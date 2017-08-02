@@ -3,7 +3,7 @@
 ## loopchain 이란?  
   loopchain은 효율적인 스마트컨트랙트를 기반으로 실시간 거래를 지원할 수 있는 고성능 블록체인입니다.
 
-![LoopChain logo](images/theloop_ci.png)
+![LoopChain logo](images/new_theloop_ci.png)
 
 ## Features
 
