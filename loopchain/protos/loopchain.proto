@@ -1,0 +1,340 @@
+// ########################################################################
+// Copyright 2017 loopchain authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+// ########################################################################
+//
+// A proto file for gRPC interface.
+
+syntax = "proto2";
+
+
+// ########################################################################
+// Peer Service for Inner Process
+service InnerService {
+    // Connection
+    rpc Request (Message) returns (Message) {}
+    rpc GetStatus (StatusRequest) returns (StatusReply) {}
+    rpc GetScoreStatus (StatusRequest) returns (StatusReply) {}
+    rpc Stop (StopRequest) returns (StopReply) {}
+    rpc GetTx (GetTxRequest) returns (GetTxReply) {}
+    rpc GetBlock (GetBlockRequest) returns (GetBlockReply) {}
+    rpc Query (QueryRequest) returns (QueryReply) {}
+    // Peer 의 Block Height 보정용 interface
+    rpc BlockSync (BlockSyncRequest) returns (BlockSyncReply) {}
+    // Subscribe 후 broadcast 받는 인터페이스는 Announce- 로 시작한다.
+    rpc AnnounceUnconfirmedBlock (BlockSend) returns (CommonReply) {}
+    rpc AnnounceConfirmedBlock (BlockAnnounce) returns (CommonReply) {}
+    rpc AnnounceNewPeer (PeerRequest) returns (CommonReply) {}
+    // Test 검증을 위한 인터페이스
+    rpc Echo (CommonRequest) returns (CommonReply) {}
+    // Leader 선정을 위한 인터페이스
+    rpc ComplainLeader (ComplainLeaderRequest) returns (CommonReply) {}
+    rpc AnnounceNewLeader (ComplainLeaderRequest) returns (CommonReply) {}
+
+    ///////////////////////////////////////////////////////////////////////
+    // BlockGenerator (leader) 에게만 허용되어야 하는 interface
+    ///////////////////////////////////////////////////////////////////////
+    // RadioStation 에서 GetLastBlockHash 는 Block Height Sync 를 위해서 사용된다.
+    rpc GetLastBlockHash (CommonRequest) returns (BlockReply) {}
+    // Subscribe 와 UnSubscribe 는 Broadcast 관련 메소드로 radiostation.proto 와 동일하게 구성되어야 한다.
+    rpc Subscribe (SubscribeRequest) returns (CommonReply) {}
+    rpc UnSubscribe (SubscribeRequest) returns (CommonReply) {}
+    rpc AddTx (TxSend) returns (CommonReply) {}
+    rpc VoteUnconfirmedBlock (BlockVote) returns (CommonReply) {}
+    ///////////////////////////////////////////////////////////////////////
+
+    ///////////////////////////////////////////////////////////////////////
+    // Inner channel 전용 메시지, 내부의 Process 가 요청하는 interface
+    // Notify- 로 시작한다.
+    ///////////////////////////////////////////////////////////////////////
+    rpc NotifyLeaderBroken (CommonRequest) returns (CommonReply) {}
+    rpc NotifyProcessError (CommonRequest) returns (CommonReply) {}
+}
+
+// Peer Service for Outer Client or other Peer
+service PeerService {
+    // Connection
+    rpc Request (Message) returns (Message) {}
+    rpc GetStatus (StatusRequest) returns (StatusReply) {}
+    rpc GetScoreStatus (StatusRequest) returns (StatusReply) {}
+    rpc Stop (StopRequest) returns (StopReply) {}
+    rpc CreateTx (CreateTxRequest) returns (CreateTxReply) {}
+    rpc GetTx (GetTxRequest) returns (GetTxReply) {}
+    rpc GetBlock (GetBlockRequest) returns (GetBlockReply) {}
+    rpc Query (QueryRequest) returns (QueryReply) {}
+    rpc GetInvokeResult (GetInvokeResultRequest) returns (GetInvokeResultReply) {}
+    // Peer 의 Block Height 보정용 interface
+    rpc BlockSync (BlockSyncRequest) returns (BlockSyncReply) {}
+    // Subscribe 후 broadcast 받는 인터페이스는 Announce- 로 시작한다.
+    rpc AnnounceUnconfirmedBlock (BlockSend) returns (CommonReply) {}
+    rpc AnnounceConfirmedBlock (BlockAnnounce) returns (CommonReply) {}
+    rpc AnnounceNewPeer (PeerRequest) returns (CommonReply) {}
+    rpc AnnounceDeletePeer (PeerID) returns (CommonReply) {}
+    // Test 검증을 위한 인터페이스
+    rpc Echo (CommonRequest) returns (CommonReply) {}
+    // Leader 선정을 위한 인터페이스
+    rpc ComplainLeader (ComplainLeaderRequest) returns (CommonReply) {}
+    rpc AnnounceNewLeader (ComplainLeaderRequest) returns (CommonReply) {}
+
+    ///////////////////////////////////////////////////////////////////////
+    // BlockGenerator (leader) 에게만 허용되어야 하는 interface
+    ///////////////////////////////////////////////////////////////////////
+    // RadioStation 에서 GetLastBlockHash 는 Block Height Sync 를 위해서 사용된다.
+    rpc GetLastBlockHash (CommonRequest) returns (BlockReply) {}
+    // Subscribe 와 UnSubscribe 는 Broadcast 관련 메소드로 radiostation.proto 와 동일하게 구성되어야 한다.
+    rpc Subscribe (SubscribeRequest) returns (CommonReply) {}
+    rpc UnSubscribe (SubscribeRequest) returns (CommonReply) {}
+    rpc AddTx (TxSend) returns (CommonReply) {}
+    rpc VoteUnconfirmedBlock (BlockVote) returns (CommonReply) {}
+    ///////////////////////////////////////////////////////////////////////
+}
+
+
+// #######################################################
+// RadioStation Service
+service RadioStation {
+    rpc Request (Message) returns (Message) {}
+    rpc GetStatus (StatusRequest) returns (StatusReply) {}
+    rpc Stop (StopRequest) returns (StopReply) {}
+    // Peer 접속
+    rpc ConnectPeer (PeerRequest) returns (PeerReply) {}
+    rpc GetPeerList (CommonRequest) returns (PeerList) {}
+    rpc GetPeerStatus (PeerID) returns (StatusReply) {}
+    rpc AnnounceNewLeader (ComplainLeaderRequest) returns (CommonReply) {}
+    // Subscribe 와 UnSubscribe 는 Broadcast 관련 메소드로 loopchain.proto 와 동일하게 구성되어야 한다.
+    rpc Subscribe (SubscribeRequest) returns (CommonReply) {}
+    rpc UnSubscribe (SubscribeRequest) returns (CommonReply) {}
+}
+
+
+// #######################################################
+// Container Service
+service Container {
+    rpc Request (Message) returns (Message) {}
+}
+
+
+message Message {
+    required int32 code = 1;        // numeric value for request type and response result, see protos/message_code.py
+    optional string message = 2;    // expain about code (optional)
+    optional string meta = 3;       // json data for object or itself (optional)
+    optional bytes object = 4;      // dumped python object by pickle for response (optional)
+}
+
+
+// Leader 선정을 위한 인터페이스 Mesages
+
+// AnnounceComplained 에 대한 응답으로 이 메시지를 사용하는 경우에는
+// complained_leader_id 에 대한 Complain 에 동의하지 않을 경우 new_leader_id 에 complained_leader_id 를 다시 전송한다.
+// TODO 추가로는 이때 합의에 대한 서명이 들어가도록 보완 되어야 한다.
+message ComplainLeaderRequest {
+    required string complained_leader_id = 1;
+    required string new_leader_id = 2;
+    required string message = 3;
+}
+
+
+//[RadioStation] for Peer list
+message PeerList {
+    required bytes peer_list = 1;
+}
+
+
+//[Peer&BlockGenerator] for Create and Send Transaction
+message CreateTxRequest {
+    required string data = 1;
+}
+
+message CreateTxReply {
+    required int32 response_code = 1;
+    required string tx_hash = 2;
+    required string more_info = 3;
+}
+
+message TxSend {
+    required bytes tx = 1;
+}
+
+
+// GetBlock Request and Reply
+message GetBlockRequest {
+    optional string block_hash = 1;
+    optional int32 block_height = 2 [default = -1];
+    required string block_data_filter = 3; // "version, prev_block_hash, time_stamp, ..." fields of Block"
+    required string tx_data_filter = 4; // "tx_hash, data_string, ..." fields of Transaction
+}
+
+message GetBlockReply {
+    required int32 response_code = 1;
+    required string block_hash = 2;
+    required string block_data_json = 3; // json key:value by block_data_filter "{version:'0.1', prev_block_hash:'0000', time_stamp:'1990-10-10'}"
+    repeated string tx_data_json = 4; // json key:value by tx_data_filter "{transaction_hash:'12345', data:'12345', time_stamp:'1990-10-10'}"
+}
+
+
+// Query Request and Reply
+message QueryRequest {
+    required string params = 1; // json params
+}
+
+message QueryReply {
+    required int32 response_code = 1;
+    required string response = 2; // json response for query
+}
+
+
+// GetTx Request and Reply
+message GetTxRequest {
+    // tx_hash 는 CreateTxReply 의 tx_hash 값이다.
+    required string tx_hash = 1;
+}
+
+message GetTxReply {
+    // Find Tx 의 data 는 CreateTxRequest 의 data 와 같다.
+    required int32 response_code = 1;
+    required string meta = 2;
+    required string data = 3;
+    required string more_info = 4;
+}
+
+// GetTxResult Request and Reply
+message GetInvokeResultRequest {
+    required string tx_hash = 1;
+}
+
+message GetInvokeResultReply {
+    required int32 response_code = 1;
+    // Transaction invoke result
+    optional string result = 2;
+}
+
+
+// For Block Sync
+message BlockSyncRequest {
+    required string block_hash = 1;
+}
+
+message BlockSyncReply {
+    required int32 response_code = 1;
+    required int32 block_height = 2;
+    required int32 max_block_height = 3;
+    required bytes block = 4;
+}
+
+
+//[Peer&BlockGenerator] for send Block, this message type shared in AnnounceUnconfirmedBlock and SendConfirmedBlock
+message BlockSend {
+    required bytes block = 1;
+}
+
+message BlockReply {
+    required int32 response_code = 1;
+    required string message = 2;
+    required string block_hash = 3;
+}
+
+message BlockVote {
+    required int32 vote_code = 1;  // has same values of response_code
+    required string message = 2;
+    required string block_hash = 3;
+    required string peer_id = 4;
+    required string group_id = 5;
+}
+
+
+//[Peer&BlockGenerator] for announce confirmed Block
+message BlockAnnounce {
+    required string block_hash = 1;
+    optional bytes block = 2;
+}
+
+
+// #######################################################
+// RadioStation, Peer, BlockGenerator 공통 요소
+// #######################################################
+
+
+enum PeerType {
+    PEER = 0;
+    BLOCK_GENERATOR = 1;
+    RADIO_STATION = 2;
+}
+
+
+// for Common Mesage
+message CommonRequest {
+    required string request = 1;
+    optional string group_id = 2;
+}
+
+message CommonReply {
+    required int32 response_code = 1;
+    required string message = 2;
+}
+
+
+// Message for Susbscription
+message SubscribeRequest {
+    required string peer_target = 1;
+    required PeerType peer_type = 2;
+    optional string peer_id = 3;
+    optional string group_id = 4;
+}
+
+
+// Data for RadioStation
+message StatusRequest {
+    required string request = 1;
+}
+
+message StatusReply {
+    required string status = 1;
+    required int32 block_height = 2;
+    required int32 total_tx = 3;
+}
+
+
+// for Stop request
+message StopRequest {
+    required string reason = 1;
+}
+
+message StopReply {
+    required string status = 1;
+}
+
+
+// Peer가 RadioStation에 접속할 때 줄 정보들
+// * target = "[IP]:[port]", It's gRPC way
+message PeerRequest {
+    required bytes peer_object = 1;
+    required string peer_id = 2;
+    required string peer_target = 3;
+    required string group_id = 4;
+    required PeerType peer_type = 5;
+    optional string token = 6;
+    optional int32 peer_order = 7;
+}
+
+message PeerID {
+    required string peer_id = 2;
+    required string group_id = 4;
+}
+
+// RadioStation이 Peer에게 줄 정보들
+message PeerReply {
+    required int32 status = 1;
+    required bytes peer_list = 2;
+    optional string more_info = 3;
+}
