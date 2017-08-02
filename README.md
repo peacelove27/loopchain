@@ -140,8 +140,8 @@ $ curl http://localhost:9100/api/v1/status/peer # 현재 Peer1 의 상태를 보
 
 
 #### 3. 새로운 Transaction을 만듭니다.
- 새로운 Transaction을 Peer0에 보내기 위해서는 다음과 같이 RESTful API를 호출합니다 
- 
+ 새로운 Transaction을 Peer0에 보내기 위해서는 다음과 같이 RESTful API를 호출합니다
+
 ```
 $ curl -H "Content-Type: application/json" -d '{"data":"hello"}' http://localhost:9000/api/v1/transactions
 
@@ -155,12 +155,12 @@ $ curl -H "Content-Type: application/json" -d '{"data":"hello"}' http://localhos
 $ curl http://localhost:9000/api/v1/blocks
 
 {
- "response_code": 0, 
- "block_hash": "f7956cb168ac80e5fd569c53c95b55a92254f7a1c372ad06e936cc35357a8ead", 
- "block_data_json": 
+ "response_code": 0,
+ "block_hash": "f7956cb168ac80e5fd569c53c95b55a92254f7a1c372ad06e936cc35357a8ead",
+ "block_data_json":
    {
         "prev_block_hash": "af5570f5a1810b7af78caf4bc70a660f0df51e42baf91d4de5b2328de0e83dfc",
-        "merkle_tree_root_hash": "1726e6d64a17cb1e0d664f4239f20b7176fc046ae6aa423922fb0ef6eb48512b", 
+        "merkle_tree_root_hash": "1726e6d64a17cb1e0d664f4239f20b7176fc046ae6aa423922fb0ef6eb48512b",
         "time_stamp": "1501132106740684",
         "height": "1",    # Height가 증가.
         "peer_id": "15e6d814-7289-11e7-bb81-14109fdb09f5"
