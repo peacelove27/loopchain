@@ -69,6 +69,7 @@ $ pip3 install -r requirements.txt  # 필요한 package들을 가상환경에 �
 ```
 $ ./setup.sh
 $ source bin/activate
+$ ./setup.sh
 $ ./generate_code.sh
 ```
 
