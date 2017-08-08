@@ -240,7 +240,7 @@ $ curl -H "Content-Type: application/json" -X POST -d '{"jsonrpc":"2.0","method"
 ```
 
 
-## 10.Transaction 확인하기 
+## 10. Transaction 확인하기 
 
 이제 위의 Transaction 이 정상적으로 실행이 되었는지 확인해보겠습니다. ```/api/v1/transaction/result?hash={Score결과로 얻은 transaction의 hash}```를 아래와 같이 실행해봅니다. 
 
@@ -257,7 +257,7 @@ $ curl http://localhost:9000/api/v1/transactions/result?hash=2ef0338a4d597661c93
 ```
 
 
-## 11.전체 Transaction이 모든 Peer에 전파되었는지 확인. 
+## 11. 전체 Transaction이 모든 Peer에 전파되었는지 확인. 
 
 ```
 curl http://localhost:9000/api/v1/status/peer
