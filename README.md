@@ -21,7 +21,7 @@ Multi channel은 하나의 독립적인 블록체인 네트워크내에서 업�
 ### Tiered System
 블록체인 네트워크에 참여시 인증과 함께 거래별로 PKI 기반 인증을 통해 거래 내역 검증 및 보안이 이루어집니다. 또한 거래에 참여하지 않지만 필요에따라 거래 내역을 감사할 수 있는 기능을 특정 노드에 부여하는 기능을 지원합니다.
 
-그 외의 내용들은 [한국어 백서](https://loopchain.files.wordpress.com/2017/07/lft-e18487e185a2e186a8e18489e185a5.pdf)를 참고 바랍니다
+그 외의 내용들은 [한국어 백서](https://loopchain.files.wordpress.com/2017/07/lft-e18487e185a2e186a8e18489e185a5.pdf)를 참고 바랍니다.
 
 
 ## Components 들
@@ -29,7 +29,7 @@ Multi channel은 하나의 독립적인 블록체인 네트워크내에서 업�
 ![LoopChain components](images/system_diagrams.png)
 
 ### Peer
-새로운 Tx(Transaction)을 만들어서 검증을 요청합니다 그리고 새로 검증된 block을 모아 Blockchain에 저장하고 그 내용을 읽어볼 수 있게 해줍니다
+새로운 Tx(Transaction)을 만들어서 검증을 요청합니다. 그리고 새로 검증된 block을 모아 Blockchain에 저장하고 그 내용을 읽어볼 수 있게 해줍니다.
 
 ### Peer (Leader)
 일정시간마다 네트워크의 트랜잭션을 모아 블록을 생성하고 다른 Peer들에게 검증을 요청하며, 다수의 Peer가 검증 후 해당 블록을 공인해서 보관하는 모듈입니다.
@@ -44,7 +44,7 @@ Peer의 추가/탈퇴/재시작시, 다른 Peer들의 주소를 알림으로써 
 각 Peer들이 돌아가는 Log를 수집하는 모듈입니다.
 
 ## 시작하기  (Getting stated)
-Local machine 에서 실행하는 방법은 다음과 같습니다
+Local machine 에서 실행하는 방법은 다음과 같습니다.
 
 ### 사전 준비하기 (Prerequisites)
 
@@ -55,7 +55,7 @@ Local machine 에서 실행하는 방법은 다음과 같습니다
 
 ### 설치하기
 
- 제일 먼저 clone으로 현재 프로젝트를 받으십시오. 그 다음 프로젝트 폴더로 가서 사용환경을 만들어야 합니다. 사용환경을 만들기 위해서는 아래와 같이 합니다
+ 제일 먼저 clone으로 현재 프로젝트를 받으십시오. 그 다음 프로젝트 폴더로 가서 사용환경을 만들어야 합니다. 사용환경을 만들기 위해서는 아래와 같이 합니다.
 
 ```
 $ virtualenv -p python3 .  # 가상 작업환경 생성
@@ -75,7 +75,7 @@ $ ./generate_code.sh
 
 ## Unit 테스트 실행하기(Running the unit tests)
 
-설치후, 전체적으로 동작이 되는지를 확인하기 위한 전체 Unit test는 아래와 같이 돌립니다.
+설치후, 전체적으로 동작이 되는지를 확인하기 위한 전체 Unit test는 아래와 같이 실행합니다.
 ```
 $ ./run_test.sh
 ```
@@ -85,7 +85,7 @@ $ ./run_test.sh
 
 ### 직접 올리기
 
- 다음의 순서로 올리게 됩니다
+ 다음의 순서로 올리게 됩니다.
 #### 1. RadioStation 올리기
 
  ```
@@ -105,7 +105,7 @@ $ ./run_test.sh
 ####  2. 여러개의 Peer 올리기
 
 
- 새로운 Terminal을 띄워서 LoopChain folder로 갑니다. 이후 아래와 같이 입력합니다
+ 새로운 Terminal을 띄워서 LoopChain folder로 갑니다. 이후 아래와 같이 입력합니다.
   ```
  $ source bin/activate  # Python 가상 환경을 띄웁니다.  
  $ ./peer.py            # Peer를 띄웁니다.
@@ -120,7 +120,7 @@ $ ./run_test.sh
 '2017-07-20 16:05:13,481 DEBUG Set Peer Type Block Generator!'
 '2017-07-20 16:05:13,481 INFO LOAD SCORE AND CONNECT TO SCORE SERVICE!'
 ```
-  같은 방식으로 또 다른 Peer를 띄워보실 수 있습니다. 그러나 이번에는 다른 Port를 이용해서 RadioStation과 연결을 해야 합니다
+  같은 방식으로 또 다른 Peer를 띄워보실 수 있습니다. 그러나 이번에는 다른 Port를 이용해서 RadioStation과 연결을 해야 합니다.
 
 ```
 $ source bin/activate
@@ -140,8 +140,8 @@ $ curl http://localhost:9100/api/v1/status/peer # 현재 Peer1 의 상태를 보
   자세한 RESTful API에 대해서는 [Peer RESTful API](proxy_rest_api.md), [Radiostation RESTful API](radiostation_proxy_restful_api.md)문서를 참고 바랍니다.
 
 
-#### 3. 새로운 Transaction을 만듭니다.
- 새로운 Transaction을 Peer0에 보내기 위해서는 다음과 같이 RESTful API를 호출합니다
+#### 3. 새로운 Transaction 만들기
+ 새로운 Transaction을 Peer0에 보내기 위해서는 다음과 같이 RESTful API를 호출합니다.
 
 ```
 $ curl -H "Content-Type: application/json" -d '{"data":"hello"}' http://localhost:9000/api/v1/transactions
@@ -150,7 +150,7 @@ $ curl -H "Content-Type: application/json" -d '{"data":"hello"}' http://localhos
 ```
 
 
-#### 4. 만들어진 Transaction의 height를 확인합니다.
+#### 4. 만들어진 Transaction의 height를 확인하기
 
 ```
 $ curl http://localhost:9000/api/v1/blocks

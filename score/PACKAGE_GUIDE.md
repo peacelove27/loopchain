@@ -2,7 +2,7 @@
 
 ## Loopchain SCORE package file
 package file 은 json 형태로 제공되며, 프록시가 로드 될때 같이 로드하여,  
-내부에서 패키지 정보가 필요할때 해당 내용이 제공된다.
+내부에서 패키지 정보가 필요할 때 해당 내용이 제공된다.
 ```
 ex) 
 {
