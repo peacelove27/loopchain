@@ -24,7 +24,7 @@ import loopchain.utils as util
 import testcase.unittest.test_util as test_util
 from loopchain.baseservice.SingletonMetaClass import *
 from loopchain.blockchain import Block
-from loopchain.blockchain import BlockChain, BlockType
+from loopchain.blockchain import BlockChain, BlockStatus
 from loopchain.blockchain import Transaction
 
 util.set_log_level_debug()
@@ -87,7 +87,7 @@ class TestGeneratorBlock(unittest.TestCase):
         for x in range(0,10):
             # 신규 블럭 생성 추가 x 10
             tmp_block = self.generate_test_block()
-            tmp_block.block_type = BlockType.confirmed
+            tmp_block.block_status = BlockStatus.confirmed
             tmp_block.generate_block(chain.last_block)
             chain.add_block(tmp_block)
             logging.debug("신규 블럭 생성 및 블럭 HASH : %s", chain.last_block.block_hash)
@@ -96,11 +96,11 @@ class TestGeneratorBlock(unittest.TestCase):
 
         # 미인증 블럭 추가
         tmp_block = self.generate_test_block()
-        tmp_block.block_type = BlockType.unconfirmed
+        tmp_block.block_status = BlockStatus.unconfirmed
         self.assertRaises(TypeError, "미인증 블럭 추가", chain.add_block, tmp_block)
 
         # Store_data Function 추가
-        tmp_block.block_type = BlockType.confirmed
+        tmp_block.block_status = BlockStatus.confirmed
         tmp_block.generate_block(chain.last_block)
         # 블럭 저장함수
         last_block_hash = chain.last_block.block_hash

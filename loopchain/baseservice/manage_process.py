@@ -62,7 +62,10 @@ class ManageProcess(CommonThread):
 
     def send_to_process(self, job):
         try:
+            # logging.debug(f"add job to manage list job :{job}")
             self.__manager_list.append(job)
+            # logging.debug(f'manage list append : {self.__manager_list}')
+            # logging.debug(f'manage list append : {str(id(self.__manager_list))}')
             return True
         except ConnectionRefusedError as e:
             if job[0] == ManageProcess.QUIT_COMMAND:

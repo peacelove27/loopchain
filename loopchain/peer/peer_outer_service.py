@@ -13,11 +13,17 @@
 # limitations under the License.
 """gRPC service for Peer Outer Service"""
 
-import json
 import re
-from loopchain.baseservice import ObjectManager
+
+import grpc
+from grpc._channel import _Rendezvous
+
+from loopchain.baseservice import ObjectManager, BroadcastProcess
 from loopchain.blockchain import *
-from loopchain.protos import loopchain_pb2, loopchain_pb2_grpc, message_code
+from loopchain.protos import loopchain_pb2_grpc, message_code
+
+# loopchain_pb2 를 아래와 같이 import 하지 않으면 broadcast 시도시 pickle 오류가 발생함
+import loopchain_pb2
 
 
 class OuterService(loopchain_pb2_grpc.PeerServiceServicer):
@@ -65,7 +71,8 @@ class OuterService(loopchain_pb2_grpc.PeerServiceServicer):
         return loopchain_pb2.StatusReply(
             status=json.dumps(peer_status),
             block_height=peer_status["block_height"],
-            total_tx=peer_status["total_tx"])
+            total_tx=peer_status["total_tx"],
+            is_leader_complaining=peer_status['leader_complaint'])
 
     def GetScoreStatus(self, request, context):
         """Score Service 의 현재 상태를 요청 한다
@@ -141,13 +148,20 @@ class OuterService(loopchain_pb2_grpc.PeerServiceServicer):
         more_info = ""
 
         if self.peer_service.score_info is not None:
+            # logging.debug("peer_outer_service create tx is have peer service info ")
             score_id = self.peer_service.score_info[message_code.MetaParams.ScoreInfo.score_id]
             score_version = self.peer_service.score_info[message_code.MetaParams.ScoreInfo.score_version]
 
         tx.init_meta(self.peer_service.peer_id, score_id, score_version)
         result_hash = tx.put_data(request.data)
+        # logging.debug("peer_outer_service result hash : " + result_hash)
 
-        self.peer_service.send_to_process_thread.send_to_process(("create_tx", tx))
+        self.peer_service.send_to_process_thread.send_to_process((BroadcastProcess.CREATE_TX_COMMAND, tx))
+
+        # TODO gRPC receiver 가 별도로 구현되지 않은 현재 상태에서는 tx broadcast 는 로드 테스트를 견디지 못한다.
+        # gRPC receiver 구현 후 다시 테스트 할 것
+        # tx_dump = pickle.dumps(tx)
+        # self.peer_service.common_service.broadcast("AddTx", (loopchain_pb2.TxSend(tx=tx_dump)))
 
         return loopchain_pb2.CreateTxReply(
             response_code=result_code,
@@ -155,26 +169,22 @@ class OuterService(loopchain_pb2_grpc.PeerServiceServicer):
             more_info=more_info)
 
     def AddTx(self, request, context):
-        """피어로부터 받은 tx 를 Block Manager 에 추가한다.
-        이 기능은 Block Generator 에서만 동작해야 한다. 일반 Peer 는 이 기능을 사용할 권한을 가져서는 안된다.
+        """Add tx to Block Manager
 
         :param request:
         :param context:
         :return:
         """
 
-        if self.peer_service.peer_type == loopchain_pb2.PEER:
+        if self.peer_service.peer_type == loopchain_pb2.BLOCK_GENERATOR \
+                and self.peer_service.block_manager.consensus.block is None:
             return loopchain_pb2.CommonReply(
-                response_code=message_code.Response.fail_no_leader_peer,
-                message=message_code.get_response_msg(message_code.Response.fail_no_leader_peer))
-        else:  # Block Manager 에 tx 추가
-            if self.peer_service.block_manager.consensus.block is None:
-                return loopchain_pb2.CommonReply(
-                    response_code=message_code.Response.fail_made_block_count_limited,
-                    message="this leader can't make more block")
+                response_code=message_code.Response.fail_made_block_count_limited,
+                message="this leader can't make more block")
 
-            self.peer_service.block_manager.add_tx_unloaded(request.tx)
-            return loopchain_pb2.CommonReply(response_code=message_code.Response.success, message="success")
+        self.peer_service.block_manager.add_tx_unloaded(request.tx)
+
+        return loopchain_pb2.CommonReply(response_code=message_code.Response.success, message="success")
 
     def GetTx(self, request, context):
         """ 트랜잭션을 가져옵니다.
@@ -299,14 +309,24 @@ class OuterService(loopchain_pb2_grpc.PeerServiceServicer):
         """
         # TODO 입력값 오류를 검사하는 방법을 고려해본다, 현재는 json string 여부만 확인
         if util.check_is_json_string(request.params):
+            logging.debug(f'Query request with {request.params}')
             try:
                 response_from_score_service = self.peer_service.stub_to_score_service.call(
-                    "Request",
-                    loopchain_pb2.Message(code=message_code.Request.score_query, meta=request.params)
+                    method_name="Request",
+                    message=loopchain_pb2.Message(code=message_code.Request.score_query, meta=request.params),
+                    timeout=conf.SCORE_QUERY_TIMEOUT,
+                    is_raise=True
                 )
                 response = response_from_score_service.meta
             except Exception as e:
-                response = str(e)
+                logging.error(f'Execute Query Error : {e}')
+                if isinstance(e, _Rendezvous):
+                    # timeout 일 경우
+                    if e.code() == grpc.StatusCode.DEADLINE_EXCEEDED:
+                        return loopchain_pb2.QueryReply(response_code=message_code.Response.timeout_exceed,
+                                                        response="")
+                return loopchain_pb2.QueryReply(response_code=message_code.Response.fail,
+                                                response="")
         else:
             return loopchain_pb2.QueryReply(response_code=message_code.Response.fail_validate_params,
                                             response="")
@@ -348,19 +368,23 @@ class OuterService(loopchain_pb2_grpc.PeerServiceServicer):
 
         unconfirmed_block = pickle.loads(request.block)
 
-        logging.debug(f"#block \n"
-                      f"peer_id({unconfirmed_block.peer_id})\n"
-                      f"made_block_count({unconfirmed_block.made_block_count})\n"
-                      f"is_voting_block({unconfirmed_block.is_voting_block})\n"
-                      f"is_divided_block({unconfirmed_block.is_divided_block})")
+        # logging.debug(f"#block \n"
+        #               f"peer_id({unconfirmed_block.peer_id})\n"
+        #               f"made_block_count({unconfirmed_block.made_block_count})\n"
+        #               f"block_type({unconfirmed_block.block_type})\n"
+        #               f"is_divided_block({unconfirmed_block.is_divided_block})\n")
 
+        # self.peer_service.add_unconfirm_block(request.block)
         self.peer_service.block_manager.add_unconfirmed_block(unconfirmed_block)
 
         if unconfirmed_block.made_block_count >= conf.LEADER_BLOCK_CREATION_LIMIT \
-                and unconfirmed_block.is_voting_block is True \
+                and unconfirmed_block.block_type is BlockType.vote \
                 and unconfirmed_block.is_divided_block is False:
             self.peer_service.reset_leader(unconfirmed_block.next_leader_peer)
 
+        # if unconfirmed_block.block_type is BlockType.peer_list:
+        #     peer_list_data = pickle.loads(unconfirmed_block.peer_manager)
+        #     self.peer_service.peer_manager.load(peer_list_data)
 
         return loopchain_pb2.CommonReply(response_code=message_code.Response.success, message="success")
 
@@ -444,7 +468,7 @@ class OuterService(loopchain_pb2_grpc.PeerServiceServicer):
         return loopchain_pb2.CommonReply(response_code=0, message="success")
 
     def AnnounceNewPeer(self, request, context):
-        """RadioStation에서 Broadcasting 으로 신규피어목록을 받아온다
+        """RadioStation에서 Broadcasting 으로 신규 피어정보를 받아온다
 
         :param request: PeerRequest
         :param context:
@@ -467,7 +491,29 @@ class OuterService(loopchain_pb2_grpc.PeerServiceServicer):
                 self.peer_service.common_service.save_peer_list(self.peer_service.peer_list)
         self.peer_service.show_peers()
 
+        # Block generator makes a peer_manager block up when a new peer joins the network.
+        if self.peer_service.peer_type is loopchain_pb2.BLOCK_GENERATOR:
+            self.add_peer_manager_tx()
+
         return loopchain_pb2.CommonReply(response_code=0, message="success")
+
+    def add_peer_manager_tx(self):
+        """ peer_manager block을 생성하기 위한 Transaction을 추가한다
+        이 기능은 Block Generator 에서만 동작해야 한다. 일반 Peer 는 이 기능을 사용할 권한을 가져서는 안된다.
+
+        :return:
+        """
+        tx = Transaction()
+        tx.type = TransactionType.peer_list
+        tx.put_meta(Transaction.PEER_ID_KEY, self.peer_service.peer_id)
+        tx.put_data(self.peer_service.peer_manager.dump())
+
+        self.peer_service.send_to_process_thread.send_to_process(("create_tx", tx))
+
+        if self.peer_service.block_manager.consensus.block is None:
+            logging.debug("this leader can't make more block")
+
+        self.peer_service.block_manager.add_tx_unloaded(pickle.dumps(tx))
 
     def AnnounceDeletePeer(self, request, context):
         logging.debug(f"AnnounceDeletePeer peer_id({request.peer_id}) group_id({request.group_id})")

@@ -76,10 +76,8 @@ class Response(IntEnum):
     fail_wrong_subscribe_info = -8
     fail_connect_to_leader = -9
     fail_add_tx_to_leader = -10
+    timeout_exceed = -900
     not_treat_message_code = -999
-
-    # TODO score invoke message 및 code 정의 분리할 것
-    not_found_tx = -11  # for score invoke
 
 
 responseCodeMap = {
@@ -95,8 +93,7 @@ responseCodeMap = {
     Response.fail_wrong_subscribe_info: (Response.fail_wrong_subscribe_info,    "fail wrong subscribe info"),
     Response.fail_connect_to_leader:    (Response.fail_connect_to_leader,       "fail connect to leader"),
     Response.fail_add_tx_to_leader:     (Response.fail_add_tx_to_leader,        "fail add tx to leader"),
-    Response.not_found_tx:              (Response.fail_add_tx_to_leader,        "not found tx")  # for score invoke
-
+    Response.timeout_exceed:            (Response.timeout_exceed,               "timeout exceed")
 }
 
 

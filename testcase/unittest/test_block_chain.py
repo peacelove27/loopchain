@@ -24,7 +24,7 @@ import unittest
 import loopchain.utils as util
 import testcase.unittest.test_util as test_util
 from loopchain.blockchain import Block
-from loopchain.blockchain import BlockChain, BlockType
+from loopchain.blockchain import BlockChain, BlockStatus
 from loopchain.blockchain import Transaction
 from loopchain.protos import message_code
 
@@ -91,7 +91,7 @@ class TestBlockChain(unittest.TestCase):
             last_block = self.chain.last_block
             n_block = self.generate_test_block()
             n_block.generate_block(last_block)
-            n_block.block_type = BlockType.confirmed
+            n_block.block_status = BlockStatus.confirmed
             if find_block_index == x:
                 find_block_hash = n_block.block_hash
                 find_block_height = n_block.height
@@ -118,7 +118,7 @@ class TestBlockChain(unittest.TestCase):
             last_block = self.chain.last_block
             n_block = self.generate_test_block()
             n_block.generate_block(last_block)
-            n_block.block_type = BlockType.confirmed
+            n_block.block_status = BlockStatus.confirmed
             if find_block_index == x:
                 find_block_hash = n_block.block_hash
             logging.debug("new block height : %i", n_block.height)
@@ -138,7 +138,7 @@ class TestBlockChain(unittest.TestCase):
         """block db 에 block_hash - block_object 를 저장할때, tx_hash - tx_object 도 저장한다.
         get tx by tx_hash 시 해당 block 을 효율적으로 찾기 위해서
         """
-        tx = self.__add_single_tx_block_return_tx_with_test()
+        tx = self.__add_single_tx_to_block_return_tx_with_test()
 
         saved_tx = self.chain.find_tx_by_key(tx.get_tx_hash())
         logging.debug("saved_tx: " + str(saved_tx.get_tx_hash()))
@@ -149,12 +149,12 @@ class TestBlockChain(unittest.TestCase):
         """invoke_result = "{"code" : "invoke_result_code" , "error_message": "message" }"
 
         """
-        tx = self.__add_single_tx_block_return_tx_with_test()
+        tx = self.__add_single_tx_to_block_return_tx_with_test()
 
         invoke_result = self.chain.find_invoke_result_by_tx_hash(tx.get_tx_hash())
         self.assertEqual(invoke_result['code'], message_code.Response.success)
 
-    def __add_single_tx_block_return_tx_with_test(self):
+    def __add_single_tx_to_block_return_tx_with_test(self):
         last_block = self.chain.last_block
         block = Block()
         tx = Transaction()
@@ -165,7 +165,7 @@ class TestBlockChain(unittest.TestCase):
         logging.debug("tx_hash: " + tx.get_tx_hash())
 
         block.generate_block(last_block)
-        block.block_type = BlockType.confirmed
+        block.block_status = BlockStatus.confirmed
         # add_block include __add_tx_to_block_db what we want to test
         self.assertTrue(self.chain.add_block(block),
                         "Fail Add Block to BlockChain in test_add_tx_to_block_db")
@@ -184,7 +184,6 @@ class TestBlockChain(unittest.TestCase):
         y = BlockChain(test_util.make_level_db())
 
         self.assertTrue((x is y))
-
 
 if __name__ == '__main__':
     unittest.main()

@@ -19,6 +19,8 @@ import logging
 import ssl
 import _ssl
 
+from grpc._channel import _Rendezvous
+
 from loopchain.baseservice.SingletonMetaClass import *
 from loopchain.baseservice import CommonThread
 from flask import Flask, request
@@ -28,6 +30,10 @@ from loopchain import configure as conf
 
 
 class ServerComponents(metaclass=SingletonMetaClass):
+
+    REST_GRPC_TIMEOUT = conf.GRPC_TIMEOUT + conf.REST_ADDITIONAL_TIMEOUT
+    REST_SCORE_QUERY_TIMEOUT = conf.SCORE_QUERY_TIMEOUT + conf.REST_ADDITIONAL_TIMEOUT
+
     def __init__(self):
         self.__app = Flask(__name__)
         self.__api = Api(self.__app)
@@ -69,7 +75,8 @@ class ServerComponents(metaclass=SingletonMetaClass):
         return self.__ssl_context
 
     def set_stub_port(self, port):
-        self.__stub_to_peer_service = loopchain_pb2_grpc.PeerServiceStub(grpc.insecure_channel(conf.IP_LOCAL + ':' + str(port)))
+        self.__stub_to_peer_service = loopchain_pb2_grpc.PeerServiceStub(
+            grpc.insecure_channel(conf.IP_LOCAL + ':' + str(port)))
 
     def set_argument(self):
         self.__parser.add_argument('hash')
@@ -83,23 +90,26 @@ class ServerComponents(metaclass=SingletonMetaClass):
         self.__api.add_resource(InvokeResult, '/api/v1/transactions/result')
 
     def query(self, data):
-        return self.__stub_to_peer_service.Query(loopchain_pb2.QueryRequest(params=data), conf.GRPC_TIMEOUT)
+        # TODO conf.SCORE_RETRY_TIMES 를 사용해서 retry 로직을 구현한다.
+        return self.__stub_to_peer_service.Query(loopchain_pb2.QueryRequest(params=data), self.REST_SCORE_QUERY_TIMEOUT)
 
     def create_transaction(self, data):
-        return self.__stub_to_peer_service.CreateTx(loopchain_pb2.CreateTxRequest(data=data), conf.GRPC_TIMEOUT)
+        # logging.debug("Grpc Create Tx Data : " + data)
+        return self.__stub_to_peer_service.CreateTx(loopchain_pb2.CreateTxRequest(data=data), self.REST_GRPC_TIMEOUT)
 
     def get_transaction(self, tx_hash):
-        return self.__stub_to_peer_service.GetTx(loopchain_pb2.GetTxRequest(tx_hash=tx_hash), conf.GRPC_TIMEOUT)
+        return self.__stub_to_peer_service.GetTx(loopchain_pb2.GetTxRequest(tx_hash=tx_hash), self.REST_GRPC_TIMEOUT)
 
     def get_invoke_result(self, tx_hash):
         return self.__stub_to_peer_service.GetInvokeResult(loopchain_pb2.GetInvokeResultRequest(tx_hash=tx_hash),
-                                                           conf.GRPC_TIMEOUT)
+                                                           self.REST_GRPC_TIMEOUT)
 
     def get_status(self):
-        return self.__stub_to_peer_service.GetStatus(loopchain_pb2.StatusRequest(request=""), conf.GRPC_TIMEOUT)
+        return self.__stub_to_peer_service.GetStatus(loopchain_pb2.StatusRequest(request=""), self.REST_GRPC_TIMEOUT)
 
     def get_score_status(self):
-        return self.__stub_to_peer_service.GetScoreStatus(loopchain_pb2.StatusRequest(request=""), conf.GRPC_TIMEOUT)
+        return self.__stub_to_peer_service.GetScoreStatus(loopchain_pb2.StatusRequest(request=""),
+                                                          self.REST_GRPC_TIMEOUT)
 
     def get_block(self, block_hash="", block_height=-1,
                   block_data_filter="prev_block_hash, height, block_hash",
@@ -110,13 +120,15 @@ class ServerComponents(metaclass=SingletonMetaClass):
                 block_hash=block_hash,
                 block_height=block_height,
                 block_data_filter=block_data_filter,
-                tx_data_filter=tx_data_filter))
+                tx_data_filter=tx_data_filter),
+                self.REST_GRPC_TIMEOUT
+            )
 
         return response
 
     def get_last_block_hash(self):
         response = self.__stub_to_peer_service.GetLastBlockHash(
-            loopchain_pb2.CommonRequest(request=""), conf.GRPC_TIMEOUT)
+            loopchain_pb2.CommonRequest(request=""), self.REST_GRPC_TIMEOUT)
         return str(response.block_hash)
 
     def get_block_by_hash(self, block_hash="",
@@ -129,15 +141,25 @@ class ServerComponents(metaclass=SingletonMetaClass):
 class Query(Resource):
     def post(self):
         request_body = json.dumps(request.get_json())
-        response = ServerComponents().query(request_body)
-
         query_data = json.loads('{}')
-        query_data['response_code'] = str(response.response_code)
         try:
-            query_data['response'] = json.loads(response.response)
-        except json.JSONDecodeError as e:
-            logging.warning("your response is not json, your response(" + str(response.response) + ")")
-            query_data['response'] = response.response
+            # TODO Asnycronous call로 바꿔야 합니다.
+            response = ServerComponents().query(request_body)
+            logging.debug(f"query result : {response}")
+            query_data['response_code'] = str(response.response_code)
+            try:
+                query_data['response'] = json.loads(response.response)
+
+            except json.JSONDecodeError as e:
+                logging.warning("your response is not json, your response(" + str(response.response) + ")")
+                query_data['response'] = response.response
+
+        except _Rendezvous as e:
+            logging.error(f'Execute Query Error : {e}')
+            if e.code() == grpc.StatusCode.DEADLINE_EXCEEDED:
+                # TODO REST 응답 메시지 변경후(전체 응답에 Response code 삽입) Extract Method 하여 모든 요청에 공통 처리로 바꿈
+                logging.debug("gRPC timeout !!!")
+                query_data['response_code'] = str(message_code.Response.timeout_exceed)
 
         return query_data
 
@@ -165,13 +187,16 @@ class Transaction(Resource):
         return tx_data
 
     def post(self):
+        # logging.debug("RestServer Post Transaction")
         request_body = json.dumps(request.get_json())
+        logging.debug("Transaction Request Body : " + request_body)
         response = ServerComponents().create_transaction(request_body)
 
         tx_data = json.loads('{}')
         tx_data['response_code'] = str(response.response_code)
         tx_data['tx_hash'] = response.tx_hash
         tx_data['more_info'] = response.more_info
+        logging.debug('create tx result : ' + str(tx_data))
 
         return tx_data
 
@@ -201,6 +226,9 @@ class Status(Resource):
     def get(self):
         response = ServerComponents().get_status()
         status_json_data = json.loads(response.status)
+        status_json_data['block_height'] = response.block_height
+        status_json_data['total_tx'] = response.total_tx
+        status_json_data['leader_complaint'] = response.is_leader_complaining
         return status_json_data
 
 

@@ -20,7 +20,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='loopchain.proto',
   package='',
   syntax='proto2',
-  serialized_pb=_b('\n\x0floopchain.proto\"F\n\x07Message\x12\x0c\n\x04\x63ode\x18\x01 \x02(\x05\x12\x0f\n\x07message\x18\x02 \x01(\t\x12\x0c\n\x04meta\x18\x03 \x01(\t\x12\x0e\n\x06object\x18\x04 \x01(\x0c\"]\n\x15\x43omplainLeaderRequest\x12\x1c\n\x14\x63omplained_leader_id\x18\x01 \x02(\t\x12\x15\n\rnew_leader_id\x18\x02 \x02(\t\x12\x0f\n\x07message\x18\x03 \x02(\t\"\x1d\n\x08PeerList\x12\x11\n\tpeer_list\x18\x01 \x02(\x0c\"\x1f\n\x0f\x43reateTxRequest\x12\x0c\n\x04\x64\x61ta\x18\x01 \x02(\t\"J\n\rCreateTxReply\x12\x15\n\rresponse_code\x18\x01 \x02(\x05\x12\x0f\n\x07tx_hash\x18\x02 \x02(\t\x12\x11\n\tmore_info\x18\x03 \x02(\t\"\x14\n\x06TxSend\x12\n\n\x02tx\x18\x01 \x02(\x0c\"r\n\x0fGetBlockRequest\x12\x12\n\nblock_hash\x18\x01 \x01(\t\x12\x18\n\x0c\x62lock_height\x18\x02 \x01(\x05:\x02-1\x12\x19\n\x11\x62lock_data_filter\x18\x03 \x02(\t\x12\x16\n\x0etx_data_filter\x18\x04 \x02(\t\"i\n\rGetBlockReply\x12\x15\n\rresponse_code\x18\x01 \x02(\x05\x12\x12\n\nblock_hash\x18\x02 \x02(\t\x12\x17\n\x0f\x62lock_data_json\x18\x03 \x02(\t\x12\x14\n\x0ctx_data_json\x18\x04 \x03(\t\"\x1e\n\x0cQueryRequest\x12\x0e\n\x06params\x18\x01 \x02(\t\"5\n\nQueryReply\x12\x15\n\rresponse_code\x18\x01 \x02(\x05\x12\x10\n\x08response\x18\x02 \x02(\t\"\x1f\n\x0cGetTxRequest\x12\x0f\n\x07tx_hash\x18\x01 \x02(\t\"R\n\nGetTxReply\x12\x15\n\rresponse_code\x18\x01 \x02(\x05\x12\x0c\n\x04meta\x18\x02 \x02(\t\x12\x0c\n\x04\x64\x61ta\x18\x03 \x02(\t\x12\x11\n\tmore_info\x18\x04 \x02(\t\")\n\x16GetInvokeResultRequest\x12\x0f\n\x07tx_hash\x18\x01 \x02(\t\"=\n\x14GetInvokeResultReply\x12\x15\n\rresponse_code\x18\x01 \x02(\x05\x12\x0e\n\x06result\x18\x02 \x01(\t\"&\n\x10\x42lockSyncRequest\x12\x12\n\nblock_hash\x18\x01 \x02(\t\"f\n\x0e\x42lockSyncReply\x12\x15\n\rresponse_code\x18\x01 \x02(\x05\x12\x14\n\x0c\x62lock_height\x18\x02 \x02(\x05\x12\x18\n\x10max_block_height\x18\x03 \x02(\x05\x12\r\n\x05\x62lock\x18\x04 \x02(\x0c\"\x1a\n\tBlockSend\x12\r\n\x05\x62lock\x18\x01 \x02(\x0c\"H\n\nBlockReply\x12\x15\n\rresponse_code\x18\x01 \x02(\x05\x12\x0f\n\x07message\x18\x02 \x02(\t\x12\x12\n\nblock_hash\x18\x03 \x02(\t\"f\n\tBlockVote\x12\x11\n\tvote_code\x18\x01 \x02(\x05\x12\x0f\n\x07message\x18\x02 \x02(\t\x12\x12\n\nblock_hash\x18\x03 \x02(\t\x12\x0f\n\x07peer_id\x18\x04 \x02(\t\x12\x10\n\x08group_id\x18\x05 \x02(\t\"2\n\rBlockAnnounce\x12\x12\n\nblock_hash\x18\x01 \x02(\t\x12\r\n\x05\x62lock\x18\x02 \x01(\x0c\"2\n\rCommonRequest\x12\x0f\n\x07request\x18\x01 \x02(\t\x12\x10\n\x08group_id\x18\x02 \x01(\t\"5\n\x0b\x43ommonReply\x12\x15\n\rresponse_code\x18\x01 \x02(\x05\x12\x0f\n\x07message\x18\x02 \x02(\t\"h\n\x10SubscribeRequest\x12\x13\n\x0bpeer_target\x18\x01 \x02(\t\x12\x1c\n\tpeer_type\x18\x02 \x02(\x0e\x32\t.PeerType\x12\x0f\n\x07peer_id\x18\x03 \x01(\t\x12\x10\n\x08group_id\x18\x04 \x01(\t\" \n\rStatusRequest\x12\x0f\n\x07request\x18\x01 \x02(\t\"E\n\x0bStatusReply\x12\x0e\n\x06status\x18\x01 \x02(\t\x12\x14\n\x0c\x62lock_height\x18\x02 \x02(\x05\x12\x10\n\x08total_tx\x18\x03 \x02(\x05\"\x1d\n\x0bStopRequest\x12\x0e\n\x06reason\x18\x01 \x02(\t\"\x1b\n\tStopReply\x12\x0e\n\x06status\x18\x01 \x02(\t\"\x9b\x01\n\x0bPeerRequest\x12\x13\n\x0bpeer_object\x18\x01 \x02(\x0c\x12\x0f\n\x07peer_id\x18\x02 \x02(\t\x12\x13\n\x0bpeer_target\x18\x03 \x02(\t\x12\x10\n\x08group_id\x18\x04 \x02(\t\x12\x1c\n\tpeer_type\x18\x05 \x02(\x0e\x32\t.PeerType\x12\r\n\x05token\x18\x06 \x01(\t\x12\x12\n\npeer_order\x18\x07 \x01(\x05\"+\n\x06PeerID\x12\x0f\n\x07peer_id\x18\x02 \x02(\t\x12\x10\n\x08group_id\x18\x04 \x02(\t\"A\n\tPeerReply\x12\x0e\n\x06status\x18\x01 \x02(\x05\x12\x11\n\tpeer_list\x18\x02 \x02(\x0c\x12\x11\n\tmore_info\x18\x03 \x01(\t*<\n\x08PeerType\x12\x08\n\x04PEER\x10\x00\x12\x13\n\x0f\x42LOCK_GENERATOR\x10\x01\x12\x11\n\rRADIO_STATION\x10\x02\x32\xfc\x07\n\x0cInnerService\x12\x1f\n\x07Request\x12\x08.Message\x1a\x08.Message\"\x00\x12+\n\tGetStatus\x12\x0e.StatusRequest\x1a\x0c.StatusReply\"\x00\x12\x30\n\x0eGetScoreStatus\x12\x0e.StatusRequest\x1a\x0c.StatusReply\"\x00\x12\"\n\x04Stop\x12\x0c.StopRequest\x1a\n.StopReply\"\x00\x12%\n\x05GetTx\x12\r.GetTxRequest\x1a\x0b.GetTxReply\"\x00\x12.\n\x08GetBlock\x12\x10.GetBlockRequest\x1a\x0e.GetBlockReply\"\x00\x12%\n\x05Query\x12\r.QueryRequest\x1a\x0b.QueryReply\"\x00\x12\x31\n\tBlockSync\x12\x11.BlockSyncRequest\x1a\x0f.BlockSyncReply\"\x00\x12\x36\n\x18\x41nnounceUnconfirmedBlock\x12\n.BlockSend\x1a\x0c.CommonReply\"\x00\x12\x38\n\x16\x41nnounceConfirmedBlock\x12\x0e.BlockAnnounce\x1a\x0c.CommonReply\"\x00\x12/\n\x0f\x41nnounceNewPeer\x12\x0c.PeerRequest\x1a\x0c.CommonReply\"\x00\x12&\n\x04\x45\x63ho\x12\x0e.CommonRequest\x1a\x0c.CommonReply\"\x00\x12\x38\n\x0e\x43omplainLeader\x12\x16.ComplainLeaderRequest\x1a\x0c.CommonReply\"\x00\x12;\n\x11\x41nnounceNewLeader\x12\x16.ComplainLeaderRequest\x1a\x0c.CommonReply\"\x00\x12\x31\n\x10GetLastBlockHash\x12\x0e.CommonRequest\x1a\x0b.BlockReply\"\x00\x12.\n\tSubscribe\x12\x11.SubscribeRequest\x1a\x0c.CommonReply\"\x00\x12\x30\n\x0bUnSubscribe\x12\x11.SubscribeRequest\x1a\x0c.CommonReply\"\x00\x12 \n\x05\x41\x64\x64Tx\x12\x07.TxSend\x1a\x0c.CommonReply\"\x00\x12\x32\n\x14VoteUnconfirmedBlock\x12\n.BlockVote\x1a\x0c.CommonReply\"\x00\x12\x34\n\x12NotifyLeaderBroken\x12\x0e.CommonRequest\x1a\x0c.CommonReply\"\x00\x12\x34\n\x12NotifyProcessError\x12\x0e.CommonRequest\x1a\x0c.CommonReply\"\x00\x32\xb3\x08\n\x0bPeerService\x12\x1f\n\x07Request\x12\x08.Message\x1a\x08.Message\"\x00\x12+\n\tGetStatus\x12\x0e.StatusRequest\x1a\x0c.StatusReply\"\x00\x12\x30\n\x0eGetScoreStatus\x12\x0e.StatusRequest\x1a\x0c.StatusReply\"\x00\x12\"\n\x04Stop\x12\x0c.StopRequest\x1a\n.StopReply\"\x00\x12.\n\x08\x43reateTx\x12\x10.CreateTxRequest\x1a\x0e.CreateTxReply\"\x00\x12%\n\x05GetTx\x12\r.GetTxRequest\x1a\x0b.GetTxReply\"\x00\x12.\n\x08GetBlock\x12\x10.GetBlockRequest\x1a\x0e.GetBlockReply\"\x00\x12%\n\x05Query\x12\r.QueryRequest\x1a\x0b.QueryReply\"\x00\x12\x43\n\x0fGetInvokeResult\x12\x17.GetInvokeResultRequest\x1a\x15.GetInvokeResultReply\"\x00\x12\x31\n\tBlockSync\x12\x11.BlockSyncRequest\x1a\x0f.BlockSyncReply\"\x00\x12\x36\n\x18\x41nnounceUnconfirmedBlock\x12\n.BlockSend\x1a\x0c.CommonReply\"\x00\x12\x38\n\x16\x41nnounceConfirmedBlock\x12\x0e.BlockAnnounce\x1a\x0c.CommonReply\"\x00\x12/\n\x0f\x41nnounceNewPeer\x12\x0c.PeerRequest\x1a\x0c.CommonReply\"\x00\x12-\n\x12\x41nnounceDeletePeer\x12\x07.PeerID\x1a\x0c.CommonReply\"\x00\x12&\n\x04\x45\x63ho\x12\x0e.CommonRequest\x1a\x0c.CommonReply\"\x00\x12\x38\n\x0e\x43omplainLeader\x12\x16.ComplainLeaderRequest\x1a\x0c.CommonReply\"\x00\x12;\n\x11\x41nnounceNewLeader\x12\x16.ComplainLeaderRequest\x1a\x0c.CommonReply\"\x00\x12\x31\n\x10GetLastBlockHash\x12\x0e.CommonRequest\x1a\x0b.BlockReply\"\x00\x12.\n\tSubscribe\x12\x11.SubscribeRequest\x1a\x0c.CommonReply\"\x00\x12\x30\n\x0bUnSubscribe\x12\x11.SubscribeRequest\x1a\x0c.CommonReply\"\x00\x12 \n\x05\x41\x64\x64Tx\x12\x07.TxSend\x1a\x0c.CommonReply\"\x00\x12\x32\n\x14VoteUnconfirmedBlock\x12\n.BlockVote\x1a\x0c.CommonReply\"\x00\x32\xa0\x03\n\x0cRadioStation\x12\x1f\n\x07Request\x12\x08.Message\x1a\x08.Message\"\x00\x12+\n\tGetStatus\x12\x0e.StatusRequest\x1a\x0c.StatusReply\"\x00\x12\"\n\x04Stop\x12\x0c.StopRequest\x1a\n.StopReply\"\x00\x12)\n\x0b\x43onnectPeer\x12\x0c.PeerRequest\x1a\n.PeerReply\"\x00\x12*\n\x0bGetPeerList\x12\x0e.CommonRequest\x1a\t.PeerList\"\x00\x12(\n\rGetPeerStatus\x12\x07.PeerID\x1a\x0c.StatusReply\"\x00\x12;\n\x11\x41nnounceNewLeader\x12\x16.ComplainLeaderRequest\x1a\x0c.CommonReply\"\x00\x12.\n\tSubscribe\x12\x11.SubscribeRequest\x1a\x0c.CommonReply\"\x00\x12\x30\n\x0bUnSubscribe\x12\x11.SubscribeRequest\x1a\x0c.CommonReply\"\x00\x32,\n\tContainer\x12\x1f\n\x07Request\x12\x08.Message\x1a\x08.Message\"\x00')
+  serialized_pb=_b('\n\x0floopchain.proto\"F\n\x07Message\x12\x0c\n\x04\x63ode\x18\x01 \x02(\x05\x12\x0f\n\x07message\x18\x02 \x01(\t\x12\x0c\n\x04meta\x18\x03 \x01(\t\x12\x0e\n\x06object\x18\x04 \x01(\x0c\"]\n\x15\x43omplainLeaderRequest\x12\x1c\n\x14\x63omplained_leader_id\x18\x01 \x02(\t\x12\x15\n\rnew_leader_id\x18\x02 \x02(\t\x12\x0f\n\x07message\x18\x03 \x02(\t\"\x1d\n\x08PeerList\x12\x11\n\tpeer_list\x18\x01 \x02(\x0c\"\x1f\n\x0f\x43reateTxRequest\x12\x0c\n\x04\x64\x61ta\x18\x01 \x02(\t\"J\n\rCreateTxReply\x12\x15\n\rresponse_code\x18\x01 \x02(\x05\x12\x0f\n\x07tx_hash\x18\x02 \x02(\t\x12\x11\n\tmore_info\x18\x03 \x02(\t\"\x14\n\x06TxSend\x12\n\n\x02tx\x18\x01 \x02(\x0c\"r\n\x0fGetBlockRequest\x12\x12\n\nblock_hash\x18\x01 \x01(\t\x12\x18\n\x0c\x62lock_height\x18\x02 \x01(\x05:\x02-1\x12\x19\n\x11\x62lock_data_filter\x18\x03 \x02(\t\x12\x16\n\x0etx_data_filter\x18\x04 \x02(\t\"i\n\rGetBlockReply\x12\x15\n\rresponse_code\x18\x01 \x02(\x05\x12\x12\n\nblock_hash\x18\x02 \x02(\t\x12\x17\n\x0f\x62lock_data_json\x18\x03 \x02(\t\x12\x14\n\x0ctx_data_json\x18\x04 \x03(\t\"\x1e\n\x0cQueryRequest\x12\x0e\n\x06params\x18\x01 \x02(\t\"5\n\nQueryReply\x12\x15\n\rresponse_code\x18\x01 \x02(\x05\x12\x10\n\x08response\x18\x02 \x02(\t\"\x1f\n\x0cGetTxRequest\x12\x0f\n\x07tx_hash\x18\x01 \x02(\t\"R\n\nGetTxReply\x12\x15\n\rresponse_code\x18\x01 \x02(\x05\x12\x0c\n\x04meta\x18\x02 \x02(\t\x12\x0c\n\x04\x64\x61ta\x18\x03 \x02(\t\x12\x11\n\tmore_info\x18\x04 \x02(\t\")\n\x16GetInvokeResultRequest\x12\x0f\n\x07tx_hash\x18\x01 \x02(\t\"=\n\x14GetInvokeResultReply\x12\x15\n\rresponse_code\x18\x01 \x02(\x05\x12\x0e\n\x06result\x18\x02 \x01(\t\"&\n\x10\x42lockSyncRequest\x12\x12\n\nblock_hash\x18\x01 \x02(\t\"f\n\x0e\x42lockSyncReply\x12\x15\n\rresponse_code\x18\x01 \x02(\x05\x12\x14\n\x0c\x62lock_height\x18\x02 \x02(\x05\x12\x18\n\x10max_block_height\x18\x03 \x02(\x05\x12\r\n\x05\x62lock\x18\x04 \x02(\x0c\"\x1a\n\tBlockSend\x12\r\n\x05\x62lock\x18\x01 \x02(\x0c\"H\n\nBlockReply\x12\x15\n\rresponse_code\x18\x01 \x02(\x05\x12\x0f\n\x07message\x18\x02 \x02(\t\x12\x12\n\nblock_hash\x18\x03 \x02(\t\"f\n\tBlockVote\x12\x11\n\tvote_code\x18\x01 \x02(\x05\x12\x0f\n\x07message\x18\x02 \x02(\t\x12\x12\n\nblock_hash\x18\x03 \x02(\t\x12\x0f\n\x07peer_id\x18\x04 \x02(\t\x12\x10\n\x08group_id\x18\x05 \x02(\t\"2\n\rBlockAnnounce\x12\x12\n\nblock_hash\x18\x01 \x02(\t\x12\r\n\x05\x62lock\x18\x02 \x01(\x0c\"2\n\rCommonRequest\x12\x0f\n\x07request\x18\x01 \x02(\t\x12\x10\n\x08group_id\x18\x02 \x01(\t\"5\n\x0b\x43ommonReply\x12\x15\n\rresponse_code\x18\x01 \x02(\x05\x12\x0f\n\x07message\x18\x02 \x02(\t\" \n\rStatusRequest\x12\x0f\n\x07request\x18\x01 \x02(\t\"d\n\x0bStatusReply\x12\x0e\n\x06status\x18\x01 \x02(\t\x12\x14\n\x0c\x62lock_height\x18\x02 \x02(\x05\x12\x10\n\x08total_tx\x18\x03 \x02(\x05\x12\x1d\n\x15is_leader_complaining\x18\x04 \x01(\x05\"\x1d\n\x0bStopRequest\x12\x0e\n\x06reason\x18\x01 \x02(\t\"\x1b\n\tStopReply\x12\x0e\n\x06status\x18\x01 \x02(\t\"\x9b\x01\n\x0bPeerRequest\x12\x0f\n\x07peer_id\x18\x01 \x02(\t\x12\x13\n\x0bpeer_target\x18\x02 \x02(\t\x12\x10\n\x08group_id\x18\x03 \x02(\t\x12\x1c\n\tpeer_type\x18\x04 \x02(\x0e\x32\t.PeerType\x12\r\n\x05token\x18\x05 \x01(\t\x12\x12\n\npeer_order\x18\x06 \x01(\x05\x12\x13\n\x0bpeer_object\x18\x07 \x01(\x0c\"+\n\x06PeerID\x12\x0f\n\x07peer_id\x18\x02 \x02(\t\x12\x10\n\x08group_id\x18\x04 \x02(\t\"A\n\tPeerReply\x12\x0e\n\x06status\x18\x01 \x02(\x05\x12\x11\n\tpeer_list\x18\x02 \x02(\x0c\x12\x11\n\tmore_info\x18\x03 \x01(\t*<\n\x08PeerType\x12\x08\n\x04PEER\x10\x00\x12\x13\n\x0f\x42LOCK_GENERATOR\x10\x01\x12\x11\n\rRADIO_STATION\x10\x02\x32\xf2\x07\n\x0cInnerService\x12\x1f\n\x07Request\x12\x08.Message\x1a\x08.Message\"\x00\x12+\n\tGetStatus\x12\x0e.StatusRequest\x1a\x0c.StatusReply\"\x00\x12\x30\n\x0eGetScoreStatus\x12\x0e.StatusRequest\x1a\x0c.StatusReply\"\x00\x12\"\n\x04Stop\x12\x0c.StopRequest\x1a\n.StopReply\"\x00\x12%\n\x05GetTx\x12\r.GetTxRequest\x1a\x0b.GetTxReply\"\x00\x12.\n\x08GetBlock\x12\x10.GetBlockRequest\x1a\x0e.GetBlockReply\"\x00\x12%\n\x05Query\x12\r.QueryRequest\x1a\x0b.QueryReply\"\x00\x12\x31\n\tBlockSync\x12\x11.BlockSyncRequest\x1a\x0f.BlockSyncReply\"\x00\x12\x36\n\x18\x41nnounceUnconfirmedBlock\x12\n.BlockSend\x1a\x0c.CommonReply\"\x00\x12\x38\n\x16\x41nnounceConfirmedBlock\x12\x0e.BlockAnnounce\x1a\x0c.CommonReply\"\x00\x12/\n\x0f\x41nnounceNewPeer\x12\x0c.PeerRequest\x1a\x0c.CommonReply\"\x00\x12&\n\x04\x45\x63ho\x12\x0e.CommonRequest\x1a\x0c.CommonReply\"\x00\x12\x38\n\x0e\x43omplainLeader\x12\x16.ComplainLeaderRequest\x1a\x0c.CommonReply\"\x00\x12;\n\x11\x41nnounceNewLeader\x12\x16.ComplainLeaderRequest\x1a\x0c.CommonReply\"\x00\x12\x31\n\x10GetLastBlockHash\x12\x0e.CommonRequest\x1a\x0b.BlockReply\"\x00\x12)\n\tSubscribe\x12\x0c.PeerRequest\x1a\x0c.CommonReply\"\x00\x12+\n\x0bUnSubscribe\x12\x0c.PeerRequest\x1a\x0c.CommonReply\"\x00\x12 \n\x05\x41\x64\x64Tx\x12\x07.TxSend\x1a\x0c.CommonReply\"\x00\x12\x32\n\x14VoteUnconfirmedBlock\x12\n.BlockVote\x1a\x0c.CommonReply\"\x00\x12\x34\n\x12NotifyLeaderBroken\x12\x0e.CommonRequest\x1a\x0c.CommonReply\"\x00\x12\x34\n\x12NotifyProcessError\x12\x0e.CommonRequest\x1a\x0c.CommonReply\"\x00\x32\xa9\x08\n\x0bPeerService\x12\x1f\n\x07Request\x12\x08.Message\x1a\x08.Message\"\x00\x12+\n\tGetStatus\x12\x0e.StatusRequest\x1a\x0c.StatusReply\"\x00\x12\x30\n\x0eGetScoreStatus\x12\x0e.StatusRequest\x1a\x0c.StatusReply\"\x00\x12\"\n\x04Stop\x12\x0c.StopRequest\x1a\n.StopReply\"\x00\x12.\n\x08\x43reateTx\x12\x10.CreateTxRequest\x1a\x0e.CreateTxReply\"\x00\x12%\n\x05GetTx\x12\r.GetTxRequest\x1a\x0b.GetTxReply\"\x00\x12.\n\x08GetBlock\x12\x10.GetBlockRequest\x1a\x0e.GetBlockReply\"\x00\x12%\n\x05Query\x12\r.QueryRequest\x1a\x0b.QueryReply\"\x00\x12\x43\n\x0fGetInvokeResult\x12\x17.GetInvokeResultRequest\x1a\x15.GetInvokeResultReply\"\x00\x12\x31\n\tBlockSync\x12\x11.BlockSyncRequest\x1a\x0f.BlockSyncReply\"\x00\x12\x36\n\x18\x41nnounceUnconfirmedBlock\x12\n.BlockSend\x1a\x0c.CommonReply\"\x00\x12\x38\n\x16\x41nnounceConfirmedBlock\x12\x0e.BlockAnnounce\x1a\x0c.CommonReply\"\x00\x12/\n\x0f\x41nnounceNewPeer\x12\x0c.PeerRequest\x1a\x0c.CommonReply\"\x00\x12-\n\x12\x41nnounceDeletePeer\x12\x07.PeerID\x1a\x0c.CommonReply\"\x00\x12&\n\x04\x45\x63ho\x12\x0e.CommonRequest\x1a\x0c.CommonReply\"\x00\x12\x38\n\x0e\x43omplainLeader\x12\x16.ComplainLeaderRequest\x1a\x0c.CommonReply\"\x00\x12;\n\x11\x41nnounceNewLeader\x12\x16.ComplainLeaderRequest\x1a\x0c.CommonReply\"\x00\x12\x31\n\x10GetLastBlockHash\x12\x0e.CommonRequest\x1a\x0b.BlockReply\"\x00\x12)\n\tSubscribe\x12\x0c.PeerRequest\x1a\x0c.CommonReply\"\x00\x12+\n\x0bUnSubscribe\x12\x0c.PeerRequest\x1a\x0c.CommonReply\"\x00\x12 \n\x05\x41\x64\x64Tx\x12\x07.TxSend\x1a\x0c.CommonReply\"\x00\x12\x32\n\x14VoteUnconfirmedBlock\x12\n.BlockVote\x1a\x0c.CommonReply\"\x00\x32\x96\x03\n\x0cRadioStation\x12\x1f\n\x07Request\x12\x08.Message\x1a\x08.Message\"\x00\x12+\n\tGetStatus\x12\x0e.StatusRequest\x1a\x0c.StatusReply\"\x00\x12\"\n\x04Stop\x12\x0c.StopRequest\x1a\n.StopReply\"\x00\x12)\n\x0b\x43onnectPeer\x12\x0c.PeerRequest\x1a\n.PeerReply\"\x00\x12*\n\x0bGetPeerList\x12\x0e.CommonRequest\x1a\t.PeerList\"\x00\x12(\n\rGetPeerStatus\x12\x07.PeerID\x1a\x0c.StatusReply\"\x00\x12;\n\x11\x41nnounceNewLeader\x12\x16.ComplainLeaderRequest\x1a\x0c.CommonReply\"\x00\x12)\n\tSubscribe\x12\x0c.PeerRequest\x1a\x0c.CommonReply\"\x00\x12+\n\x0bUnSubscribe\x12\x0c.PeerRequest\x1a\x0c.CommonReply\"\x00\x32,\n\tContainer\x12\x1f\n\x07Request\x12\x08.Message\x1a\x08.Message\"\x00')
 )
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
@@ -45,8 +45,8 @@ _PEERTYPE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   options=None,
-  serialized_start=1931,
-  serialized_end=1991,
+  serialized_start=1856,
+  serialized_end=1916,
 )
 _sym_db.RegisterEnumDescriptor(_PEERTYPE)
 
@@ -949,58 +949,6 @@ _COMMONREPLY = _descriptor.Descriptor(
 )
 
 
-_SUBSCRIBEREQUEST = _descriptor.Descriptor(
-  name='SubscribeRequest',
-  full_name='SubscribeRequest',
-  filename=None,
-  file=DESCRIPTOR,
-  containing_type=None,
-  fields=[
-    _descriptor.FieldDescriptor(
-      name='peer_target', full_name='SubscribeRequest.peer_target', index=0,
-      number=1, type=9, cpp_type=9, label=2,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-    _descriptor.FieldDescriptor(
-      name='peer_type', full_name='SubscribeRequest.peer_type', index=1,
-      number=2, type=14, cpp_type=8, label=2,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-    _descriptor.FieldDescriptor(
-      name='peer_id', full_name='SubscribeRequest.peer_id', index=2,
-      number=3, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-    _descriptor.FieldDescriptor(
-      name='group_id', full_name='SubscribeRequest.group_id', index=3,
-      number=4, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-  ],
-  extensions=[
-  ],
-  nested_types=[],
-  enum_types=[
-  ],
-  options=None,
-  is_extendable=False,
-  syntax='proto2',
-  extension_ranges=[],
-  oneofs=[
-  ],
-  serialized_start=1390,
-  serialized_end=1494,
-)
-
-
 _STATUSREQUEST = _descriptor.Descriptor(
   name='StatusRequest',
   full_name='StatusRequest',
@@ -1027,8 +975,8 @@ _STATUSREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1496,
-  serialized_end=1528,
+  serialized_start=1390,
+  serialized_end=1422,
 )
 
 
@@ -1060,6 +1008,13 @@ _STATUSREPLY = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
+    _descriptor.FieldDescriptor(
+      name='is_leader_complaining', full_name='StatusReply.is_leader_complaining', index=3,
+      number=4, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
   ],
   extensions=[
   ],
@@ -1072,8 +1027,8 @@ _STATUSREPLY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1530,
-  serialized_end=1599,
+  serialized_start=1424,
+  serialized_end=1524,
 )
 
 
@@ -1103,8 +1058,8 @@ _STOPREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1601,
-  serialized_end=1630,
+  serialized_start=1526,
+  serialized_end=1555,
 )
 
 
@@ -1134,8 +1089,8 @@ _STOPREPLY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1632,
-  serialized_end=1659,
+  serialized_start=1557,
+  serialized_end=1584,
 )
 
 
@@ -1147,51 +1102,51 @@ _PEERREQUEST = _descriptor.Descriptor(
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='peer_object', full_name='PeerRequest.peer_object', index=0,
-      number=1, type=12, cpp_type=9, label=2,
-      has_default_value=False, default_value=_b(""),
+      name='peer_id', full_name='PeerRequest.peer_id', index=0,
+      number=1, type=9, cpp_type=9, label=2,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='peer_id', full_name='PeerRequest.peer_id', index=1,
+      name='peer_target', full_name='PeerRequest.peer_target', index=1,
       number=2, type=9, cpp_type=9, label=2,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='peer_target', full_name='PeerRequest.peer_target', index=2,
+      name='group_id', full_name='PeerRequest.group_id', index=2,
       number=3, type=9, cpp_type=9, label=2,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='group_id', full_name='PeerRequest.group_id', index=3,
-      number=4, type=9, cpp_type=9, label=2,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-    _descriptor.FieldDescriptor(
-      name='peer_type', full_name='PeerRequest.peer_type', index=4,
-      number=5, type=14, cpp_type=8, label=2,
+      name='peer_type', full_name='PeerRequest.peer_type', index=3,
+      number=4, type=14, cpp_type=8, label=2,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='token', full_name='PeerRequest.token', index=5,
-      number=6, type=9, cpp_type=9, label=1,
+      name='token', full_name='PeerRequest.token', index=4,
+      number=5, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='peer_order', full_name='PeerRequest.peer_order', index=6,
-      number=7, type=5, cpp_type=1, label=1,
+      name='peer_order', full_name='PeerRequest.peer_order', index=5,
+      number=6, type=5, cpp_type=1, label=1,
       has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='peer_object', full_name='PeerRequest.peer_object', index=6,
+      number=7, type=12, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b(""),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
@@ -1207,8 +1162,8 @@ _PEERREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1662,
-  serialized_end=1817,
+  serialized_start=1587,
+  serialized_end=1742,
 )
 
 
@@ -1245,8 +1200,8 @@ _PEERID = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1819,
-  serialized_end=1862,
+  serialized_start=1744,
+  serialized_end=1787,
 )
 
 
@@ -1290,11 +1245,10 @@ _PEERREPLY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1864,
-  serialized_end=1929,
+  serialized_start=1789,
+  serialized_end=1854,
 )
 
-_SUBSCRIBEREQUEST.fields_by_name['peer_type'].enum_type = _PEERTYPE
 _PEERREQUEST.fields_by_name['peer_type'].enum_type = _PEERTYPE
 DESCRIPTOR.message_types_by_name['Message'] = _MESSAGE
 DESCRIPTOR.message_types_by_name['ComplainLeaderRequest'] = _COMPLAINLEADERREQUEST
@@ -1318,7 +1272,6 @@ DESCRIPTOR.message_types_by_name['BlockVote'] = _BLOCKVOTE
 DESCRIPTOR.message_types_by_name['BlockAnnounce'] = _BLOCKANNOUNCE
 DESCRIPTOR.message_types_by_name['CommonRequest'] = _COMMONREQUEST
 DESCRIPTOR.message_types_by_name['CommonReply'] = _COMMONREPLY
-DESCRIPTOR.message_types_by_name['SubscribeRequest'] = _SUBSCRIBEREQUEST
 DESCRIPTOR.message_types_by_name['StatusRequest'] = _STATUSREQUEST
 DESCRIPTOR.message_types_by_name['StatusReply'] = _STATUSREPLY
 DESCRIPTOR.message_types_by_name['StopRequest'] = _STOPREQUEST
@@ -1482,13 +1435,6 @@ CommonReply = _reflection.GeneratedProtocolMessageType('CommonReply', (_message.
   ))
 _sym_db.RegisterMessage(CommonReply)
 
-SubscribeRequest = _reflection.GeneratedProtocolMessageType('SubscribeRequest', (_message.Message,), dict(
-  DESCRIPTOR = _SUBSCRIBEREQUEST,
-  __module__ = 'loopchain_pb2'
-  # @@protoc_insertion_point(class_scope:SubscribeRequest)
-  ))
-_sym_db.RegisterMessage(SubscribeRequest)
-
 StatusRequest = _reflection.GeneratedProtocolMessageType('StatusRequest', (_message.Message,), dict(
   DESCRIPTOR = _STATUSREQUEST,
   __module__ = 'loopchain_pb2'
@@ -1637,12 +1583,12 @@ try:
           )
       self.Subscribe = channel.unary_unary(
           '/InnerService/Subscribe',
-          request_serializer=SubscribeRequest.SerializeToString,
+          request_serializer=PeerRequest.SerializeToString,
           response_deserializer=CommonReply.FromString,
           )
       self.UnSubscribe = channel.unary_unary(
           '/InnerService/UnSubscribe',
-          request_serializer=SubscribeRequest.SerializeToString,
+          request_serializer=PeerRequest.SerializeToString,
           response_deserializer=CommonReply.FromString,
           )
       self.AddTx = channel.unary_unary(
@@ -1879,12 +1825,12 @@ try:
         ),
         'Subscribe': grpc.unary_unary_rpc_method_handler(
             servicer.Subscribe,
-            request_deserializer=SubscribeRequest.FromString,
+            request_deserializer=PeerRequest.FromString,
             response_serializer=CommonReply.SerializeToString,
         ),
         'UnSubscribe': grpc.unary_unary_rpc_method_handler(
             servicer.UnSubscribe,
-            request_deserializer=SubscribeRequest.FromString,
+            request_deserializer=PeerRequest.FromString,
             response_serializer=CommonReply.SerializeToString,
         ),
         'AddTx': grpc.unary_unary_rpc_method_handler(
@@ -2015,12 +1961,12 @@ try:
           )
       self.Subscribe = channel.unary_unary(
           '/PeerService/Subscribe',
-          request_serializer=SubscribeRequest.SerializeToString,
+          request_serializer=PeerRequest.SerializeToString,
           response_deserializer=CommonReply.FromString,
           )
       self.UnSubscribe = channel.unary_unary(
           '/PeerService/UnSubscribe',
-          request_serializer=SubscribeRequest.SerializeToString,
+          request_serializer=PeerRequest.SerializeToString,
           response_deserializer=CommonReply.FromString,
           )
       self.AddTx = channel.unary_unary(
@@ -2261,12 +2207,12 @@ try:
         ),
         'Subscribe': grpc.unary_unary_rpc_method_handler(
             servicer.Subscribe,
-            request_deserializer=SubscribeRequest.FromString,
+            request_deserializer=PeerRequest.FromString,
             response_serializer=CommonReply.SerializeToString,
         ),
         'UnSubscribe': grpc.unary_unary_rpc_method_handler(
             servicer.UnSubscribe,
-            request_deserializer=SubscribeRequest.FromString,
+            request_deserializer=PeerRequest.FromString,
             response_serializer=CommonReply.SerializeToString,
         ),
         'AddTx': grpc.unary_unary_rpc_method_handler(
@@ -2333,12 +2279,12 @@ try:
           )
       self.Subscribe = channel.unary_unary(
           '/RadioStation/Subscribe',
-          request_serializer=SubscribeRequest.SerializeToString,
+          request_serializer=PeerRequest.SerializeToString,
           response_deserializer=CommonReply.FromString,
           )
       self.UnSubscribe = channel.unary_unary(
           '/RadioStation/UnSubscribe',
-          request_serializer=SubscribeRequest.SerializeToString,
+          request_serializer=PeerRequest.SerializeToString,
           response_deserializer=CommonReply.FromString,
           )
 
@@ -2437,12 +2383,12 @@ try:
         ),
         'Subscribe': grpc.unary_unary_rpc_method_handler(
             servicer.Subscribe,
-            request_deserializer=SubscribeRequest.FromString,
+            request_deserializer=PeerRequest.FromString,
             response_serializer=CommonReply.SerializeToString,
         ),
         'UnSubscribe': grpc.unary_unary_rpc_method_handler(
             servicer.UnSubscribe,
-            request_deserializer=SubscribeRequest.FromString,
+            request_deserializer=PeerRequest.FromString,
             response_serializer=CommonReply.SerializeToString,
         ),
     }
@@ -2689,8 +2635,8 @@ try:
       ('InnerService', 'Query'): QueryRequest.FromString,
       ('InnerService', 'Request'): Message.FromString,
       ('InnerService', 'Stop'): StopRequest.FromString,
-      ('InnerService', 'Subscribe'): SubscribeRequest.FromString,
-      ('InnerService', 'UnSubscribe'): SubscribeRequest.FromString,
+      ('InnerService', 'Subscribe'): PeerRequest.FromString,
+      ('InnerService', 'UnSubscribe'): PeerRequest.FromString,
       ('InnerService', 'VoteUnconfirmedBlock'): BlockVote.FromString,
     }
     response_serializers = {
@@ -2768,8 +2714,8 @@ try:
       ('InnerService', 'Query'): QueryRequest.SerializeToString,
       ('InnerService', 'Request'): Message.SerializeToString,
       ('InnerService', 'Stop'): StopRequest.SerializeToString,
-      ('InnerService', 'Subscribe'): SubscribeRequest.SerializeToString,
-      ('InnerService', 'UnSubscribe'): SubscribeRequest.SerializeToString,
+      ('InnerService', 'Subscribe'): PeerRequest.SerializeToString,
+      ('InnerService', 'UnSubscribe'): PeerRequest.SerializeToString,
       ('InnerService', 'VoteUnconfirmedBlock'): BlockVote.SerializeToString,
     }
     response_deserializers = {
@@ -3012,8 +2958,8 @@ try:
       ('PeerService', 'Query'): QueryRequest.FromString,
       ('PeerService', 'Request'): Message.FromString,
       ('PeerService', 'Stop'): StopRequest.FromString,
-      ('PeerService', 'Subscribe'): SubscribeRequest.FromString,
-      ('PeerService', 'UnSubscribe'): SubscribeRequest.FromString,
+      ('PeerService', 'Subscribe'): PeerRequest.FromString,
+      ('PeerService', 'UnSubscribe'): PeerRequest.FromString,
       ('PeerService', 'VoteUnconfirmedBlock'): BlockVote.FromString,
     }
     response_serializers = {
@@ -3094,8 +3040,8 @@ try:
       ('PeerService', 'Query'): QueryRequest.SerializeToString,
       ('PeerService', 'Request'): Message.SerializeToString,
       ('PeerService', 'Stop'): StopRequest.SerializeToString,
-      ('PeerService', 'Subscribe'): SubscribeRequest.SerializeToString,
-      ('PeerService', 'UnSubscribe'): SubscribeRequest.SerializeToString,
+      ('PeerService', 'Subscribe'): PeerRequest.SerializeToString,
+      ('PeerService', 'UnSubscribe'): PeerRequest.SerializeToString,
       ('PeerService', 'VoteUnconfirmedBlock'): BlockVote.SerializeToString,
     }
     response_deserializers = {
@@ -3239,8 +3185,8 @@ try:
       ('RadioStation', 'GetStatus'): StatusRequest.FromString,
       ('RadioStation', 'Request'): Message.FromString,
       ('RadioStation', 'Stop'): StopRequest.FromString,
-      ('RadioStation', 'Subscribe'): SubscribeRequest.FromString,
-      ('RadioStation', 'UnSubscribe'): SubscribeRequest.FromString,
+      ('RadioStation', 'Subscribe'): PeerRequest.FromString,
+      ('RadioStation', 'UnSubscribe'): PeerRequest.FromString,
     }
     response_serializers = {
       ('RadioStation', 'AnnounceNewLeader'): CommonReply.SerializeToString,
@@ -3282,8 +3228,8 @@ try:
       ('RadioStation', 'GetStatus'): StatusRequest.SerializeToString,
       ('RadioStation', 'Request'): Message.SerializeToString,
       ('RadioStation', 'Stop'): StopRequest.SerializeToString,
-      ('RadioStation', 'Subscribe'): SubscribeRequest.SerializeToString,
-      ('RadioStation', 'UnSubscribe'): SubscribeRequest.SerializeToString,
+      ('RadioStation', 'Subscribe'): PeerRequest.SerializeToString,
+      ('RadioStation', 'UnSubscribe'): PeerRequest.SerializeToString,
     }
     response_deserializers = {
       ('RadioStation', 'AnnounceNewLeader'): CommonReply.FromString,

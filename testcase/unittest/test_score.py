@@ -23,7 +23,7 @@ import unittest
 
 import loopchain.utils as util
 import testcase.unittest.test_util as test_util
-from loopchain.blockchain import BlockChain, BlockType, Transaction, Block
+from loopchain.blockchain import BlockChain, BlockStatus, Transaction, Block
 from loopchain.blockchain import ScoreBase
 
 util.set_log_level_debug()
@@ -109,7 +109,7 @@ class TestScore(unittest.TestCase):
 
         for x in range(10):
             block = self.generate_block()
-            block.block_type = BlockType.confirmed
+            block.block_status = BlockStatus.confirmed
             self.chain.add_block(block)
 
         block_data = self.score.query(function='block_data', block_hash=self.chain.last_block.block_hash)

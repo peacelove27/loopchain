@@ -38,7 +38,7 @@ class TestVote(unittest.TestCase):
 
     @staticmethod
     def __make_peer_info(peer_id, group_id):
-        peer_info = loopchain_pb2.SubscribeRequest()
+        peer_info = loopchain_pb2.PeerRequest()
         peer_info.peer_target = peer_id + "_target"
         peer_info.peer_type = loopchain_pb2.PEER
         peer_info.peer_id = peer_id

@@ -48,8 +48,8 @@ service InnerService {
     // RadioStation 에서 GetLastBlockHash 는 Block Height Sync 를 위해서 사용된다.
     rpc GetLastBlockHash (CommonRequest) returns (BlockReply) {}
     // Subscribe 와 UnSubscribe 는 Broadcast 관련 메소드로 radiostation.proto 와 동일하게 구성되어야 한다.
-    rpc Subscribe (SubscribeRequest) returns (CommonReply) {}
-    rpc UnSubscribe (SubscribeRequest) returns (CommonReply) {}
+    rpc Subscribe (PeerRequest) returns (CommonReply) {}
+    rpc UnSubscribe (PeerRequest) returns (CommonReply) {}
     rpc AddTx (TxSend) returns (CommonReply) {}
     rpc VoteUnconfirmedBlock (BlockVote) returns (CommonReply) {}
     ///////////////////////////////////////////////////////////////////////
@@ -93,8 +93,8 @@ service PeerService {
     // RadioStation 에서 GetLastBlockHash 는 Block Height Sync 를 위해서 사용된다.
     rpc GetLastBlockHash (CommonRequest) returns (BlockReply) {}
     // Subscribe 와 UnSubscribe 는 Broadcast 관련 메소드로 radiostation.proto 와 동일하게 구성되어야 한다.
-    rpc Subscribe (SubscribeRequest) returns (CommonReply) {}
-    rpc UnSubscribe (SubscribeRequest) returns (CommonReply) {}
+    rpc Subscribe (PeerRequest) returns (CommonReply) {}
+    rpc UnSubscribe (PeerRequest) returns (CommonReply) {}
     rpc AddTx (TxSend) returns (CommonReply) {}
     rpc VoteUnconfirmedBlock (BlockVote) returns (CommonReply) {}
     ///////////////////////////////////////////////////////////////////////
@@ -113,8 +113,8 @@ service RadioStation {
     rpc GetPeerStatus (PeerID) returns (StatusReply) {}
     rpc AnnounceNewLeader (ComplainLeaderRequest) returns (CommonReply) {}
     // Subscribe 와 UnSubscribe 는 Broadcast 관련 메소드로 loopchain.proto 와 동일하게 구성되어야 한다.
-    rpc Subscribe (SubscribeRequest) returns (CommonReply) {}
-    rpc UnSubscribe (SubscribeRequest) returns (CommonReply) {}
+    rpc Subscribe (PeerRequest) returns (CommonReply) {}
+    rpc UnSubscribe (PeerRequest) returns (CommonReply) {}
 }
 
 
@@ -284,15 +284,6 @@ message CommonReply {
 }
 
 
-// Message for Susbscription
-message SubscribeRequest {
-    required string peer_target = 1;
-    required PeerType peer_type = 2;
-    optional string peer_id = 3;
-    optional string group_id = 4;
-}
-
-
 // Data for RadioStation
 message StatusRequest {
     required string request = 1;
@@ -302,6 +293,7 @@ message StatusReply {
     required string status = 1;
     required int32 block_height = 2;
     required int32 total_tx = 3;
+    optional int32 is_leader_complaining = 4;
 }
 
 
@@ -318,13 +310,13 @@ message StopReply {
 // Peer가 RadioStation에 접속할 때 줄 정보들
 // * target = "[IP]:[port]", It's gRPC way
 message PeerRequest {
-    required bytes peer_object = 1;
-    required string peer_id = 2;
-    required string peer_target = 3;
-    required string group_id = 4;
-    required PeerType peer_type = 5;
-    optional string token = 6;
-    optional int32 peer_order = 7;
+    required string peer_id = 1;
+    required string peer_target = 2;
+    required string group_id = 3;
+    required PeerType peer_type = 4;
+    optional string token = 5;
+    optional int32 peer_order = 6;
+    optional bytes peer_object = 7;
 }
 
 message PeerID {

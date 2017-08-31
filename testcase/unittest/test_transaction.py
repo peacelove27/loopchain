@@ -23,14 +23,14 @@ import pickle
 import sys
 import loopchain.utils as util
 import testcase.unittest.test_util as test_util
-from loopchain.blockchain import Transaction, TransactionType
+from loopchain.blockchain import Transaction, TransactionStatus
 
 util.set_log_level_debug()
 
 
 class TransactionDataOnly:
     def __init__(self):
-        self.__transaction_type = TransactionType.unconfirmed
+        self.__transaction_type = TransactionStatus.unconfirmed
         self.data = []
         self.__time_stamp = []
         self.__transaction_hash = ""
@@ -148,7 +148,7 @@ class TestTransaction(unittest.TestCase):
         # GIVEN
         tx = Transaction()
         tx.put_data("TEST")
-        tx.transaction_type = TransactionType.confirmed
+        tx.transaction_type = TransactionStatus.confirmed
 
         tx_only_data = TransactionDataOnly()
         tx_only_data.data = "TEST"

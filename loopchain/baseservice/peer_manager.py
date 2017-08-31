@@ -160,6 +160,16 @@ class PeerManager:
 
         return peer.order
 
+    def update_peer_status(self, peer_id, group_id=conf.ALL_GROUP_ID, peer_status=PeerStatus.connected):
+        try:
+            peer = self.peer_list[group_id][peer_id]
+            peer.status = peer_status
+            return peer
+        except Exception as e:
+            logging.warning(f"fail update peer status peer_id({peer_id})")
+
+        return None
+
     def set_leader_peer(self, peer, group_id=None):
         """리더 피어를 지정한다. group_id 를 지정하면 sub leader 를 지정하고
         없는 경우에는 전체 리더 피어를 지정하게 된다.
@@ -292,10 +302,13 @@ class PeerManager:
 
             next_order_position += 1
 
-        next_peer_id = self.peer_order_list[group_id][order_list[next_order_position]]
-        logging.debug("next_leader_peer_id: " + str(next_peer_id))
-
-        return self.peer_list[group_id][next_peer_id]
+        try:
+            next_peer_id = self.peer_order_list[group_id][order_list[next_order_position]]
+            logging.debug("next_leader_peer_id: " + str(next_peer_id))
+            return self.peer_list[group_id][next_peer_id]
+        except IndexError as e:
+            logging.warning(f"there is no next peer ({e})")
+            return None
 
     def get_next_leader_stub_manager(self, group_id=None):
         """다음 리더 peer, stub manager 을 식별한다.

@@ -13,19 +13,17 @@
 # limitations under the License.
 """A module for managing Score"""
 
-import json
-import shutil
 import os
 import os.path as osp
+import shutil
 import stat
 import zipfile
 
 from git import Repo, Git, GitCmdObjectDB
 from git.repo.fun import is_git_dir
-from loopchain.utils import get_valid_filename
-from loopchain.blockchain import *
 
-import loopchain.utils as util
+from loopchain.blockchain import *
+from loopchain.utils import get_valid_filename
 
 logger = logging.getLogger("git")
 logger.setLevel(logging.WARNING)
@@ -79,41 +77,40 @@ class PeerScore:
         return self.__current_version
 
     def load_package(self):
-        """
-        패키지를 로드
+        """load SCORE package
 
         :return:
         """
-        load_repository = False
-        logging.debug("Package Path : "+str(self.__package_path))
+        is_loaded = False
+        logging.debug(f"Package Path : {self.__package_path}")
 
         # Check Develop Score Package
         if self.__score_package.split('/')[0] == conf.DEVELOP_SCORE_PACKAGE_ROOT and conf.ALLOW_LOAD_SCORE_IN_DEVELOP:
             # 개발 중인 score 를 git 또는 zip 배포 없이 로드를 허용한 경우 폴더 경로를 지정하여 score 를 로드 할 수 있게 한다.
             logging.debug("try load develop score repository")
             self.init_package_in_develop()
-            load_repository = self.load_package_by_local_repository()
+            is_loaded = self.load_package_by_local_repository()
 
         # Check Path Exist
         if osp.exists(self.__package_path):
             logging.debug("try load local repository")
             # 해당 위치가 있으면 해당 위치를 로드
-            load_repository = self.load_package_by_local_repository()
+            is_loaded = self.load_package_by_local_repository()
 
         # Check package file ex) score_package...zip
-        if load_repository is False:
+        if is_loaded is False:
             logging.debug("try load local package file")
             # 해당 위치가 없으면, 일단 파일로 로드를 시도
             # 없다면 리모트 리파지토리에서 패키지를 로드
-            load_repository = self.load_package_by_file()
+            is_loaded = self.load_package_by_file()
 
         # Check remote
-        if load_repository is False:
+        if is_loaded is False:
             logging.debug("try load remote repository")
             # 해당 위치도 없고 파일도 없으면 리모트 리파지토리에서 패키지를 로드
-            load_repository = self.load_package_by_remote()
+            is_loaded = self.load_package_by_remote()
 
-        if load_repository is False:
+        if is_loaded is False:
             logging.debug("load package fail")
             # 해당 아이디의 패키지 로드 실패
             raise FileNotFoundError()
@@ -222,9 +219,14 @@ class PeerScore:
             ssh_cmd = 'ssh -o StrictHostKeyChecking=no -i '+conf.DEFAULT_SCORE_REPOSITORY_KEY
             logging.debug("SSH KEY COMMAND : "+ssh_cmd)
             git.custom_environment(GIT_SSH_COMMAND=ssh_cmd)
+
+        logging.debug(f"load_package_by_remote repository_url({repository_url}) package_path({self.__package_path})")
         self.__package_repository = Repo._clone(git, repository_url, self.__package_path, GitCmdObjectDB, None)
+        logging.debug(f"load_package_by_remote result({self.__package_repository})")
+
         if conf.DEFAULT_SCORE_BRANCH != conf.DEFAULT_SCORE_BRANCH_MASTER:
             self.__package_repository.git.checkout(conf.DEFAULT_SCORE_BRANCH)
+
         return True
 
     def last_version(self):

@@ -44,12 +44,39 @@ $>python3 -m unittest score/theloop/chain_message_score/test_chain_message.py
 __IDE에서 테스트시 Working Directory 를 Loopchain root로 설정하여 테스트 바랍니다.__
 
 ## 3. SCORE 배포 및 관리
-* 스코어의 배포는 특별히 관리되는 리파지토리에서 관리 됩니다.
-  - 차후 다수의 리파지토리를 검색하여, 순위별로 배포하는 방안도 검토 중입니다.
-* 리모트 리파지토리에서 관리하지 않는 스코어는 내부 리파지토리가 포함된 zip 파일에서 관리합니다.
+
+### <1> local develop folder 를 사용하는 방법
+* configure_user.py 파일을 추가합니다. (configure_default.py 와 같은 위치)
+```
+ALLOW_LOAD_SCORE_IN_DEVELOP = 'allow'
+DEVELOP_SCORE_PACKAGE_ROOT = 'develop'
+DEFAULT_SCORE_PACKAGE = 'develop/[package]'
+```
+* /score/develop/[package] 폴더를 만듭니다 [package] 는 원하는 이름으로 작성합니다. (sample 을 사용하는 경우 test_score 로 합니다.)
+* /score/sample-test_score/* 파일을 새로운 폴더로 복사합니다.
+* loopchain 네트워크를 실행하여 확인합니다.
+
+### <2> zip 파일을 사용하는 방법
+* 임의의 폴더에서 score 를 작성합니다. (<1> 에서 작성한 SCORE 복사하여도 됩니다.) 
+* package.json 의 "id" 값을 "[company_name]-[package]" 로 수정합니다.
+* $ git init . 으로 해당 폴더를 local git repository 로 설정합니다.
+* $ git add . 으로 폴더의 모든 파일을 repository 에 추가 합니다.
+* $ git commmit -a 로 SCORE 파일들을 git 에 commit 합니다.
+* $ zip -r ../[company_name]_[package].zip ./ 으로 repository 를 zip 으로 압축합니다.
+* zip 파일을 /score/ 아래에 둡니다. (/score/[company_name]_[package].zip)
+* configure_user.py 파일을 추가합니다. (configure_default.py 와 같은 위치)
+```
+DEFAULT_SCORE_PACKAGE = '[company_name]/[package]'
+```
+* loopchain 네트워크를 실행하여 확인합니다.
+
+### <3> repository 를 사용하는 방법
+* 스코어의 배포는 특별히 관리되는 repository 를 사용할 수 있습니다.
+  - 차후 다수의 repository 를 검색하여, 순위별로 배포하는 방안도 검토 중입니다.
+* remote repository 에서 관리하지 않는 스코어는 내부 repository 가 포함된 zip 파일에서 관리 할 수 있습니다.
 * peer 에서 스코어의 배포는 다음의 명령어를 통해 하게 됩니다.
    - Docker에서 실행시  
-     ```
+     ``` 
      docker run -d ${DOCKER_LOGDRIVE} --name ${PEER_NAME} --link radio_station:radio_station -p ${PORT}:${PORT}  looppeer:${DOCKER_TAG}  python3 peer.py -c ${DEPLOY_SCORE}  -r radio_station -d -p ${PORT}
      ```
    - Local에서 실행시

@@ -47,7 +47,7 @@ class ConsensusDefault(ConsensusBase):
             logging.info("Block Validation is Complete hash: " + confirmed_block.block_hash)
 
             # 검증이 끝나면 BlockChain 에 해당 block 의 block_hash 로 등록 완료
-            confirmed_block.block_type = BlockType.confirmed
+            confirmed_block.block_status = BlockStatus.confirmed
             self._blockmanager.add_block(confirmed_block)
 
             # 해당 block 이 confirm 되었음을 announce 한다.

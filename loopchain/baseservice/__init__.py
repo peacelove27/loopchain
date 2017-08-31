@@ -21,5 +21,4 @@ from .common_thread import *
 from .common_process import *
 from .manage_process import *
 from .broadcast_process import *
-from .tx_process import *
 from .peer_score import *

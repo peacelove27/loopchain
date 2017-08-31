@@ -22,9 +22,14 @@ from enum import Enum
 from loopchain import configure as conf
 
 
-class TransactionType(Enum):
+class TransactionStatus(Enum):
     unconfirmed = 1
     confirmed = 2
+
+
+class TransactionType(Enum):
+    general = 1
+    peer_list = 2
 
 
 class Transaction:
@@ -39,11 +44,32 @@ class Transaction:
 
     def __init__(self):
         # TODO Client 의 Sign이나 인증에 대한 내용을 트랜잭션에 넣어야 하지 않을까?
-        self.transaction_type = TransactionType.unconfirmed
+        self.__transaction_status = TransactionStatus.unconfirmed
+        self.__transaction_type = TransactionType.general
         self.__meta = collections.OrderedDict()  # peer_id, score_id, score_ver ...
         self.__data = []
         self.__time_stamp = 0
         self.__transaction_hash = ""
+
+    @property
+    def tx_hash(self):
+        return self.__transaction_hash
+
+    @property
+    def status(self):
+        return self.__transaction_status
+
+    @status.setter
+    def status(self, tx_status):
+        self.__transaction_status = tx_status
+
+    @property
+    def type(self):
+        return self.__transaction_type
+
+    @type.setter
+    def type(self, tx_type):
+        self.__transaction_type = tx_type
 
     def get_meta(self):
         return self.__meta.copy()
@@ -90,6 +116,7 @@ class Transaction:
         data를 받으면 해당 시간의 Time stamp와 data를 가지고 Hash를 생성해서 기록한다.
 
         :param data: Transaction에 넣고 싶은 data. data가 스트링인 경우 bytearray로 변환한다.
+        :param time_stamp:
         :return Transaction의 data를 가지고 만든 Hash값:
         """
         if isinstance(data, str):
@@ -129,6 +156,7 @@ class Transaction:
 
         return self.__transaction_hash
 
+    # TODO property.tx_hash 로 대체할 것
     def get_tx_hash(self):
         """트랜잭션의 해쉬 값을 리턴합니다
 

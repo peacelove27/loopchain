@@ -45,6 +45,7 @@ class BlockManager(CommonThread):
         self.__blockchain = BlockChain(blockchain_db)
         self.__total_tx = self.__blockchain.rebuild_blocks()
         self.__peer_type = None
+        self.__block_type = BlockType.general
         self.__consensus = None
         self.__run_logic = None
         self.set_peer_type(loopchain_pb2.PEER)
@@ -53,11 +54,20 @@ class BlockManager(CommonThread):
     def consensus(self):
         return self.__consensus
 
+    @property
+    def block_type(self):
+        return self.__block_type
+
+    @block_type.setter
+    def block_type(self, block_type):
+        self.__block_type = block_type
+
     def clear_all_blocks(self):
         self.__common_service.clear_level_db()
 
     def set_peer_type(self, peer_type):
         self.__peer_type = peer_type
+
         if self.__peer_type == loopchain_pb2.BLOCK_GENERATOR:
             if conf.CONSENSUS_ALGORITHM == conf.ConsensusAlgorithm.none:
                 self.__consensus = ConsensusNone(self)
@@ -94,7 +104,8 @@ class BlockManager(CommonThread):
     def broadcast_send_unconfirmed_block(self, block):
         """생성된 unconfirmed block 을 피어들에게 broadcast 하여 검증을 요청한다.
         """
-        logging.info("BroadCast AnnounceUnconfirmedBlock...peers: " + str(self.__common_service.get_voter_count()))
+        logging.info("BroadCast AnnounceUnconfirmedBlock...peers: " +
+                     str(ObjectManager().peer_service.peer_manager.get_peer_count()))
         dump = pickle.dumps(block)
         if len(block.confirmed_transaction_list) > 0:
             self.__blockchain.increase_made_block_count()
@@ -178,6 +189,9 @@ class BlockManager(CommonThread):
             if unconfirmed_block.prev_block_confirm:
                 logging.debug("block confirm by siever: " + str(unconfirmed_block.prev_block_hash))
                 self.confirm_block(unconfirmed_block.prev_block_hash)
+            elif unconfirmed_block.block_type is BlockType.peer_list:
+                logging.debug("peer manager block confirm by siever: " + str(unconfirmed_block.block_hash))
+                self.confirm_block(unconfirmed_block.block_hash)
             else:
                 # 투표에 실패한 블럭을 받은 경우
                 # 특별한 처리가 필요 없다. 새로 받은 블럭을 아래 로직에서 add_unconfirm_block 으로 수행하면 된다.
@@ -205,7 +219,6 @@ class BlockManager(CommonThread):
     def __do_vote(self):
         """Announce 받은 unconfirmed block 에 투표를 한다.
         """
-
         if not self.__unconfirmedBlockQueue.empty():
             unconfirmed_block = self.__unconfirmedBlockQueue.get()
             logging.debug("we got unconfirmed block ....")
@@ -216,7 +229,8 @@ class BlockManager(CommonThread):
 
         logging.info("PeerService received unconfirmed block: " + unconfirmed_block.block_hash)
 
-        if unconfirmed_block.confirmed_transaction_list.__len__() == 0:
+        if unconfirmed_block.confirmed_transaction_list.__len__() == 0 and \
+                unconfirmed_block.block_type is not BlockType.peer_list:
             # siever 에서 사용하는 vote block 은 tx 가 없다. (검증 및 투표 불필요)
             # siever 에서 vote 블럭 발송 빈도를 보기 위해 warning 으로 로그 남김, 그 외의 경우 아래 로그는 주석처리 할 것
             # logging.warning("This is vote block by siever")
@@ -225,7 +239,7 @@ class BlockManager(CommonThread):
             # block 검증
             block_is_validated = False
             try:
-                block_is_validated = unconfirmed_block.validate()
+                block_is_validated = unconfirmed_block.validate(self.__txQueue)
             except (BlockInValidError, BlockError, TransactionInValidError) as e:
                 logging.error(e)
 
