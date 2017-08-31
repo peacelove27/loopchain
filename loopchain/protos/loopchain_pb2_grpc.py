@@ -92,12 +92,12 @@ class InnerServiceStub(object):
         )
     self.Subscribe = channel.unary_unary(
         '/InnerService/Subscribe',
-        request_serializer=loopchain__pb2.SubscribeRequest.SerializeToString,
+        request_serializer=loopchain__pb2.PeerRequest.SerializeToString,
         response_deserializer=loopchain__pb2.CommonReply.FromString,
         )
     self.UnSubscribe = channel.unary_unary(
         '/InnerService/UnSubscribe',
-        request_serializer=loopchain__pb2.SubscribeRequest.SerializeToString,
+        request_serializer=loopchain__pb2.PeerRequest.SerializeToString,
         response_deserializer=loopchain__pb2.CommonReply.FromString,
         )
     self.AddTx = channel.unary_unary(
@@ -334,12 +334,12 @@ def add_InnerServiceServicer_to_server(servicer, server):
       ),
       'Subscribe': grpc.unary_unary_rpc_method_handler(
           servicer.Subscribe,
-          request_deserializer=loopchain__pb2.SubscribeRequest.FromString,
+          request_deserializer=loopchain__pb2.PeerRequest.FromString,
           response_serializer=loopchain__pb2.CommonReply.SerializeToString,
       ),
       'UnSubscribe': grpc.unary_unary_rpc_method_handler(
           servicer.UnSubscribe,
-          request_deserializer=loopchain__pb2.SubscribeRequest.FromString,
+          request_deserializer=loopchain__pb2.PeerRequest.FromString,
           response_serializer=loopchain__pb2.CommonReply.SerializeToString,
       ),
       'AddTx': grpc.unary_unary_rpc_method_handler(
@@ -470,12 +470,12 @@ class PeerServiceStub(object):
         )
     self.Subscribe = channel.unary_unary(
         '/PeerService/Subscribe',
-        request_serializer=loopchain__pb2.SubscribeRequest.SerializeToString,
+        request_serializer=loopchain__pb2.PeerRequest.SerializeToString,
         response_deserializer=loopchain__pb2.CommonReply.FromString,
         )
     self.UnSubscribe = channel.unary_unary(
         '/PeerService/UnSubscribe',
-        request_serializer=loopchain__pb2.SubscribeRequest.SerializeToString,
+        request_serializer=loopchain__pb2.PeerRequest.SerializeToString,
         response_deserializer=loopchain__pb2.CommonReply.FromString,
         )
     self.AddTx = channel.unary_unary(
@@ -716,12 +716,12 @@ def add_PeerServiceServicer_to_server(servicer, server):
       ),
       'Subscribe': grpc.unary_unary_rpc_method_handler(
           servicer.Subscribe,
-          request_deserializer=loopchain__pb2.SubscribeRequest.FromString,
+          request_deserializer=loopchain__pb2.PeerRequest.FromString,
           response_serializer=loopchain__pb2.CommonReply.SerializeToString,
       ),
       'UnSubscribe': grpc.unary_unary_rpc_method_handler(
           servicer.UnSubscribe,
-          request_deserializer=loopchain__pb2.SubscribeRequest.FromString,
+          request_deserializer=loopchain__pb2.PeerRequest.FromString,
           response_serializer=loopchain__pb2.CommonReply.SerializeToString,
       ),
       'AddTx': grpc.unary_unary_rpc_method_handler(
@@ -788,12 +788,12 @@ class RadioStationStub(object):
         )
     self.Subscribe = channel.unary_unary(
         '/RadioStation/Subscribe',
-        request_serializer=loopchain__pb2.SubscribeRequest.SerializeToString,
+        request_serializer=loopchain__pb2.PeerRequest.SerializeToString,
         response_deserializer=loopchain__pb2.CommonReply.FromString,
         )
     self.UnSubscribe = channel.unary_unary(
         '/RadioStation/UnSubscribe',
-        request_serializer=loopchain__pb2.SubscribeRequest.SerializeToString,
+        request_serializer=loopchain__pb2.PeerRequest.SerializeToString,
         response_deserializer=loopchain__pb2.CommonReply.FromString,
         )
 
@@ -892,12 +892,12 @@ def add_RadioStationServicer_to_server(servicer, server):
       ),
       'Subscribe': grpc.unary_unary_rpc_method_handler(
           servicer.Subscribe,
-          request_deserializer=loopchain__pb2.SubscribeRequest.FromString,
+          request_deserializer=loopchain__pb2.PeerRequest.FromString,
           response_serializer=loopchain__pb2.CommonReply.SerializeToString,
       ),
       'UnSubscribe': grpc.unary_unary_rpc_method_handler(
           servicer.UnSubscribe,
-          request_deserializer=loopchain__pb2.SubscribeRequest.FromString,
+          request_deserializer=loopchain__pb2.PeerRequest.FromString,
           response_serializer=loopchain__pb2.CommonReply.SerializeToString,
       ),
   }

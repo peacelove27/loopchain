@@ -75,11 +75,11 @@ PORT_DIFF_SCORE_CONTAINER = 10021  # peer service 가 score container 를 시작
 PORT_DIFF_TX_CONTAINER = 10051
 PORT_DIFF_BROADCAST_CONTAINER = 10081
 MAX_WORKERS = 100
-SLEEP_SECONDS_IN_SERVICE_LOOP = 0.05  # multi thread 동작을 위한 최소 대기 시간 설정
+SLEEP_SECONDS_IN_SERVICE_LOOP = 0.1  # 0.05  # multi thread 동작을 위한 최소 대기 시간 설정
 SLEEP_SECONDS_IN_SERVICE_NONE = 2  # _아무일도 하지 않는 대기 thread 의 대기 시간 설정
 SLEEP_SECONDS_IN_RADIOSTATION_HEARTBEAT = 60 * 60  # seconds, RS 의 peer status heartbeat 주기
-GRPC_TIMEOUT = 5  # seconds
-GRPC_TIMEOUT_TEST = 5  # seconds
+GRPC_TIMEOUT = 30  # seconds
+GRPC_TIMEOUT_TEST = 30  # seconds
 GRPC_CONNECTION_TIMEOUT = GRPC_TIMEOUT * 2  # seconds, Connect Peer 메시지는 처리시간이 좀 더 필요함
 STUB_REUSE_TIMEOUT = 60  # minutes
 
@@ -102,7 +102,7 @@ class ConsensusAlgorithm(IntEnum):
 # 블록 생성 간격, tx 가 없을 경우 다음 간격까지 건너 뛴다.
 INTERVAL_BLOCKGENERATION = 1
 # Interval for Wait peer's vote
-INTERVAL_WAIT_PEER_VOTE = 0.05
+INTERVAL_WAIT_PEER_VOTE = 0.1  # 0.05
 # blockchain 용 level db 생성 재시도 횟수, 테스트가 아닌 경우 1로 설정하여도 무방하다.
 MAX_RETRY_CREATE_DB = 10
 # default level db path
@@ -156,6 +156,9 @@ SCORE_LOAD_TIMEOUT = GRPC_TIMEOUT * 180  # seconds, Git repository 접속해서 
 # REMOTE PULL PACKAGE FLAG
 REMOTE_PULL_SCORE = False
 INTERVAL_LOAD_SCORE = 1  # seconds
+SCORE_RETRY_TIMES = 3
+SCORE_QUERY_TIMEOUT = 120
+SCORE_INVOKE_TIMEOUT = 60 * 5  # seconds
 
 
 ##################
@@ -167,6 +170,7 @@ ENABLE_REST_SSL = 0    # Rest server에 SSL 적용 여부를 설정한다. 0: No
 DEFAULT_SSL_CERT_PATH = 'resources/ssl_test_cert/cert.pem'
 DEFAULT_SSL_KEY_PATH = 'resources/ssl_test_cert/key.pem'
 DEFAULT_SSL_TRUST_CERT_PATH = 'resources/ssl_test_ca/cert.pem'
+REST_ADDITIONAL_TIMEOUT = 30  # seconds
 
 
 # check default stroage path exist
@@ -186,6 +190,7 @@ CONNECTION_RETRY_TIMES = 2  # times
 REQUEST_BLOCK_GENERATOR_TIMEOUT = 10  # seconds
 BLOCK_GENERATOR_BROADCAST_TIMEOUT = 5  # seconds
 WAIT_GRPC_SERVICE_START = 2  # seconds
+WAIT_SECONDS_FOR_SUB_PROCESS_START = 5  # seconds
 SLEEP_SECONDS_FOR_SUB_PROCESS_START = 0.05  # seconds
 WAIT_SUB_PROCESS_RETRY_TIMES = 30
 PEER_GROUP_ID = ""  # "8d4e8d08-0d2c-11e7-a589-acbc32b0aaa1"  # vote group id
@@ -203,6 +208,7 @@ ALLOW_PEER_RECONNECT = True
 TOKEN_INTERVAL = 10
 # If disconnected state of the peer is maintained, That peer will removed from peer list after this minutes.
 TIMEOUT_PEER_REMOVE_IN_LIST = 5  # minutes
+IS_LOAD_PEER_MANAGER_FROM_DB = False
 
 
 ####################

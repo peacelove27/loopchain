@@ -20,7 +20,7 @@ import timeit
 
 import grpc
 
-from loopchain.baseservice import CommonThread, TxProcess, StubManager
+from loopchain.baseservice import ObjectManager, CommonThread, BroadcastProcess, StubManager
 from loopchain.blockchain import *
 from loopchain.container import ScoreService, RestService, TxService, CommonService
 from loopchain.peer import BlockManager, InnerService, OuterService
@@ -29,9 +29,12 @@ from loopchain.protos import loopchain_pb2, loopchain_pb2_grpc, message_code
 
 
 class SendToProcess(CommonThread):
-    def __init__(self, process):
+    def __init__(self):
         CommonThread.__init__(self)
         self.__job = queue.Queue()
+        self.__process = None
+
+    def set_process(self, process):
         self.__process = process
 
     def send_to_process(self, params):
@@ -39,14 +42,27 @@ class SendToProcess(CommonThread):
 
         :param PeerProcess 에 전달하는 command 와 param 의 쌍
         """
+        # logging.debug("send job queue add")
         self.__job.put(params)
 
     def run(self):
         while self.is_run():
             time.sleep(conf.SLEEP_SECONDS_IN_SERVICE_LOOP)
+
+            param = None
             while not self.__job.empty():
                 # logging.debug("Send to Process by thread.... remain jobs: " + str(self.__job.qsize()))
-                self.__process.send_to_process(self.__job.get())
+
+                param = self.__job.get()
+                try:
+                    self.__process.send_to_process(param)
+                    param = None
+                except Exception as e:
+                    logging.warning(f"process not init yet... ({e})")
+                    break
+
+            if param is not None:
+                self.__job.put(param)
 
 
 class PeerService:
@@ -72,7 +88,7 @@ class PeerService:
             message_code.Request.peer_peer_list: self.__handler_peer_list
         }
         self.__peer_type = loopchain_pb2.PEER
-        self.__send_to_process_thread = None
+        self.__send_to_process_thread = SendToProcess()
 
         self.__radio_station_target = radio_station_ip + ":" + str(radio_station_port)
         self.__stub_to_radio_station = None
@@ -100,6 +116,7 @@ class PeerService:
         self.__peer_target = None
         self.__inner_target = None
         self.__peer_port = 0
+        self.__peer_object = None
 
         self.__block_height_sync_lock = False
 
@@ -121,6 +138,10 @@ class PeerService:
     @property
     def common_service(self):
         return self.__common_service
+
+    @property
+    def tx_service(self):
+        return self.__tx_service
 
     @property
     def block_manager(self):
@@ -149,8 +170,16 @@ class PeerService:
         return self.__send_to_process_thread
 
     @property
+    def tx_process(self):
+        return self.__tx_process
+
+    @property
     def peer_type(self):
         return self.__peer_type
+
+    @property
+    def peer_object(self):
+        return self.__peer_object
 
     @property
     def auth(self):
@@ -218,17 +247,17 @@ class PeerService:
 
         self.__peer_manager.set_leader_peer(leader_peer, None)
 
-        peer_self = self.__peer_manager.get_peer(self.peer_id)
+        self.__peer_object = self.__peer_manager.get_peer(self.peer_id)
         peer_leader = self.__peer_manager.get_leader_peer()
 
-        if peer_self.target == peer_leader.target:
+        if self.__peer_object.target == peer_leader.target:
             logging.debug("Set Peer Type Block Generator!")
             self.__peer_type = loopchain_pb2.BLOCK_GENERATOR
             self.__block_manager.get_blockchain().reset_made_block_count()
 
             # TODO 아래 코드는 중복된 의미이다. 하지만, leader 가 변경되길 기다리는 코드로 의미를 명확히 할 경우
             # 블록체인 동작 지연으로 인한 오류가 발생한다. 우선 더 안정적인 테스트 결과를 보이는 상태로 유지한다.
-            response = self.peer_list.get_peer_stub_manager(peer_self).call(
+            response = self.peer_list.get_peer_stub_manager(self.__peer_object).call(
                 "GetStatus",
                 loopchain_pb2.StatusRequest(request="reset_leader"),
                 is_stub_reuse=True
@@ -322,19 +351,15 @@ class PeerService:
 
     def score_invoke(self, block):
         block_object = pickle.dumps(block)
-        try:
-            response = self.__stub_to_score_service.call(
-                "Request",
-                loopchain_pb2.Message(code=message_code.Request.score_invoke, object=block_object)
-            )
-            # logging.debug("Score Server says: " + str(response))
-            if response.code == message_code.Response.success:
-                return json.loads(response.meta)
-            else:
-                raise ScoreInvokeError('score process grpc fail')
-        except Exception as e:
-            logging.warning("fail score invoke: " + str(e))
-            return False
+        response = self.__stub_to_score_service.call(
+            method_name="Request",
+            message=loopchain_pb2.Message(code=message_code.Request.score_invoke, object=block_object),
+            timeout=conf.SCORE_INVOKE_TIMEOUT,
+            is_raise=True
+        )
+        # logging.debug("Score Server says: " + str(response))
+        if response.code == message_code.Response.success:
+            return json.loads(response.meta)
 
     def __load_block_manager(self):
         try:
@@ -361,10 +386,10 @@ class PeerService:
 
         token = None
         if self.__auth.is_secure:
-            peer_self = self.__peer_manager.get_peer(self.peer_id)
+            self.__peer_object = self.__peer_manager.get_peer(self.peer_id)
             token = None
-            if peer_self is not None:
-                token = peer_self.token
+            if self.__peer_object is not None:
+                token = self.__peer_object.token
             logging.debug("Self Peer Token : %s", token)
 
             # 토큰 유효시간이 지나면 다시 생성 요청
@@ -453,7 +478,26 @@ class PeerService:
                             response.status = message_code.Response.fail_validate_params
                             response.more_info = "Invalid Token Signature"
 
-        return response
+        logging.debug("Connect to radiostation: " + str(response))
+
+        is_peer_list_from_rs = False
+
+        if response is not None and response.status == message_code.Response.success:
+            # RS 의 응답이 있으면 peer_list 는 RS 가 전달한 결과로 업데이트 된다.
+            # 없는 경우 local 의 level DB 로 부터 읽어드린 값을 default 로 사용하게 된다.
+            # TODO RS 는 어떻게 신뢰하지? RS 가 새로운 피어의 참여를 승인하더라도 참여한 피어 목록은 더 신뢰할만한 방식으로 보호가 필요하지 않나?
+            # 누군가 RS 를 죽인다면 RS 인척 가짜로 이루어진 피어 리스트를 전송하면 네트워크를 파괴할 수 있지 않나?
+            # 피어의 참여는 RS 가 승인한 다음 블록에 담아서 블록체인에 추가하면 어떨까?
+
+            peer_list_data = pickle.loads(response.peer_list)
+            self.__peer_manager.load(peer_list_data, False)
+            self.__common_service.save_peer_list(self.__peer_manager)
+            logging.debug("peer list update: " + self.__peer_manager.get_peers_for_debug())
+            is_peer_list_from_rs = True
+        else:
+            logging.debug("using local peer list: " + self.__peer_manager.get_peers_for_debug())
+
+        return is_peer_list_from_rs
 
     def add_unconfirm_block(self, block_unloaded):
         block = pickle.loads(block_unloaded)
@@ -480,30 +524,33 @@ class PeerService:
         return response_code, response_msg, block_hash
 
     def __tx_process_connect_to_leader(self, peer_process, leader_target):
-        logging.debug("try... Peer Process connect_to_blockgenerator: " + leader_target)
+        logging.debug("try... Peer Process connect_to_leader: " + leader_target)
         logging.debug("peer_process: " + str(peer_process))
-        peer_process.send_to_process(("connect_to_blockgenerator", leader_target))
+        peer_process.send_to_process((BroadcastProcess.CONNECT_TO_LEADER_COMMAND, leader_target))
+        peer_process.send_to_process((BroadcastProcess.SUBSCRIBE_COMMAND, leader_target))
 
     def __run_tx_process(self, blockgenerator_info, inner_channel_info):
-        tx_process = TxProcess()
+        tx_process = BroadcastProcess()
         tx_process.start()
         tx_process.send_to_process(("status", ""))
 
         wait_times = 0
         wait_for_process_start = None
 
-        while wait_for_process_start is None:
-            time.sleep(conf.SLEEP_SECONDS_FOR_SUB_PROCESS_START)
-            logging.debug(f"wait start tx process....")
-            wait_for_process_start = tx_process.get_receive("status")
+        time.sleep(conf.WAIT_SECONDS_FOR_SUB_PROCESS_START)
 
-            if wait_for_process_start is None and wait_times > conf.WAIT_SUB_PROCESS_RETRY_TIMES:
-                util.exit_and_msg("Tx Process start Fail!")
+        # while wait_for_process_start is None:
+        #     time.sleep(conf.SLEEP_SECONDS_FOR_SUB_PROCESS_START)
+        #     logging.debug(f"wait start tx process....")
+        #     wait_for_process_start = tx_process.get_receive("status")
+        #
+        #     if wait_for_process_start is None and wait_times > conf.WAIT_SUB_PROCESS_RETRY_TIMES:
+        #         util.exit_and_msg("Tx Process start Fail!")
 
-        logging.debug(f"Tx Process start({wait_for_process_start})")
+        # logging.debug(f"Tx Process start({wait_for_process_start})")
 
         self.__tx_process_connect_to_leader(tx_process, blockgenerator_info)
-        tx_process.send_to_process(("make_self_connection", inner_channel_info))
+        tx_process.send_to_process((BroadcastProcess.MAKE_SELF_PEER_CONNECTION_COMMAND, inner_channel_info))
 
         return tx_process
 
@@ -655,11 +702,13 @@ class PeerService:
         """
         if self.__reset_voter_in_progress is not True:
             self.__reset_voter_in_progress = True
-            logging.debug("reset voter count before: " + str(self.__common_service.get_voter_count()))
+            logging.debug("reset voter count before: " +
+                          str(ObjectManager().peer_service.peer_manager.get_peer_count()))
 
             # TODO peer_list 를 순회하면서 gRPC 오류인 사용자를 remove_audience 한다.
             self.__peer_manager.reset_peers(None, self.__common_service.remove_audience)
-            logging.debug("reset voter count after: " + str(self.__common_service.get_voter_count()))
+            logging.debug("reset voter count after: " +
+                          str(ObjectManager().peer_service.peer_manager.get_peer_count()))
             self.__reset_voter_in_progress = False
 
     def set_chain_code(self, score):
@@ -725,32 +774,13 @@ class PeerService:
         self.__peer_manager = self.__common_service.load_peer_manager()
         self.__block_manager = self.__load_block_manager()
 
-        response = self.__connect_to_radiostation()
-        logging.debug("Connect to radiostation: " + str(response))
-
-        is_peer_list_from_rs = False
-
-        if response is not None and response.status == message_code.Response.success:
-            # RS 의 응답이 있으면 peer_list 는 RS 가 전달한 결과로 업데이트 된다.
-            # 없는 경우 local 의 level DB 로 부터 읽어드린 값을 default 로 사용하게 된다.
-            # TODO RS 는 어떻게 신뢰하지? RS 가 새로운 피어의 참여를 승인하더라도 참여한 피어 목록은 더 신뢰할만한 방식으로 보호가 필요하지 않나?
-            # 누군가 RS 를 죽인다면 RS 인척 가짜로 이루어진 피어 리스트를 전송하면 네트워크를 파괴할 수 있지 않나?
-            # 피어의 참여는 RS 가 승인한 다음 블록에 담아서 블록체인에 추가하면 어떨까?
-
-            peer_list_data = pickle.loads(response.peer_list)
-            self.__peer_manager.load(peer_list_data, False)
-            self.__common_service.save_peer_list(self.__peer_manager)
-            logging.debug("peer list update: " + self.__peer_manager.get_peers_for_debug())
-            is_peer_list_from_rs = True
-        else:
-            logging.debug("using local peer list: " + self.__peer_manager.get_peers_for_debug())
-
-        logging.debug("peer_id: " + str(self.peer_id))
+        is_peer_list_from_rs = self.__connect_to_radiostation()
+        logging.info("peer_service peer_id: " + str(self.peer_id))
 
         if self.__peer_manager.get_peer_count() == 0:
             util.exit_and_msg("There is no peer_list, initial network is not allowed without RS!")
-        peer_self = self.__peer_manager.get_peer(self.peer_id, self.group_id)
-        logging.debug("peer_self: " + str(peer_self))
+        self.__peer_object = self.__peer_manager.get_peer(self.peer_id, self.group_id)
+        logging.debug("peer_self: " + str(self.__peer_object))
         peer_leader = self.__peer_manager.get_leader_peer(is_complain_to_rs=True)
         logging.debug("peer_leader: " + str(peer_leader))
 
@@ -761,7 +791,7 @@ class PeerService:
         # TODO 인증정보 요청
 
         # TODO 이 부분을 조건 검사가 아니라 leader complain 을 이용해서 리더가 되도록 하는 방법 검토하기
-        if peer_self.peer_id == peer_leader.peer_id:
+        if self.__peer_object.peer_id == peer_leader.peer_id:
             # 자기가 peer_list 의 유일한 connected PEER 이거나 rs 의 leader 정보와 같을 때 block generator 가 된다.
             if is_peer_list_from_rs is True or self.__peer_manager.get_connected_peer_count(None) == 1:
                 logging.debug("Set Peer Type Block Generator!")
@@ -797,12 +827,11 @@ class PeerService:
                         time_out_seconds=conf.GRPC_TIMEOUT
                     )
 
-            if peer_leader is None or peer_leader.peer_id == peer_self.peer_id:
-                peer_leader = peer_self
+            if peer_leader is None or peer_leader.peer_id == self.__peer_object.peer_id:
+                peer_leader = self.__peer_object
                 self.__peer_type = loopchain_pb2.BLOCK_GENERATOR
             else:
                 self.block_height_sync(block_sync_target_stub)
-
                 # # TODO 마지막 블럭으로 leader 정보를 판단하는 로직은 리더 컴플레인 알고리즘 수정 후 유효성을 다시 판단할 것
                 # last_block_peer_id = self.__block_manager.get_blockchain().last_block.peer_id
                 #
@@ -841,7 +870,6 @@ class PeerService:
 
         if self.__stub_to_radio_station is not None:
             self.__common_service.subscribe(self.__stub_to_radio_station)
-
         # Start Peer Process for gRPC send to Block Generator
         # But It use only when create tx (yet)
         logging.debug("peer_leader target is: " + str(peer_leader.target))
@@ -857,7 +885,7 @@ class PeerService:
         if is_delay_announce_new_leader:
             self.__peer_manager.announce_new_leader(peer_old_leader.peer_id, peer_leader.peer_id)
 
-        self.__send_to_process_thread = SendToProcess(self.__tx_process)
+        self.__send_to_process_thread.set_process(self.__tx_process)
         self.__send_to_process_thread.start()
 
         stopwatch_duration = timeit.default_timer() - stopwatch_start

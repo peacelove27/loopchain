@@ -68,7 +68,7 @@ class ConsensusSiever(ConsensusBase):
             self._block.prev_block_confirm = True
 
             # 검증이 끝나면 BlockChain 에 해당 block 의 block_hash 로 등록 완료
-            confirmed_block.block_type = BlockType.confirmed
+            confirmed_block.block_status = BlockStatus.confirmed
             self._blockmanager.add_block(confirmed_block)
 
             # 새로운 블럭의 broadcast 를 위해 current_vote_block_hash 를 리셋한다.
@@ -113,7 +113,7 @@ class ConsensusSiever(ConsensusBase):
 
                 # 검증할 후보 블럭이 없으면서 이전 블럭이 unconfirmed block 이면 투표가 담긴 빈 블럭을 전송한다.
                 self._block.prev_block_hash = confirmed_block.block_hash
-                self._block.is_voting_block = True
+                self._block.block_type = BlockType.vote
                 self.made_block_count -= 1
 
                 logging.debug(f"made_block_count({self.made_block_count})")

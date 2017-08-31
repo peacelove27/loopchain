@@ -52,6 +52,10 @@ class TxService(Container, loopchain_pb2_grpc.ContainerServicer):
 
         self.start()
 
+    @property
+    def peer_status(self):
+        return self.__peer_status
+
     def __create_tx_continue(self):
         # 저장된 작업이 있으면 전송한다.
         while not self.__stored_tx.empty():

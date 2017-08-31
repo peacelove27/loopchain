@@ -20,14 +20,20 @@ import struct
 from enum import Enum
 
 from loopchain import utils as util
-from loopchain.blockchain import TransactionType, Transaction
+from loopchain.blockchain import TransactionStatus, TransactionType, Transaction
 from loopchain.blockchain.exception import *
 from loopchain.blockchain.score_base import *
 
 
-class BlockType(Enum):
+class BlockStatus(Enum):
     unconfirmed = 1
     confirmed = 2
+
+
+class BlockType(Enum):
+    general = 1
+    vote = 2
+    peer_list = 3
 
 
 class Block:
@@ -48,7 +54,8 @@ class Block:
         self.confirmed_transaction_list = []
         self.block_hash = ""
         self.height = 0
-        self.block_type = BlockType.unconfirmed
+        self.block_status = BlockStatus.unconfirmed
+        self.__block_type = BlockType.general
 
         # TODO 블록을 생성한 peer 의 id, Genesis Block 인 경우 Radio Station 이 지정한 peer 가 leader 가 된다. (첫번째 Peer)
         # 이 후에는 마지막 block 의 peer_id 를 leader 로 간주한다.
@@ -56,29 +63,30 @@ class Block:
         self.peer_id = ""
         # peer_id(leader) 가 생성한 몇번째 블럭인지 카운드한다.
         self.__made_block_count = made_block_count
-        self.__is_voting_block = False
         self.__is_divided_block = is_divided_block
         self.__next_leader_peer_id = ""
+        self.__peer_manager = None
 
         self.merkle_tree = []
-        self.confirmed_transaction_list = []
         self.merkle_tree_root_hash = ""
         self.prev_block_hash = ""
         self.height = 0
         self.time_stamp = 0
 
     @property
-    def made_block_count(self):
-        return self.__made_block_count
+    def block_type(self):
+        return self.__block_type
+
+    @block_type.setter
+    def block_type(self, block_type):
+        if block_type is not BlockType.general:
+            self.__made_block_count -= 1
+
+        self.__block_type = block_type
 
     @property
-    def is_voting_block(self):
-        return self.__is_voting_block
-
-    @is_voting_block.setter
-    def is_voting_block(self, value):
-        self.__made_block_count -= 1
-        self.__is_voting_block = value
+    def made_block_count(self):
+        return self.__made_block_count
 
     @property
     def is_divided_block(self):
@@ -95,6 +103,14 @@ class Block:
     @next_leader_peer.setter
     def next_leader_peer(self, peer_id):
         self.__next_leader_peer_id = peer_id
+
+    @property
+    def peer_manager(self):
+        return self.__peer_manager
+
+    @peer_manager.setter
+    def peer_manager(self, peer_manager):
+        self.__peer_manager = peer_manager
 
     def put_transaction(self, tx):
         """Block Generator 에서만 사용한다.
@@ -116,7 +132,7 @@ class Block:
         # TX 검증은 현재 받아들인 TX의 Hash값(Peer 생성)과
         # block generator (leader) 에서 만든 Hash 값이 일치하는지 확인 후 block 에 추가합니다.
         # TX 는 최초 생성한 Peer 에서 block 에 담겨오는지 여부를 확인 할 때까지 보관해야 합니다. (TODO)
-        if tx.transaction_type == TransactionType.unconfirmed:
+        if tx.status == TransactionStatus.unconfirmed:
             # transaction 검증
             # logging.debug("Transaction Hash %s", tx.get_tx_hash())
             if Transaction.generate_transaction_hash(tx) != tx.get_tx_hash():
@@ -126,7 +142,7 @@ class Block:
                               "\ntx data : " + str(tx.get_data()))
                 return False
             else:
-                tx.transaction_type = TransactionType.confirmed
+                tx.status = TransactionStatus.confirmed
 
         # Block 에 검증된 Transaction 추가 : 목록에 존재하는지 확인 필요
         if tx not in self.confirmed_transaction_list:
@@ -198,7 +214,7 @@ class Block:
                 return idx
         return -1
 
-    def validate(self):
+    def validate(self, tx_queue=None):
         """블럭 검증
 
         :return: 검증결과
@@ -224,12 +240,37 @@ class Block:
             raise BlockError('Prev Block Hash not Exist')
 
         # Transaction Validate
+        confirmed_tx_list = []
         for tx in self.confirmed_transaction_list:
             if tx.get_tx_hash() != Transaction.generate_transaction_hash(tx):
                 logging.debug("TX HASH : %s vs %s", tx.get_tx_hash(), Transaction.generate_transaction_hash(tx))
                 raise TransactionInValidError('Transaction hash is not same')
+            else:
+                confirmed_tx_list.append(tx.tx_hash)
+
+        if tx_queue is not None:
+            self.__tx_validate_with_queue(tx_queue, confirmed_tx_list)
 
         return True
+
+    def __tx_validate_with_queue(self, tx_queue, confirmed_tx_list):
+        remain_tx = []
+
+        while not tx_queue.empty():
+            tx_unloaded = tx_queue.get()
+            tx = pickle.loads(tx_unloaded)
+
+            if tx.tx_hash not in confirmed_tx_list:
+                # logging.warning(f"tx_validate_with_queue not confirmed tx ({tx.tx_hash})({tx.type})")
+                # logging.warning(f"confirmed_tx list ({confirmed_tx_list})")
+                if tx.type == TransactionType.general:
+                    remain_tx.append(tx_unloaded)
+
+        if len(remain_tx) != 0:
+            logging.warning(f"after tx validate, remain tx({len(remain_tx)})")
+
+            for tx_unloaded in remain_tx:
+                ObjectManager().peer_service.block_manager.add_tx_unloaded(tx_unloaded)
 
     def generate_block(self, prev_block=None):
         """블럭을 생성한다 \n

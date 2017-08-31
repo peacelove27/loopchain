@@ -68,13 +68,15 @@ class StubManager:
     def target(self):
         return self.__target
 
-    def call(self, method_name, message, timeout=conf.GRPC_TIMEOUT, is_stub_reuse=True):
+    def call(self, method_name, message, timeout=conf.GRPC_TIMEOUT, is_stub_reuse=True, is_raise=False):
         self.__make_stub(is_stub_reuse)
 
         try:
             stub_method = getattr(self.__stub, method_name)
             return stub_method(message, timeout)
         except Exception as e:
+            if is_raise:
+                raise e
             logging.debug(f"gRPC call fail method_name({method_name}), message({message}): {e}")
 
         return None

@@ -50,17 +50,19 @@ class CommonService(CommonThread):
         self.__peer_port = inner_service_port - conf.PORT_DIFF_INNER_SERVICE
         self.__subscriptions = queue.Queue()
         self.__peer_type = loopchain_pb2.PEER
-        self.__peer_target = ""
+        self.__peer_target = util.get_private_ip() + ":" + str(self.__peer_port)
         self.__stub_to_blockgenerator = None
-
         self.__group_id = ""
-        self.__audience = {}  # { peer_id : peer_info(SubscribeRequest of gRPC) }
 
         # broadcast process
         self.__broadcast_process = self.__run_broadcast_process()
         self.__init_level_db(level_db_identity)
 
         self.__loop_functions = []
+
+    @property
+    def broadcast_process(self):
+        return self.__broadcast_process
 
     def __init_level_db(self, level_db_identity):
         """init Level Db
@@ -122,6 +124,8 @@ class CommonService(CommonThread):
         try:
             dump = peer_list.dump()
             self.__level_db.Put(conf.LEVEL_DB_KEY_FOR_PEER_LIST, dump)
+            # 아래의 audience dump update 는 안정성에 문제를 야기한다. (원인 미파악)
+            # self.update_audience(dump)
         except AttributeError as e:
             logging.warning("Fail Save Peer_list: " + str(e))
 
@@ -132,12 +136,13 @@ class CommonService(CommonThread):
         """
         peer_manager = PeerManager()
 
-        try:
-            peer_list_data = pickle.loads(self.__level_db.Get(conf.LEVEL_DB_KEY_FOR_PEER_LIST))
-            peer_manager.load(peer_list_data)
-            logging.debug("load peer_list_data on yours: " + peer_manager.get_peers_for_debug())
-        except KeyError:
-            logging.warning("There is no peer_list_data on yours")
+        if conf.IS_LOAD_PEER_MANAGER_FROM_DB:
+            try:
+                peer_list_data = pickle.loads(self.__level_db.Get(conf.LEVEL_DB_KEY_FOR_PEER_LIST))
+                peer_manager.load(peer_list_data)
+                logging.debug("load peer_list_data on yours: " + peer_manager.get_peers_for_debug())
+            except KeyError:
+                logging.warning("There is no peer_list_data on yours")
 
         return peer_manager
 
@@ -171,13 +176,18 @@ class CommonService(CommonThread):
                 total_tx = block_manager.get_total_tx()
 
         status_data["status"] = "Service is online: " + str(self.__peer_type)
-        status_data["audience_count"] = self.__count_audience()
+
+        # TODO 더이상 사용하지 않는다. REST API 업데이트 후 제거할 것
+        status_data["audience_count"] = "0"
+
         status_data["consensus"] = str(conf.CONSENSUS_ALGORITHM.name)
         status_data["peer_id"] = str(self.get_peer_id())
         status_data["peer_type"] = str(self.__peer_type)
         status_data["block_height"] = block_height
         status_data["total_tx"] = total_tx
         status_data["peer_target"] = self.__peer_target
+        if ObjectManager().peer_service is not None:
+            status_data["leader_complaint"] = ObjectManager().peer_service.tx_service.peer_status.value
 
         return status_data
 
@@ -189,15 +199,20 @@ class CommonService(CommonThread):
         wait_times = 0
         wait_for_process_start = None
 
-        while wait_for_process_start is None:
-            time.sleep(conf.SLEEP_SECONDS_FOR_SUB_PROCESS_START)
-            logging.debug(f"wait start broadcast process....")
-            wait_for_process_start = broadcast_process.get_receive("status")
+        time.sleep(conf.WAIT_SECONDS_FOR_SUB_PROCESS_START)
 
-            if wait_for_process_start is None and wait_times > conf.WAIT_SUB_PROCESS_RETRY_TIMES:
-                util.exit_and_msg("Broadcast Process start Fail!")
+        # while wait_for_process_start is None:
+        #     time.sleep(conf.SLEEP_SECONDS_FOR_SUB_PROCESS_START)
+        #     logging.debug(f"wait start broadcast process....")
+        #     wait_for_process_start = broadcast_process.get_receive("status")
+        #
+        #     if wait_for_process_start is None and wait_times > conf.WAIT_SUB_PROCESS_RETRY_TIMES:
+        #         util.exit_and_msg("Broadcast Process start Fail!")
 
-        logging.debug(f"Broadcast Process start({wait_for_process_start})")
+        if self.__peer_type == loopchain_pb2.PEER:
+            broadcast_process.send_to_process((BroadcastProcess.MAKE_SELF_PEER_CONNECTION_COMMAND, self.__peer_target))
+
+        # logging.debug(f"Broadcast Process start({wait_for_process_start})")
 
         return broadcast_process
 
@@ -214,7 +229,7 @@ class CommonService(CommonThread):
             if is_unsubscribe:
                 subscribe_stub.call(
                     "UnSubscribe",
-                    self.__gRPC_module.SubscribeRequest(
+                    self.__gRPC_module.PeerRequest(
                         peer_target=self.__peer_target, peer_type=self.__peer_type,
                         peer_id=self.peer_id, group_id=self.__group_id
                     ),
@@ -223,7 +238,7 @@ class CommonService(CommonThread):
             else:
                 subscribe_stub.call(
                     "Subscribe",
-                    self.__gRPC_module.SubscribeRequest(
+                    self.__gRPC_module.PeerRequest(
                         peer_target=self.__peer_target, peer_type=self.__peer_type,
                         peer_id=self.peer_id, group_id=self.__group_id
                     ),
@@ -238,40 +253,34 @@ class CommonService(CommonThread):
     def __un_subscribe(self, port, subscribe_stub):
         self.__subscribe(port, subscribe_stub, True)
 
-    def __count_audience(self):
-        return self.__audience.__len__()
-
-    def get_voter_count(self):
-        # TODO Check this if can remove?
-        # peer_list 의 count 로 변경할 것
-        return self.__count_audience() + 1  # leader 자신을 투표자 수에 포함한다.
-
     def add_audience(self, peer_info):
         """broadcast 를 수신 받을 peer 를 등록한다.
         :param peer_info: SubscribeRequest
         """
-        logging.info("Try add audience: " + str(peer_info))
-        self.__broadcast_process.send_to_process(("subscribe", peer_info.peer_target))
-        self.__audience[peer_info.peer_id] = peer_info
+        logging.debug("Try add audience: " + str(peer_info))
+        if ObjectManager().peer_service is not None:
+            ObjectManager().peer_service.tx_process.send_to_process(
+                (BroadcastProcess.SUBSCRIBE_COMMAND, peer_info.peer_target))
+        self.__broadcast_process.send_to_process((BroadcastProcess.SUBSCRIBE_COMMAND, peer_info.peer_target))
 
     def remove_audience(self, peer_id, peer_target):
         logging.debug("Try remove audience: " + str(peer_target))
-        self.__broadcast_process.send_to_process(("unsubscribe", peer_target))
+        if ObjectManager().peer_service is not None:
+            ObjectManager().peer_service.tx_process.send_to_process((BroadcastProcess.UNSUBSCRIBE_COMMAND, peer_target))
+        self.__broadcast_process.send_to_process((BroadcastProcess.UNSUBSCRIBE_COMMAND, peer_target))
 
-        try:
-            del self.__audience[peer_id]
-        except KeyError:
-            logging.warning("Already deleted peer: " + str(peer_id))
+    def update_audience(self, peer_manager_dump):
+        self.__broadcast_process.send_to_process((BroadcastProcess.UPDATE_AUDIENCE_COMMAND, peer_manager_dump))
 
     def broadcast(self, method_name, method_param, response_handler=None):
         """등록된 모든 Peer 의 동일한 gRPC method 를 같은 파라미터로 호출한다.
         """
-        logging.warning("broadcast in process ==========================")
+        # logging.warning("broadcast in process ==========================")
         # logging.debug("pickle method_param: " + str(pickle.dumps(method_param)))
-        self.__broadcast_process.send_to_process(("broadcast", (method_name, method_param)))
+        self.__broadcast_process.send_to_process((BroadcastProcess.BROADCAST_COMMAND, (method_name, method_param)))
 
     def broadcast_audience_set(self):
-        self.__broadcast_process.send_to_process(("status", "audience set"))
+        self.__broadcast_process.send_to_process((BroadcastProcess.STATUS_COMMAND, "audience set"))
 
     def start(self, port, peer_id="", group_id=""):
         self.__port = port
@@ -285,6 +294,8 @@ class CommonService(CommonThread):
         self.__subscriptions.put(subscribe_stub)
 
         if type == loopchain_pb2.BLOCK_GENERATOR:
+            # tx broadcast 를 위해서 leader 인 경우 자신의 audience 에 같이 추가를 한다.
+            self.__broadcast_process.send_to_process((BroadcastProcess.SUBSCRIBE_COMMAND, subscribe_stub.target))
             self.__stub_to_blockgenerator = subscribe_stub
 
     def vote_unconfirmed_block(self, block_hash, is_validated):

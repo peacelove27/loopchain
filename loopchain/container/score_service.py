@@ -109,6 +109,8 @@ class ScoreService(Container, loopchain_pb2_grpc.ContainerServicer):
         :param context:
         :return:
         """
+        logging.debug("score_service handler_status")
+
         status = dict()
         if self.__score is not None:
             status['id'] = self.__score.id()
@@ -193,13 +195,23 @@ class ScoreService(Container, loopchain_pb2_grpc.ContainerServicer):
             return loopchain_pb2.Message(code=message_code.Response.success, meta=meta)
 
     def __handler_score_query(self, request, context):
+        """ do query using request.meta and return json.dumps response
+        :param request:
+        :return: gRPC response
+        """
         logging.debug("ScoreService handler query...")
 
         if self.__score is None:
             logging.error("There is no score!!")
             ret = ""
         else:
-            ret = self.__score.query(request.meta)
+            try:
+                ret = self.__score.query(request.meta)
+            except Exception as e:
+                logging.error(f'query {request.meta} raise exception {e}')
+                exception_response = {'code': ScoreResponse.EXCEPTION, 'message': f'Query Raise Exception : {e}'}
+                ret = json.dumps(exception_response)
+                return loopchain_pb2.Message(code=message_code.Response.success, meta=ret)
 
         return loopchain_pb2.Message(code=message_code.Response.success, meta=ret)
 

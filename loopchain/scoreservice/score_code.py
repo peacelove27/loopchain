@@ -22,3 +22,4 @@ class ScoreResponse(IntEnum):
     SUCCESS = 0
     EXCEPTION = 9000
     NOT_INVOKED = 2
+    SCORE_CONTAINER_EXCEPTION = 9100

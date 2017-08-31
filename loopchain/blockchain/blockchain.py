@@ -15,12 +15,13 @@
 
 import json
 import leveldb
+
 from loopchain import configure as conf
+from loopchain.baseservice import ObjectManager
+from loopchain.baseservice.SingletonMetaClass import *
+from loopchain.blockchain import BlockStatus, Block
 from loopchain.blockchain.exception import *
 from loopchain.blockchain.score_base import *
-from loopchain.baseservice.SingletonMetaClass import *
-from loopchain.baseservice import ObjectManager
-from loopchain.blockchain import BlockType, Block
 from loopchain.protos import message_code
 from loopchain.scoreservice import ScoreResponse
 
@@ -152,7 +153,7 @@ class BlockChain(metaclass=SingletonMetaClass):
             logging.error(e)
             raise BlockchainError('Block is Not valid')
 
-        if block.block_type is not BlockType.confirmed:
+        if block.block_status is not BlockStatus.confirmed:
             raise BlockInValidError("미인증 블럭")
         elif self.last_block is not None and self.last_block.height > 0:
             if self.last_block.block_hash != block.prev_block_hash:
@@ -166,15 +167,18 @@ class BlockChain(metaclass=SingletonMetaClass):
         if ObjectManager().peer_service is None:
             # all results to success
             success_result = {'code': int(message_code.Response.success)}
-            for tx in block.confirmed_transaction_list:
-                invoke_results[tx.get_tx_hash()] = success_result
+            invoke_results = self.__create_invoke_result_specific_case(block.confirmed_transaction_list, success_result)
         else:
             try:
                 invoke_results = ObjectManager().peer_service.score_invoke(block)
 
             except Exception as e:
-                logging.error(e)
-                raise ScoreInvokeError('Error While Invoke Score fail add block')
+                # When Grpc Connection Raise Exception
+                # save all result{'code': ScoreResponse.SCORE_CONTAINER_EXCEPTION, 'message': str(e)}
+                logging.error(f'Error While Invoke Score fail add block : {e}')
+                score_container_exception_result = {'code': ScoreResponse.SCORE_CONTAINER_EXCEPTION, 'message': str(e)}
+                invoke_results = self.__create_invoke_result_specific_case(block.confirmed_transaction_list
+                                                                           , score_container_exception_result)
 
         self.__add_tx_to_block_db(block, invoke_results)
         self.__confirmed_block_db.Put(block.block_hash.encode(encoding='UTF-8'), block.serialize_block())
@@ -183,8 +187,10 @@ class BlockChain(metaclass=SingletonMetaClass):
             BlockChain.BLOCK_HEIGHT_KEY +
             block.height.to_bytes(conf.BLOCK_HEIGHT_BYTES_LEN, byteorder='big'),
             block.block_hash.encode(encoding='UTF-8'))
+
         self.last_block = block
         self.block_height = self.last_block.height
+
         # logging.debug("ADD BLOCK Height : %i", block.height)
         # logging.debug("ADD BLOCK Hash : %s", block.block_hash)
         # logging.debug("ADD BLOCK MERKLE TREE Hash : %s", block.merkle_tree_root_hash)
@@ -195,6 +201,12 @@ class BlockChain(metaclass=SingletonMetaClass):
 
         return True
 
+    def __create_invoke_result_specific_case(self, confirmed_transaction_list, invoke_result):
+        invoke_results = {}
+        for tx in confirmed_transaction_list:
+            invoke_results[tx.get_tx_hash()] = invoke_result
+        return invoke_results
+
     def __add_tx_to_block_db(self, block, invoke_results):
         """block db 에 block_hash - block_object 를 저장할때, tx_hash - block_hash 를 저장한다.
         get tx by tx_hash 시 해당 block 을 효율적으로 찾기 위해서
@@ -202,6 +214,7 @@ class BlockChain(metaclass=SingletonMetaClass):
         """
         # loop all tx in block
         logging.debug("try add all tx in block to block db, block hash: " + block.block_hash)
+
         for tx in block.confirmed_transaction_list:
             tx_hash = tx.get_tx_hash()
 
@@ -290,7 +303,7 @@ class BlockChain(metaclass=SingletonMetaClass):
         """
         logging.info("Make Genesis Block....")
         block = Block()
-        block.block_type = BlockType.confirmed
+        block.block_status = BlockStatus.confirmed
         block.generate_block()
         # 제네시스 블럭을 추가 합니다.
         self.add_block(block)
@@ -327,12 +340,13 @@ class BlockChain(metaclass=SingletonMetaClass):
         try:
             unconfirmed_block_byte = self.__confirmed_block_db.Get(BlockChain.UNCONFIRM_BLOCK_KEY)
         except KeyError:
-            except_msg = "there is no unconfirmed block in this peer by: " + confirmed_block_hash
+            except_msg = f"there is no unconfirmed block in this peer block_hash({confirmed_block_hash})"
             logging.warning(except_msg)
             raise BlockchainError(except_msg)
 
         unconfirmed_block = Block()
         unconfirmed_block.deserialize_block(unconfirmed_block_byte)
+
         if unconfirmed_block.block_hash != confirmed_block_hash:
             logging.warning("It's not possible to add block while check block hash is fail-")
             raise BlockchainError('확인하는 블럭 해쉬 값이 다릅니다.')
@@ -341,7 +355,7 @@ class BlockChain(metaclass=SingletonMetaClass):
         logging.debug("confirmed_block_hash: " + confirmed_block_hash)
         logging.debug("unconfirmed_block.prev_block_hash: " + unconfirmed_block.prev_block_hash)
 
-        unconfirmed_block.block_type = BlockType.confirmed
+        unconfirmed_block.block_status = BlockStatus.confirmed
         # Block Validate and save Block
         self.add_block(unconfirmed_block)
         self.__confirmed_block_db.Delete(BlockChain.UNCONFIRM_BLOCK_KEY)

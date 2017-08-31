@@ -207,7 +207,7 @@ class RadioStationService(loopchain_pb2_grpc.RadioStationServicer):
         logging.info("Trying to connect peer: "+request.peer_id)
 
         res, info = self._rs.validate_group_id(request.group_id)
-        if res < 0:  # 잘못된 입력이 들어오면 빈 list를 보내준다.
+        if res < 0:  # send null list(b'') while wrong input.
             return loopchain_pb2.PeerReply(status=message_code.Response.fail, peer_list=b'', more_info=info)
 
         logging.debug("Connect Peer "
@@ -288,36 +288,17 @@ class RadioStationService(loopchain_pb2_grpc.RadioStationServicer):
         peer = self.__peer_manager.make_peer(request.peer_id,
                                              request.group_id,
                                              request.peer_target,
-                                             PeerStatus.connected,
+                                             PeerStatus.unknown,
                                              peer_auth=auth,
                                              peer_token=token)
 
         peer_order = self.__peer_manager.add_peer_object(peer)
         self.__common_service.save_peer_list(self.__peer_manager)
 
+        peer_list_dump = b''
+        status, reason = message_code.get_response(message_code.Response.fail)
+
         if peer_order > 0:
-            # 접속 완료
-            try:
-                peer_dump = pickle.dumps(peer)
-            except pickle.PicklingError as e:
-                logging.warning("Fail Peer Dump: " + str(e))
-                peer_dump = b''
-
-            request.peer_object = peer_dump
-            request.peer_order = peer_order
-            logging.debug("Connect Peer: " + str(request))
-
-            # self.__broadcast_new_peer(request)
-            # TODO RS subsribe 를 이용하는 경우, RS 가 재시작시 peer broadcast 가 전체로 되지 않는 문제가 있다.
-            # peer_list 를 이용하여 broadcast 하는 구조가되면 RS 혹은 Leader 에 대한 Subscribe 구조는 유효하지 않다.
-            # 하지만 broadcast process 는 peer_list broadcast 인 경우 사용되어지지 않는다. peer_list 에서 broadcast 하는 동안
-            # block 되는 구조. broadcast Process 를 peer_list 를 이용한 broadcast 에서도 활용할 수 있게 하거나.
-            # RS 혹은 Leader 가 재시작 후에 Subscribe 정보를 복원하게 하거나.
-            # 혹은 peer_list 가 broadcast 하여도 성능상(동시성에 있어) 문제가 없는지 보증하여야 한다. TODO TODO TODO
-            self.__peer_manager.announce_new_peer(request)
-
-            logging.debug("get_IP_of_peers_in_group: " + str(self.__peer_manager.get_IP_of_peers_in_group()))
-
             try:
                 peer_list_dump = self.__peer_manager.dump()
                 status, reason = message_code.get_response(message_code.Response.success)
@@ -326,15 +307,13 @@ class RadioStationService(loopchain_pb2_grpc.RadioStationServicer):
                 reason = token
             except pickle.PicklingError as e:
                 logging.warning("fail peer_list dump")
-                peer_list_dump = b''
-                status, reason = message_code.get_response(message_code.Response.fail)
                 reason += " " + str(e)
 
-            return loopchain_pb2.PeerReply(
-                status=status,
-                peer_list=peer_list_dump,
-                more_info=reason
-            )
+        return loopchain_pb2.PeerReply(
+            status=status,
+            peer_list=peer_list_dump,
+            more_info=reason
+        )
 
     def GetPeerList(self, request, context):
         """현재 RadioStation 에 접속된 Peer 목록을 구한다.
@@ -388,8 +367,33 @@ class RadioStationService(loopchain_pb2_grpc.RadioStationServicer):
         """
         logging.debug("Radio Station Subscription peer_id: " + str(request))
         self.__common_service.add_audience(request)
-        return loopchain_pb2.CommonReply(response_code=message_code.get_response_code(message_code.Response.success),
-                                         message=message_code.get_response_msg(message_code.Response.success))
+
+        peer = self.__peer_manager.update_peer_status(peer_id=request.peer_id, peer_status=PeerStatus.connected)
+
+        try:
+            peer_dump = pickle.dumps(peer)
+            request.peer_order = peer.order
+            request.peer_object = peer_dump
+
+            # self.__broadcast_new_peer(request)
+            # TODO RS subsribe 를 이용하는 경우, RS 가 재시작시 peer broadcast 가 전체로 되지 않는 문제가 있다.
+            # peer_list 를 이용하여 broadcast 하는 구조가되면 RS 혹은 Leader 에 대한 Subscribe 구조는 유효하지 않다.
+            # 하지만 broadcast process 는 peer_list broadcast 인 경우 사용되어지지 않는다. peer_list 에서 broadcast 하는 동안
+            # block 되는 구조. broadcast Process 를 peer_list 를 이용한 broadcast 에서도 활용할 수 있게 하거나.
+            # RS 혹은 Leader 가 재시작 후에 Subscribe 정보를 복원하게 하거나.
+            # 혹은 peer_list 가 broadcast 하여도 성능상(동시성에 있어) 문제가 없는지 보증하여야 한다. TODO TODO TODO
+            self.__peer_manager.announce_new_peer(request)
+
+            # logging.debug("get_IP_of_peers_in_group: " + str(self.__peer_manager.get_IP_of_peers_in_group()))
+
+            return loopchain_pb2.CommonReply(
+                response_code=message_code.get_response_code(message_code.Response.success),
+                message=message_code.get_response_msg(message_code.Response.success))
+
+        except pickle.PicklingError as e:
+            logging.warning("Fail Peer Dump: " + str(e))
+            return loopchain_pb2.CommonReply(response_code=message_code.get_response_code(message_code.Response.fail),
+                                             message=message_code.get_response_msg(message_code.Response.fail))
 
     def UnSubscribe(self, request, context):
         """RadioStation 의 broadcast 채널에서 Peer 를 제외한다.
@@ -415,14 +419,14 @@ class RadioStationService(loopchain_pb2_grpc.RadioStationServicer):
 
         :return:
         """
+        time.sleep(conf.SLEEP_SECONDS_IN_RADIOSTATION_HEARTBEAT)
+
         delete_peer_list = self.__peer_manager.check_peer_status()
 
         for delete_peer in delete_peer_list:
             logging.debug(f"delete peer {delete_peer.peer_id}")
             message = loopchain_pb2.PeerID(peer_id=delete_peer.peer_id, group_id=delete_peer.group_id)
             self.__common_service.broadcast("AnnounceDeletePeer", message)
-
-        time.sleep(conf.SLEEP_SECONDS_IN_RADIOSTATION_HEARTBEAT)
 
     def serve(self, port=conf.PORT_RADIOSTATION):
         """Peer(BlockGenerator Peer) to RadioStation
