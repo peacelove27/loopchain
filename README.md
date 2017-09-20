@@ -26,7 +26,7 @@ When participating in a blockchain network, transactions are verified and secure
 Please refer to the [white paper](https://loopchain.files.wordpress.com/2017/07/lft-e18487e185a2e186a8e18489e185a5.pdf) for more detail.
 
 
-## Components 들
+## Components
 
 ![LoopChain components](images/system_diagrams.png)
 
