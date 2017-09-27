@@ -75,10 +75,46 @@ $ ./generate_code.sh
 
 ## Unit 테스트 실행하기(Running the unit tests)
 
-설치후, 전체적으로 동작이 되는지를 확인하기 위한 전체 Unit test는 아래와 같이 실행합니다.
+설치 후, 전체적으로 동작이 되는지를 확인하기 위한 전체 Unit test는 아래와 같이 실행합니다.
 ```
 $ ./run_test.sh
 ```
+
+## loopchain 설정 방법
+
+loopchain의 설정값은 기본적으로 파일로 관리합니다.
+* ./loopchain/**configure_default.py**
+    - loopchain의 기본 설정이 기록된 파일입니다.
+    - 반드시 존재해야 하는 필수 파일입니다.
+
+* ./loopchain/**configure_user.py**
+    - loopchain의 사용자 정의 설정이 기록된 파일입니다.
+    - 이 파일은 사용자 편의에 따라 추가할 수 있는 파일입니다. 없어도 상관없습니다.
+    - configure_default.py 파일 보다 적용되는 우선순위가 높습니다.
+    - 적용환경에 따라 변경이 필요한 설정값을 기록합니다. 
+    - 예를 들어 "IP_LOCAL" 값을 변경 하고자 한다면, configure_user.py 파일에 변경하고자 하는 설정을 추가합니다. : **IP_LOCAL = '123.456.789.10'**
+
+* ./loopchain/**configure.json**
+    - 파일 형식은 json으로 하되, 파일 경로는 사용자가 자유롭게 지정할 수 있습니다.
+    - 모든 설정 파일(configure_default.py, configure_user.py 등) 중 적용되는 **우선순위가 가장 높습니다.**
+    - `peer.py`와 `radiostation.py`를 실행할 때 각각 `-o {파일 경로}` 혹은 `--configure_file_path {파일 경로}` 옵션을 뒤에 추가하여 적용할 수 있습니다.
+
+#### 예시
+만약에 “PORT_PEER” 경로를 7500으로 변경하고자 한다고 가정하면, loopchain/configure.json 파일에 다음과 같이 설정을 추가합니다.
+
+```json
+{
+  “PORT_PEER”: 7500
+}
+```
+
+이후 Peer를 띄울 때, 둘 중 하나의 명령어로 옵션을 추가하여 실행하면 기존의 설정값이 json의 값으로 변경이 됩니다.
+```
+$ ./peer.py -o loopchain/configure.json   # 혹은
+$ ./peer.py --configure_file_path loopchain/configure.json
+```
+`radiostation.py`에도 똑같은 방법으로 적용이 가능합니다.
+
 
 ## Deployment
   실제 LoopChain을 돌리는 방법으로 두가지가 있습니다.
@@ -110,6 +146,12 @@ $ ./run_test.sh
  $ source bin/activate  # Python 가상 환경을 띄웁니다.
  $ ./peer.py            # Peer를 띄웁니다.
    ```
+   
+ 하지만 configuration.json 파일에 추가로 설정값을 지정했을 경우에는 아래와 같이 옵션을 추가하여 Peer를 띄워야 합니다.
+ ```
+ $ ./peer.py -o loopchain/configure.json
+ ```
+  
  그러면 아래와 같은 Log를 보실 수 있습니다.
  ```buildoutcfg
  ...........

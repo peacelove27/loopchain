@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 # Copyright 2017 theloop, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -28,8 +31,9 @@ import loopchain.utils as util
 from loopchain import configure as conf
 from loopchain.baseservice import ObjectManager, StubManager
 from loopchain.baseservice.SingletonMetaClass import *
+from loopchain.blockchain import Transaction
 from loopchain.container import ScoreService
-from loopchain.peer import PeerService
+from loopchain.peer import PeerService, PeerAuthorization
 from loopchain.protos import loopchain_pb2, loopchain_pb2_grpc
 from loopchain.radiostation import RadioStationService
 
@@ -141,6 +145,7 @@ def close_open_python_process():
     # ubuntu patch
     if platform == "darwin":
         os.system("pkill -f python")
+        os.system("pkill -f Python")
     else:
         os.system("pgrep -f python | tail -$((`pgrep -f python | wc -l` - 1)) | xargs kill -9")
 
@@ -154,6 +159,7 @@ def clean_up_temp_db_files(kill_process=True):
     os.system(f'rm -rf $(find {module_root_path} -name *test_db*)')
     os.system(f'rm -rf $(find {module_root_path} -name *_block)')
     os.system("rm -rf ./testcase/db_*")
+    os.system("rm -rf ./storage/db_*")
     os.system("rm -rf chaindb_*")
     os.system("rm -rf ./blockchain_db*")
     os.system("rm -rf ./testcase/chaindb_*")
@@ -163,6 +169,27 @@ def clean_up_temp_db_files(kill_process=True):
     os.system("rm -rf ./resources/test_score_deploy")
     os.system("rm -rf ./resources/test_score_repository/loopchain")
     time.sleep(1)
+
+
+def create_basic_tx(peer_id: str, peer_auth: PeerAuthorization) -> Transaction:
+    """ create basic tx data is "{args:[]}"
+
+    :param peer_id: peer_id
+    :param peer_auth:
+    :return: transaction
+    """
+    tx = Transaction()
+    tx.put_meta('peer_id', peer_id)
+    tx.put_data("{args:[]}")
+    tx.sign_hash(peer_auth)
+    return tx
+
+
+def create_peer_auth() -> PeerAuthorization:
+    peer_auth = PeerAuthorization(cert_file=conf.CERT_PATH,
+                                  pri_file=conf.PRIVATE_PATH,
+                                  cert_pass=conf.DEFAULT_PW)
+    return peer_auth
 
 
 class TestServerManager(metaclass=SingletonMetaClass):
@@ -229,14 +256,7 @@ class TestServerManager(metaclass=SingletonMetaClass):
         self.__peer_info[num] = (process, stub_manager, peer_port)
         time.sleep(1)
 
-    def start_black_peers(self, peer_count):
-        pass
-
     def add_peer(self):
-        num = 0
-        return num
-
-    def add_black_peer(self):
         num = 0
         return num
 

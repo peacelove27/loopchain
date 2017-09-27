@@ -24,6 +24,9 @@ import sys
 import loopchain.utils as util
 import testcase.unittest.test_util as test_util
 from loopchain.blockchain import Transaction, TransactionStatus
+from loopchain.peer import PeerAuthorization
+from loopchain import configure as conf
+
 
 util.set_log_level_debug()
 
@@ -50,14 +53,14 @@ class TestTransaction(unittest.TestCase):
         tx.put_meta("peer_id", "12345")
 
         # WHEN
-        meta_data = tx.get_meta()
+        meta_data = tx.meta
         tx.put_meta("peer_id", "ABCDE")
 
         # THEN
         logging.debug("tx peer_id(before): " + meta_data["peer_id"])
-        logging.debug("tx peer_id(after): " + tx.get_meta()["peer_id"])
+        logging.debug("tx peer_id(after): " + tx.meta["peer_id"])
 
-        self.assertNotEqual(meta_data["peer_id"], tx.get_meta()["peer_id"])
+        self.assertNotEqual(meta_data["peer_id"], tx.meta["peer_id"])
 
     def test_put_data(self):
         """트랜잭션 생성확인
@@ -162,6 +165,34 @@ class TestTransaction(unittest.TestCase):
         logging.debug("size of tx: " + str(sys.getsizeof(dump_b)))
 
         self.assertLessEqual(sys.getsizeof(dump_a), sys.getsizeof(dump_b) * 1.5)
+
+    def test_signature_validate(self):
+        """ GIVEN success tx, invalid public key tx, invalid signature tx,
+        WHEN validate 3 tx
+        THEN only success tx validate return true
+        """
+        # GIVEN
+        # init peer_auth for signautre
+        peer_auth = PeerAuthorization(cert_file=conf.CERT_PATH,
+                                      pri_file=conf.PRIVATE_PATH,
+                                      cert_pass=conf.DEFAULT_PW)
+
+        # create txs
+        success_tx = test_util.create_basic_tx("aaa", peer_auth)
+
+        # public key and signature property must don't have setter
+        invalid_public_tx = test_util.create_basic_tx("aaa", peer_auth)
+        invalid_public_tx._Transaction__public_key = b'invalid_public'
+
+        invalid_sign_tx = test_util.create_basic_tx("aaa", peer_auth)
+        invalid_sign_tx._Transaction__signature = b'invalid_sign'
+
+        # WHEN THEN
+        self.assertTrue(Transaction.validate(success_tx))
+        logging.debug("start validate invalid public key")
+        self.assertFalse(Transaction.validate(invalid_public_tx, is_exception_log=False))
+        logging.debug("start validate invalid signature")
+        self.assertFalse(Transaction.validate(invalid_sign_tx, is_exception_log=False))
 
 
 if __name__ == '__main__':

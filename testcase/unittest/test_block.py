@@ -22,35 +22,66 @@ import unittest
 
 import loopchain.utils as util
 import testcase.unittest.test_util as test_util
+from loopchain.baseservice import PeerInfo, PeerStatus, PeerObject, ObjectManager
 
 sys.path.append('../')
-from loopchain.blockchain import Block
-from loopchain.blockchain import Transaction
+from loopchain.blockchain import Block, BlockInValidError
 
 util.set_log_level_debug()
 
 
 class TestBlock(unittest.TestCase):
+    __peer_id = 'aaa'
+
     def setUp(self):
         test_util.print_testname(self._testMethodName)
+        self.__peer_auth = test_util.create_peer_auth()
 
-    def generate_block(self):
+        peer_service_mock = Mock()
+        peer_service_mock.peer_manager = Mock()
+        mock_info = PeerInfo(peer_id=self.__peer_id, group_id='a', target="192.0.0.1:1234", status=PeerStatus.unknown,
+                             cert=self.__peer_auth.serialized_cert, order=0)
+        mock_peer_object = PeerObject(mock_info)
+
+        def get_leader_object():
+            return mock_peer_object
+
+        peer_service_mock.peer_manager.get_leader_object = get_leader_object
+        ObjectManager().peer_service = peer_service_mock
+
+    def tearDown(self):
+        ObjectManager().peer_service = None
+
+    def __generate_block_data(self) -> Block:
+        """ block data generate
+        :return: unsigned block
         """
-        블럭 생성기
-        :return: 임의생성블럭
-        """
-        genesis = Block()
+        genesis = Block(channel_name="test_channel")
         genesis.generate_block()
         # Block 생성
         block = Block()
         # Transaction(s) 추가
         for x in range(0, 10):
-            tx = Transaction()
-            tx.put_data("{args:[]}")
-            block.put_transaction(tx)
+            block.put_transaction(test_util.create_basic_tx(self.__peer_id, self.__peer_auth))
 
         # Hash 생성 이 작업까지 끝내고 나서 Block을 peer에 보낸다
         block.generate_block(genesis)
+        return block
+
+    def __generate_block(self) -> Block:
+        """ block data generate, add sign
+        :return: signed block
+        """
+        block = self.__generate_block_data()
+        block.sign(self.__peer_auth)
+        return block
+
+    def __generate_invalid_block(self) -> Block:
+        """ create invalid signature block
+        :return: invalid signature block
+        """
+        block = self.__generate_block_data()
+        block._Block__signature = b'invalid signature '
         return block
 
     def test_put_transaction(self):
@@ -61,31 +92,41 @@ class TestBlock(unittest.TestCase):
         tx_list = []
         tx_size = 10
         for x in range(0, tx_size):
-            tx = Transaction()
-            tx2 = Transaction()
-            hashed_value = tx.put_data("{args:[]}")
-            tx2.put_data("{args:[]}")
+            tx = test_util.create_basic_tx(self.__peer_id, self.__peer_auth)
+            tx2 = test_util.create_basic_tx(self.__peer_id, self.__peer_auth)
             tx_list.append(tx2)
-            self.assertNotEqual(hashed_value, "", "트랜잭션 생성 실패")
+            self.assertNotEqual(tx.tx_hash, "", "트랜잭션 생성 실패")
             self.assertTrue(block.put_transaction(tx), "Block에 트랜잭션 추가 실패")
         self.assertTrue(block.put_transaction(tx_list), "Block에 여러 트랜잭션 추가 실패")
         self.assertEqual(len(block.confirmed_transaction_list), tx_size*2, "트랜잭션 사이즈 확인 실패")
 
+    # TODO block validate 에 peer_service 정보가 필요해짐, 테스트 수정 필요
+    @unittest.skip
     def test_validate_block(self):
+        """ GIVEN correct block and invalid signature block
+        WHEN validate two block
+        THEN correct block validate return True, invalid block raise exception
         """
-        블럭 검증
-        """
-        # Block 생성
-        block = self.generate_block()
-        # 생성 블럭 Validation
-        self.assertTrue(block.validate(), "Fail to validate block!")
+        # GIVEN
+        # create correct block
+        block = self.__generate_block()
+        # WHEN THEN
+        self.assertTrue(Block.validate(block), "Fail to validate block!")
+
+        # GIVEN
+        # create invalid block
+        invalid_signature_block = self.__generate_invalid_block()
+
+        # WHEN THEN
+        with self.assertRaises(BlockInValidError):
+            Block.validate(invalid_signature_block)
 
     def test_transaction_merkle_tree_validate_block(self):
         """
         머클트리 검증
         """
         # 블럭을 검증 - 모든 머클트리의 내용 검증
-        block = self.generate_block()
+        block = self.__generate_block()
         mk_result = True
         for tx in block.confirmed_transaction_list:
             # FIND tx index
@@ -100,12 +141,16 @@ class TestBlock(unittest.TestCase):
         """
         블럭 serialize and deserialize 테스트
         """
-        block = self.generate_block()
+        block = self.__generate_block()
         test_dmp = block.serialize_block()
         block2 = Block()
         block2.deserialize_block(test_dmp)
         logging.debug("serialize block hash : %s , deserialize block hash %s", block.merkle_tree_root_hash, block2.merkle_tree_root_hash)
         self.assertEqual(block.merkle_tree_root_hash, block2.merkle_tree_root_hash, "블럭이 같지 않습니다 ")
+
+
+class Mock:
+    pass
 
 
 if __name__ == '__main__':

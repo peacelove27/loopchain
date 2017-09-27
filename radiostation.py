@@ -15,31 +15,39 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import sys
-import logging
 import getopt
-import yappi
-import getpass
+import logging
+import sys
 
-from loopchain import configure as conf
-from loopchain.radiostation import RadioStationService
+import yappi
+
 import loopchain.utils as util
+from loopchain import configure as conf
+from loopchain.baseservice import ObjectManager
+from loopchain.radiostation import RadioStationService
 
 
 def main(argv):
     logging.info("RadioStation main got argv(list): " + str(argv))
 
     try:
-        opts, args = getopt.getopt(argv, "dhp:",
+        opts, args = getopt.getopt(argv, "dhp:o:",
                                    ["help",
                                     "port=",
-                                    "cert="
+                                    "cert=",
+                                    "configure_file_path="
                                     ])
     except getopt.GetoptError as e:
         logging.error(e)
         usage()
         sys.exit(1)
 
+    # apply json configure values
+    for opt, arg in opts:
+        if (opt == "-o") or (opt == "--configure_file_path"):
+            conf.Configure().load_configure_json(arg)
+
+    # apply default configure values
     port = conf.PORT_RADIOSTATION
     cert = None
     pw = None
@@ -61,7 +69,8 @@ def main(argv):
         logging.error('RadioStation Service Port is Using '+str(port))
         return
 
-    RadioStationService(conf.IP_RADIOSTATION, cert, pw).serve(port)
+    ObjectManager().rs_service = RadioStationService(conf.IP_RADIOSTATION, cert, pw)
+    ObjectManager().rs_service.serve(port)
 
 
 def usage():

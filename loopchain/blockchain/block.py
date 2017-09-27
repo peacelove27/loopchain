@@ -20,9 +20,12 @@ import struct
 from enum import Enum
 
 from loopchain import utils as util
+from loopchain.baseservice import ObjectManager
 from loopchain.blockchain import TransactionStatus, TransactionType, Transaction
 from loopchain.blockchain.exception import *
 from loopchain.blockchain.score_base import *
+from loopchain import configure as conf
+
 
 
 class BlockStatus(Enum):
@@ -41,7 +44,7 @@ class Block:
     Transaction 들을 담아서 Peer들과 주고 받는 Block Object.
     """
 
-    def __init__(self, made_block_count=0, is_divided_block=False):
+    def __init__(self, made_block_count=0, is_divided_block=False, channel_name=conf.LOOPCHAIN_DEFAULT_CHANNEL):
         # Block head
         self.version = "0.1a"
         self.prev_block_hash = ""
@@ -49,6 +52,7 @@ class Block:
         self.merkle_tree_root_hash = ""
         self.merkle_tree = []
         self.time_stamp = 0
+        self.__channel_name = channel_name
 
         # 검증된 트랜젝션 목록
         self.confirmed_transaction_list = []
@@ -69,9 +73,13 @@ class Block:
 
         self.merkle_tree = []
         self.merkle_tree_root_hash = ""
-        self.prev_block_hash = ""
         self.height = 0
         self.time_stamp = 0
+        self.__signature = b''
+
+    @property
+    def channel_name(self):
+        return self.__channel_name
 
     @property
     def block_type(self):
@@ -95,6 +103,10 @@ class Block:
     @is_divided_block.setter
     def is_divided_block(self, value):
         self.__is_divided_block = value
+
+    @property
+    def signature(self):
+        return self.__signature
 
     @property
     def next_leader_peer(self):
@@ -135,21 +147,18 @@ class Block:
         if tx.status == TransactionStatus.unconfirmed:
             # transaction 검증
             # logging.debug("Transaction Hash %s", tx.get_tx_hash())
-            if Transaction.generate_transaction_hash(tx) != tx.get_tx_hash():
-                # 검증실패
-                logging.error("검증 실패 \ntx hash : " + tx.get_tx_hash() +
-                              "\ntx meta : " + str(tx.get_meta()) +
-                              "\ntx data : " + str(tx.get_data()))
-                return False
-            else:
+            if Transaction.validate(tx):
                 tx.status = TransactionStatus.confirmed
+            else:
+                return False
 
         # Block 에 검증된 Transaction 추가 : 목록에 존재하는지 확인 필요
         if tx not in self.confirmed_transaction_list:
             self.confirmed_transaction_list.append(tx)
         return True
 
-    def __calculate_merkle_tree_root_hash(self):
+    @staticmethod
+    def __calculate_merkle_tree_root_hash(block):
         """현재 들어온 Tx들만 가지고 Hash tree를 구성해서 merkle tree root hash 계산.
 
         :return: 계산된 root hash
@@ -161,8 +170,8 @@ class Block:
         # 1개가 나올때까지 반복 합니다.
         # 마지막 1개가 merkle_tree_root_hash
 
-        mt_list = [tx.get_tx_hash() for tx in self.confirmed_transaction_list]
-        self.merkle_tree.extend(mt_list)
+        mt_list = [tx.get_tx_hash() for tx in block.confirmed_transaction_list]
+        block.merkle_tree.extend(mt_list)
 
         while True:
             tree_length = len(mt_list)
@@ -181,12 +190,12 @@ class Block:
                 mk_hash = hashlib.sha256(mk_sum).hexdigest()
                 tmp_mt_list.append(mk_hash)
             mt_list = tmp_mt_list
-            self.merkle_tree.extend(mt_list)
+            block.merkle_tree.extend(mt_list)
 
         if len(mt_list) == 1:
-            self.merkle_tree_root_hash = mt_list[0]
+            block.merkle_tree_root_hash = mt_list[0]
 
-        return self.merkle_tree_root_hash
+        return block.merkle_tree_root_hash
 
     def serialize_block(self):
         """블럭 Class serialize
@@ -214,42 +223,48 @@ class Block:
                 return idx
         return -1
 
-    def validate(self, tx_queue=None):
-        """블럭 검증
+    @staticmethod
+    def validate(block, tx_queue=None) -> bool:
+        """validate block and all transactions in block
 
-        :return: 검증결과
+        :param: block
+        :param: tx_queue
+        :return validate success return true
         """
-
-        mk_hash = self.__calculate_merkle_tree_root_hash()
-        if self.height == 0 and len(self.confirmed_transaction_list) == 0:
+        mk_hash = Block.__calculate_merkle_tree_root_hash(block)
+        if block.height == 0 and len(block.confirmed_transaction_list) == 0:
             # Genesis Block 은 검증하지 않습니다.
             return True
 
-        if len(self.confirmed_transaction_list) > 0:
+        if len(block.confirmed_transaction_list) > 0:
             # 머클트리 검증은 Tx가 있을때에만 합니다.
-            if mk_hash != self.merkle_tree_root_hash:
+            if mk_hash != block.merkle_tree_root_hash:
                 raise BlockInValidError('Merkle Tree Root hash is not same')
 
-        if self.block_hash != self.__generate_hash():
+        if block.block_hash != Block.__generate_hash(block):
             raise BlockInValidError('block Hash is not same generate hash')
 
-        if self.time_stamp == 0:
+        leader = ObjectManager().peer_service.channel_manager.get_peer_manager(block.__channel_name).get_leader_object()
+        if not leader.cert_verifier.verify_hash(block.block_hash, block.signature):
+            raise BlockInValidError('block signature invalid')
+
+        if block.time_stamp == 0:
             raise BlockError('block time stamp is 0')
 
-        if len(self.prev_block_hash) == 0:
+        if len(block.prev_block_hash) == 0:
             raise BlockError('Prev Block Hash not Exist')
 
         # Transaction Validate
         confirmed_tx_list = []
-        for tx in self.confirmed_transaction_list:
-            if tx.get_tx_hash() != Transaction.generate_transaction_hash(tx):
-                logging.debug("TX HASH : %s vs %s", tx.get_tx_hash(), Transaction.generate_transaction_hash(tx))
-                raise TransactionInValidError('Transaction hash is not same')
-            else:
+        for tx in block.confirmed_transaction_list:
+            if Transaction.validate(tx):
                 confirmed_tx_list.append(tx.tx_hash)
+            else:
+                raise BlockInValidError(f"block ({block.block_hash}) validate fails \n"
+                                        f"tx {tx.tx_hash} is invalid")
 
         if tx_queue is not None:
-            self.__tx_validate_with_queue(tx_queue, confirmed_tx_list)
+            block.__tx_validate_with_queue(tx_queue, confirmed_tx_list)
 
         return True
 
@@ -270,7 +285,8 @@ class Block:
             logging.warning(f"after tx validate, remain tx({len(remain_tx)})")
 
             for tx_unloaded in remain_tx:
-                ObjectManager().peer_service.block_manager.add_tx_unloaded(tx_unloaded)
+                ObjectManager().peer_service.channel_manager.get_block_manager(
+                    self.__channel_name).add_tx_unloaded(tx_unloaded)
 
     def generate_block(self, prev_block=None):
         """블럭을 생성한다 \n
@@ -295,12 +311,13 @@ class Block:
 
         # 트랜잭션이 있을 경우 머클트리 생성
         if len(self.confirmed_transaction_list) > 0:
-            self.__calculate_merkle_tree_root_hash()
-        self.block_hash = self.__generate_hash()
+            Block.__calculate_merkle_tree_root_hash(self)
+        self.block_hash = Block.__generate_hash(self)
 
         return self.block_hash
 
-    def __generate_hash(self):
+    @staticmethod
+    def __generate_hash(block):
         """Block Hash 생성 \n
         HashData
          1. 트랜잭션 머클트리
@@ -313,9 +330,9 @@ class Block:
         # 자기 블럭에 대한 해쉬 생성
         # 자기 자신의 블럭해쉬는 블럭 생성후 추가되기 직전에 생성함
         # transaction(s), time_stamp, prev_block_hash
-        block_hash_data = b''.join([self.prev_block_hash.encode(encoding='UTF-8'),
-                                    self.merkle_tree_root_hash.encode(encoding='UTF-8'),
-                                    struct.pack('Q', self.time_stamp)])
+        block_hash_data = b''.join([block.prev_block_hash.encode(encoding='UTF-8'),
+                                    block.merkle_tree_root_hash.encode(encoding='UTF-8'),
+                                    struct.pack('Q', block.time_stamp)])
         block_hash = hashlib.sha256(block_hash_data).hexdigest()
         return block_hash
 
@@ -392,3 +409,6 @@ class Block:
         logging.debug('PROOF RESULT: %s , MK ROOT: %s', resulthash, block.merkle_tree_root_hash)
 
         return resulthash == block.merkle_tree_root_hash.encode(encoding='UTF-8')
+
+    def sign(self, peer_auth):
+        self.__signature = peer_auth.sign_data(self.block_hash, is_hash=True)

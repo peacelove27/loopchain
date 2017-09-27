@@ -20,6 +20,7 @@ import time
 import timeit
 
 import grpc
+from grpc._channel import _Rendezvous
 
 import loopchain.utils as util
 from loopchain import configure as conf
@@ -81,17 +82,21 @@ class StubManager:
 
         return None
 
+    @staticmethod
+    def print_broadcast_fail(result: _Rendezvous):
+        if result.code() != grpc.StatusCode.OK:
+            logging.warning(f"call_async fail  : {result}\n"
+                            f"cause by : {result.details()}")
+
     def call_async(self, method_name, message, timeout=conf.GRPC_TIMEOUT, is_stub_reuse=True):
         self.__make_stub(is_stub_reuse)
 
         try:
             stub_method = getattr(self.__stub, method_name)
             feature_future = stub_method.future(message, timeout)
-            return feature_future.result()
+            feature_future.add_done_callback(self.print_broadcast_fail)
         except Exception as e:
-            logging.debug(f"gRPC call_async fail method_name({method_name}), message({message}): {e}")
-
-        return None
+            logging.warning(f"gRPC call_async fail method_name({method_name}), message({message}): {e}")
 
     def call_in_time(self, method_name, message, time_out_seconds=conf.CONNECTION_RETRY_TIMEOUT, is_stub_reuse=True):
         """Try gRPC call. If it fails try again until time out (seconds)

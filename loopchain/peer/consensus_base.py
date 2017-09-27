@@ -15,6 +15,7 @@
 
 from abc import ABCMeta, abstractmethod
 
+from loopchain.baseservice import ObjectManager
 from loopchain.blockchain import *
 
 
@@ -26,6 +27,7 @@ class ConsensusBase(metaclass=ABCMeta):
         self._made_block_count = 0
         self._block = None
         self._blockmanager = blockmanager
+        self._channel_name = blockmanager.channel_name
         self._blockchain = self._blockmanager.get_blockchain()
         self._txQueue = self._blockmanager.get_tx_queue()
         self._current_vote_block_hash = ""
@@ -52,7 +54,7 @@ class ConsensusBase(metaclass=ABCMeta):
 
     def _gen_block(self):
         self._made_block_count += 1
-        self._block = Block(self._made_block_count)
+        self._block = Block(made_block_count=self._made_block_count, channel_name=self._channel_name)
 
     def _stop_gen_block(self):
         self._made_block_count = 0
@@ -81,10 +83,10 @@ class ConsensusBase(metaclass=ABCMeta):
                 continue
 
             if tx.type is TransactionType.peer_list:
-                peer_manager_block = Block()
+                peer_manager_block = Block(channel_name=self._channel_name)
                 peer_manager_block.block_type = BlockType.peer_list
                 peer_manager_block.peer_manager = tx.get_data()
-                break;
+                break
             elif self._block is None:
                 logging.error("Leader Can't Add tx...")
             else:
@@ -102,7 +104,7 @@ class ConsensusBase(metaclass=ABCMeta):
 
             if block_dump_size > (conf.MAX_BLOCK_KBYTES * 1024):
                 # TODO block 나누기
-                divided_block = Block(is_divided_block=True)
+                divided_block = Block(is_divided_block=True, channel_name=self._channel_name)
                 do_divide = False
 
                 next_tx = (self._block.confirmed_transaction_list.pop(0), None)[
@@ -129,9 +131,11 @@ class ConsensusBase(metaclass=ABCMeta):
                         divided_block.generate_block(self._candidate_blocks.get_last_block(self._blockchain))
                         self._candidate_blocks.add_unconfirmed_block(divided_block)
                         # 새로운 Block 을 생성하여 다음 tx 을 수집한다.
-                        divided_block = Block(is_divided_block=True)
+                        divided_block = Block(is_divided_block=True, channel_name=self._channel_name)
                         expected_block_size = len(pickle.dumps(divided_block))
                         do_divide = False
 
         if peer_manager_block is not None:
             peer_manager_block.generate_block(self._candidate_blocks.get_last_block(self._blockchain))
+            peer_manager_block.sign(ObjectManager().peer_service.auth)
+

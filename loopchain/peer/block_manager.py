@@ -13,14 +13,19 @@
 # limitations under the License.
 """A management class for blockchain."""
 
+import os.path as osp
 import queue
+import shutil
+import uuid
 
+from loopchain.baseservice import CommonThread, ObjectManager, Timer
 from loopchain.blockchain import *
-from loopchain.peer import candidate_blocks
-from loopchain.peer.consensus_siever import ConsensusSiever
+from loopchain.peer.candidate_blocks import CandidateBlocks
 from loopchain.peer.consensus_default import ConsensusDefault
+from loopchain.peer.consensus_lft import ConsensusLFT
 from loopchain.peer.consensus_none import ConsensusNone
-from loopchain.baseservice import CommonThread, ObjectManager
+from loopchain.peer.consensus_siever import ConsensusSiever
+
 import loopchain_pb2
 
 
@@ -30,25 +35,31 @@ class BlockManager(CommonThread):
     BlockGenerator 의 BlockManager 는 주기적으로 Block 을 생성하여 Peer 로 broadcast 한다.
     Peer 의 BlockManager 는 전달 받은 Block 을 검증 처리 한다.
     """
-    def __init__(self, common_service):
-        blockchain_db = None
-        peer_id = ""
-
-        if common_service is not None:
-            blockchain_db = common_service.get_level_db()
-            peer_id = common_service.get_peer_id()
-
+    def __init__(self, common_service, peer_id, channel_name, level_db_identity):
+        self.__channel_name = channel_name
+        self.__level_db = None
+        self.__level_db_path = ""
+        self.__init_level_db(f"{level_db_identity}_{channel_name}")
+        self.__peer_id = peer_id if peer_id is not None else self.__make_peer_id()
         self.__txQueue = queue.Queue()
         self.__unconfirmedBlockQueue = queue.Queue()
-        self.__candidate_blocks = candidate_blocks.CandidateBlocks(peer_id)
+        self.__candidate_blocks = CandidateBlocks(self.__peer_id, channel_name)
         self.__common_service = common_service
-        self.__blockchain = BlockChain(blockchain_db)
+        self.__blockchain = BlockChain(self.__level_db, channel_name)
         self.__total_tx = self.__blockchain.rebuild_blocks()
         self.__peer_type = None
         self.__block_type = BlockType.general
         self.__consensus = None
         self.__run_logic = None
         self.set_peer_type(loopchain_pb2.PEER)
+
+    @property
+    def channel_name(self):
+        return self.__channel_name
+
+    @property
+    def peer_type(self):
+        return self.__peer_type
 
     @property
     def consensus(self):
@@ -62,8 +73,60 @@ class BlockManager(CommonThread):
     def block_type(self, block_type):
         self.__block_type = block_type
 
+    def __init_level_db(self, level_db_identity):
+        """init Level Db
+
+        :param level_db_identity: identity for leveldb
+        :return:
+        """
+        level_db = None
+
+        db_default_path = osp.join(conf.DEFAULT_STORAGE_PATH, 'db_' + level_db_identity)
+        db_path = db_default_path
+
+        retry_count = 0
+        while level_db is None and retry_count < conf.MAX_RETRY_CREATE_DB:
+            try:
+                level_db = leveldb.LevelDB(db_path, create_if_missing=True)
+            except leveldb.LevelDBError:
+                db_path = db_default_path + str(retry_count)
+            retry_count += 1
+
+        if level_db is None:
+            logging.error("Fail! Create LevelDB")
+            raise leveldb.LevelDBError("Fail To Create Level DB(path): " + db_path)
+
+        self.__level_db = level_db
+        self.__level_db_path = db_path
+
+    def __make_peer_id(self):
+        """네트워크에서 Peer 를 식별하기 위한 UUID를 level db 에 생성한다.
+        """
+        if self.__channel_name != conf.LOOPCHAIN_DEFAULT_CHANNEL:
+            util.exit_and_msg(f"Only default channel can make peer id!")
+
+        try:
+            uuid_bytes = bytes(self.__level_db.Get(conf.LEVEL_DB_KEY_FOR_PEER_ID))
+            peer_id = uuid.UUID(bytes=uuid_bytes)
+        except KeyError:  # It's first Run
+            peer_id = None
+
+        if peer_id is None:
+            peer_id = uuid.uuid1()
+            logging.info("make new peer_id: " + str(peer_id))
+            self.__level_db.Put(conf.LEVEL_DB_KEY_FOR_PEER_ID, peer_id.bytes)
+
+        return str(peer_id)
+
+    def get_peer_id(self):
+        return self.__peer_id
+
+    def get_level_db(self):
+        return self.__level_db
+
     def clear_all_blocks(self):
-        self.__common_service.clear_level_db()
+        logging.debug(f"clear level db({self.__level_db_path})")
+        shutil.rmtree(self.__level_db_path)
 
     def set_peer_type(self, peer_type):
         self.__peer_type = peer_type
@@ -73,6 +136,8 @@ class BlockManager(CommonThread):
                 self.__consensus = ConsensusNone(self)
             elif conf.CONSENSUS_ALGORITHM == conf.ConsensusAlgorithm.siever:
                 self.__consensus = ConsensusSiever(self)
+            elif conf.CONSENSUS_ALGORITHM == conf.ConsensusAlgorithm.lft:
+                self.__consensus = ConsensusLFT(self)
             else:
                 self.__consensus = ConsensusDefault(self)
             self.__run_logic = self.__consensus.consensus
@@ -104,14 +169,18 @@ class BlockManager(CommonThread):
     def broadcast_send_unconfirmed_block(self, block):
         """생성된 unconfirmed block 을 피어들에게 broadcast 하여 검증을 요청한다.
         """
-        logging.info("BroadCast AnnounceUnconfirmedBlock...peers: " +
-                     str(ObjectManager().peer_service.peer_manager.get_peer_count()))
+        logging.debug("BroadCast AnnounceUnconfirmedBlock...peers: " +
+                      str(ObjectManager().peer_service.channel_manager.get_peer_manager(
+                          self.__channel_name).get_peer_count()))
+
         dump = pickle.dumps(block)
         if len(block.confirmed_transaction_list) > 0:
             self.__blockchain.increase_made_block_count()
         if self.__common_service is not None:
             self.__common_service.broadcast("AnnounceUnconfirmedBlock",
-                                            (loopchain_pb2.BlockSend(block=dump)))
+                                            (loopchain_pb2.BlockSend(
+                                                block=dump,
+                                                channel=self.__channel_name)))
 
     def broadcast_announce_confirmed_block(self, block_hash, block=None):
         """검증된 block 을 전체 peer 에 announce 한다.
@@ -123,10 +192,13 @@ class BlockManager(CommonThread):
                 self.__common_service.broadcast("AnnounceConfirmedBlock",
                                                 (loopchain_pb2.BlockAnnounce(
                                                     block_hash=block_hash,
+                                                    channel=self.__channel_name,
                                                     block=dump)))
             else:
                 self.__common_service.broadcast("AnnounceConfirmedBlock",
-                                                (loopchain_pb2.BlockAnnounce(block_hash=block_hash)))
+                                                (loopchain_pb2.BlockAnnounce(
+                                                    block_hash=block_hash,
+                                                    channel=self.__channel_name)))
 
     def broadcast_audience_set(self):
         """Check Broadcast Audience and Return Status
@@ -187,10 +259,32 @@ class BlockManager(CommonThread):
         # siever 인 경우 블럭에 담긴 투표 결과를 이전 블럭에 반영한다.
         if conf.CONSENSUS_ALGORITHM == conf.ConsensusAlgorithm.siever:
             if unconfirmed_block.prev_block_confirm:
-                logging.debug("block confirm by siever: " + str(unconfirmed_block.prev_block_hash))
+                # logging.debug(f"block confirm by siever: "
+                #               f"hash({unconfirmed_block.prev_block_hash}) "
+                #               f"block.channel({unconfirmed_block.channel_name})")
+
                 self.confirm_block(unconfirmed_block.prev_block_hash)
             elif unconfirmed_block.block_type is BlockType.peer_list:
-                logging.debug("peer manager block confirm by siever: " + str(unconfirmed_block.block_hash))
+                logging.debug(f"peer manager block confirm by siever: "
+                              f"hash({unconfirmed_block.block_hash}) block.channel({unconfirmed_block.channel_name})")
+                self.confirm_block(unconfirmed_block.block_hash)
+            else:
+                # 투표에 실패한 블럭을 받은 경우
+                # 특별한 처리가 필요 없다. 새로 받은 블럭을 아래 로직에서 add_unconfirm_block 으로 수행하면 된다.
+                pass
+        elif conf.CONSENSUS_ALGORITHM == conf.ConsensusAlgorithm.lft:
+            if unconfirmed_block.prev_block_confirm:
+
+                # turn off previous vote's timer when a general peer received new block for vote
+                ObjectManager().peer_service.timer_service.stop_timer(unconfirmed_block.prev_block_hash)
+                # logging.debug(f"block confirm by lft: "
+                #               f"hash({unconfirmed_block.prev_block_hash}) "
+                #               f"block.channel({unconfirmed_block.channel_name})")
+
+                self.confirm_block(unconfirmed_block.prev_block_hash)
+            elif unconfirmed_block.block_type is BlockType.peer_list:
+                logging.debug(f"peer manager block confirm by lft: "
+                              f"hash({unconfirmed_block.block_hash}) block.channel({unconfirmed_block.channel_name})")
                 self.confirm_block(unconfirmed_block.block_hash)
             else:
                 # 투표에 실패한 블럭을 받은 경우
@@ -209,12 +303,12 @@ class BlockManager(CommonThread):
         Block Generator 인 경우 conf 에 따라 사용할 Consensus 알고리즘이 변경된다.
         """
 
-        logging.info("Block Manager thread Start.")
+        logging.info(f"channel({self.__channel_name}) Block Manager thread Start.")
 
         while self.is_run():
             self.__run_logic()
 
-        logging.info("Block Manager thread Ended.")
+        logging.info(f"channel({self.__channel_name}) Block Manager thread Ended.")
 
     def __do_vote(self):
         """Announce 받은 unconfirmed block 에 투표를 한다.
@@ -239,8 +333,8 @@ class BlockManager(CommonThread):
             # block 검증
             block_is_validated = False
             try:
-                block_is_validated = unconfirmed_block.validate(self.__txQueue)
-            except (BlockInValidError, BlockError, TransactionInValidError) as e:
+                block_is_validated = Block.validate(unconfirmed_block, self.__txQueue)
+            except Exception as e:
                 logging.error(e)
 
             if block_is_validated:
@@ -252,6 +346,19 @@ class BlockManager(CommonThread):
                     pass
                 elif reason == "block_height":
                     # Announce 되는 블럭과 자신의 height 가 다르면 Block Height Sync 를 다시 시도한다.
+
                     ObjectManager().peer_service.block_height_sync()
 
-            self.__common_service.vote_unconfirmed_block(unconfirmed_block.block_hash, block_is_validated)
+            self.__common_service.vote_unconfirmed_block(
+                unconfirmed_block.block_hash, block_is_validated, self.__channel_name)
+
+            if conf.CONSENSUS_ALGORITHM == conf.ConsensusAlgorithm.lft:
+                # turn on timer when peer type is general after vote
+                # TODO: set appropriate callback function and parameters
+                timer = Timer(
+                    unconfirmed_block.block_hash,
+                    conf.TIMEOUT_FOR_PEER_VOTE,
+                    ObjectManager().peer_service.timer_test_callback_function,
+                    ["test after vote by block_manager"]
+                )
+                ObjectManager().peer_service.timer_service.add_timer(unconfirmed_block.block_hash, timer)

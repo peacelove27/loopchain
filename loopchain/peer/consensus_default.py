@@ -13,11 +13,10 @@
 # limitations under the License.
 """A default class of consensus for the loopchain"""
 
-import math
-
+from loopchain.baseservice import ObjectManager
 from loopchain.blockchain import *
-from loopchain.peer.consensus_base import ConsensusBase
 from loopchain.peer import candidate_blocks
+from loopchain.peer.consensus_base import ConsensusBase
 
 
 class ConsensusDefault(ConsensusBase):
@@ -39,7 +38,7 @@ class ConsensusDefault(ConsensusBase):
         except candidate_blocks.InvalidatedBlock as e:
             logging.error("InvalidatedBlock!! " + str(e))
             # 해당 블럭은 candidate blocks 의 get_confirmed_block 과정중 버려진다. ( TODO 해당 블럭에 담긴 tx 도 같이 버려진다. 검토 필요 )
-            self._block = Block()
+            self._block = Block(channel_name=self._channel_name)
             self._current_vote_block_hash = ""
 
         # 검증이 끝난 블럭이 있으면
@@ -67,7 +66,7 @@ class ConsensusDefault(ConsensusBase):
                 self._block.generate_block(self._candidate_blocks.get_last_block(self._blockchain))
                 self._candidate_blocks.add_unconfirmed_block(self._block)
                 # 새로운 Block 을 생성하여 다음 tx 을 수집한다.
-                self._block = Block()
+                self._block = Block(channel_name=self._channel_name)
 
             # 다음 검증 후보 블럭이 있는지 확인한다.
             candidate_block = self._candidate_blocks.get_candidate_block()
@@ -76,7 +75,9 @@ class ConsensusDefault(ConsensusBase):
                 self._current_vote_block_hash = candidate_block.block_hash
                 logging.info("candidate block hash: " + self._current_vote_block_hash)
 
-                candidate_block.next_leader_peer = ObjectManager().peer_service.peer_list.get_next_leader_peer().peer_id
+                candidate_block.next_leader_peer = \
+                    ObjectManager().peer_service.channel_manager.get_peer_manager(
+                        self._channel_name).get_next_leader_peer().peer_id
 
                 # 생성된 블럭을 투표 요청하기 위해서 broadcast 한다.
                 self._blockmanager.broadcast_send_unconfirmed_block(candidate_block)

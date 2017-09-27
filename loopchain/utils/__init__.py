@@ -28,14 +28,29 @@ from subprocess import PIPE, Popen, TimeoutExpired
 
 import coloredlogs
 import grpc
+import verboselogs
 
 from loopchain import configure as conf
 from loopchain.protos import loopchain_pb2, message_code
 
 
+# for verbose logs
+logger = verboselogs.VerboseLogger("dev")
+
+
 def set_log_level():
     logging.basicConfig(handlers=[logging.FileHandler(conf.LOG_FILE_PATH, 'w', 'utf-8'), logging.StreamHandler()],
                         format=conf.LOG_FORMAT, level=conf.LOG_LEVEL)
+
+
+def set_colored_log_level():
+    global logger
+    coloredlogs.install(fmt=conf.LOG_FORMAT_DEBUG, datefmt="%m%d %H:%M:%S", level=verboselogs.SPAM)
+    logging.basicConfig(format=conf.LOG_FORMAT_DEBUG, level=verboselogs.SPAM)
+    logger = verboselogs.VerboseLogger("dev")
+
+# for logger color reset during test
+logger_reset = set_log_level
 
 
 def exit_and_msg(msg):
@@ -54,13 +69,56 @@ def load_user_score(path):
     return user_module.UserScore
 
 
+coloredlogs.DEFAULT_FIELD_STYLES = {
+    'hostname': {'color': 'magenta'},
+    'programname': {'color': 'cyan'},
+    'name': {'color': 'blue'},
+    'levelname': {'color': 'black', 'bold': True},
+    'asctime': {'color': 'magenta'}}
+
+
+def set_log_color_set(is_leader=False):
+    # level SPAM value is 5
+    # level DEBUG value is 10
+    if is_leader:
+        coloredlogs.DEFAULT_LEVEL_STYLES = {
+            'info': {},
+            'notice': {'color': 'magenta'},
+            'verbose': {'color': 'green'},
+            'success': {'color': 'green', 'bold': True},
+            'spam': {'color': 'cyan'},
+            'critical': {'color': 'red', 'bold': True},
+            'error': {'color': 'red'},
+            'debug': {'color': 'blue'},
+            'warning': {'color': 'yellow'}}
+    else:
+        coloredlogs.DEFAULT_LEVEL_STYLES = {
+            'info': {},
+            'notice': {'color': 'magenta'},
+            'verbose': {'color': 'blue'},
+            'success': {'color': 'green', 'bold': True},
+            'spam': {'color': 'cyan'},
+            'critical': {'color': 'red', 'bold': True},
+            'error': {'color': 'red'},
+            'debug': {'color': 'green'},
+            'warning': {'color': 'yellow'}}
+
+
 def set_log_level_debug():
+    global logger_reset
+    set_log_color_set()
+    set_colored_log_level()
+    logger_reset = set_colored_log_level
+
     # set for debug
-    coloredlogs.install(level=logging.DEBUG)
-    logging.basicConfig(level=logging.DEBUG)
-    conf.CONNECTION_RETRY_INTERVAL = conf.CONNECTION_RETRY_INTERVAL_TEST
-    conf.CONNECTION_RETRY_TIMEOUT_TO_RS = conf.CONNECTION_RETRY_TIMEOUT_TO_RS_TEST
-    conf.GRPC_TIMEOUT = conf.GRPC_TIMEOUT_TEST
+    # conf.CONNECTION_RETRY_INTERVAL = conf.CONNECTION_RETRY_INTERVAL_TEST
+    # conf.CONNECTION_RETRY_TIMEOUT_TO_RS = conf.CONNECTION_RETRY_TIMEOUT_TO_RS_TEST
+    # conf.GRPC_TIMEOUT = conf.GRPC_TIMEOUT_TEST
+
+
+def change_log_color_set(is_leader=False):
+    set_log_color_set(is_leader)
+    logger_reset()
 
 
 def get_stub_to_server(target, stub_class, time_out_seconds=conf.CONNECTION_RETRY_TIMEOUT, is_check_status=True):

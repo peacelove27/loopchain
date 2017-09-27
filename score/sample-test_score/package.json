@@ -1,0 +1,18 @@
+{
+  "id":"develop-test_score",
+  "version":"1.0.0",
+  "auth":{
+    "name":"LoopChain Dev Team",
+    "email":"dev@theloop.co.kr",
+    "org":"Theloop inc"
+  },
+  "dependencies":{},
+  "description":"LoopChain Default Score",
+  "repository":{},
+  "homepage":"http://www.theloop.co.kr",
+  "function":{
+    "query":[],
+    "invoke":[]
+  },
+  "main":"test_score"
+}

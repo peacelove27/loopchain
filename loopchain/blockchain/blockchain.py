@@ -18,7 +18,6 @@ import leveldb
 
 from loopchain import configure as conf
 from loopchain.baseservice import ObjectManager
-from loopchain.baseservice.SingletonMetaClass import *
 from loopchain.blockchain import BlockStatus, Block
 from loopchain.blockchain.exception import *
 from loopchain.blockchain.score_base import *
@@ -26,20 +25,21 @@ from loopchain.protos import message_code
 from loopchain.scoreservice import ScoreResponse
 
 
-class BlockChain(metaclass=SingletonMetaClass):
-    """인증된 Block들만 가지고 있는 Blockchain.
-    """
-    block_height = 0
-    last_block = None
-    unconfirmed_block = None
-
+class BlockChain:
+    """인증된 Block들만 가지고 있는 Blockchain."""
+    
     UNCONFIRM_BLOCK_KEY = b'UNCONFIRM_BLOCK'
     LAST_BLOCK_KEY = b'last_block_key'
     BLOCK_HEIGHT_KEY = b'block_height_key'
 
-    def __init__(self, blockchain_db=None):
+    def __init__(self, blockchain_db=None, channel_name=conf.LOOPCHAIN_DEFAULT_CHANNEL):
+        self.__block_height = 0
+        self.__last_block = None
+        self.__channel_name = channel_name
+
         # block db has [ block_hash - block | block_height - block_hash | BlockChain.LAST_BLOCK_KEY - block_hash ]
         self.__confirmed_block_db = blockchain_db
+        # logging.debug(f"BlockChain::init confirmed_block_db({self.__confirmed_block_db})")
 
         if self.__confirmed_block_db is None:
             try:
@@ -56,20 +56,28 @@ class BlockChain(metaclass=SingletonMetaClass):
 
         if last_block_key:
             # DB에서 마지막 블럭을 가져와서 last_block 에 바인딩
-            self.last_block = Block()
+            self.__last_block = Block(channel_name=self.__channel_name)
             block_dump = self.__confirmed_block_db.Get(last_block_key)
-            self.last_block.deserialize_block(block_dump)
-            logging.debug("restore from last block hash(" + str(self.last_block.block_hash) + ")")
-            logging.debug("restore from last block height(" + str(self.last_block.height) + ")")
+            self.__last_block.deserialize_block(block_dump)
+            logging.debug("restore from last block hash(" + str(self.__last_block.block_hash) + ")")
+            logging.debug("restore from last block height(" + str(self.__last_block.height) + ")")
         else:
             # 제네시스 블럭 생성
             self.__add_genesisblock()
 
         # 블럭의 높이는 마지막 블럭의 높이와 같음
-        self.block_height = self.last_block.height
+        self.__block_height = self.__last_block.height
 
         # made block count as a leader
         self.__made_block_count = 0
+
+    @property
+    def block_height(self):
+        return self.__block_height
+
+    @property
+    def last_block(self):
+        return self.__last_block
 
     @property
     def made_block_count(self):
@@ -85,8 +93,8 @@ class BlockChain(metaclass=SingletonMetaClass):
         # Genesis block 까지 순회하며 Block 정보를 복원한다.
         logging.info("re-build blocks from DB....")
 
-        block = Block()
-        prev_block_hash = self.last_block.block_hash
+        block = Block(channel_name=self.__channel_name)
+        prev_block_hash = self.__last_block.block_hash
         total_tx = 0
 
         while prev_block_hash != "":
@@ -102,14 +110,14 @@ class BlockChain(metaclass=SingletonMetaClass):
 
         logging.info("rebuilt blocks, total_tx: " + str(total_tx))
         logging.info("block hash("
-                     + self.last_block.block_hash
+                     + self.__last_block.block_hash
                      + ") and height("
-                     + str(self.last_block.height) + ")")
+                     + str(self.__last_block.height) + ")")
 
         return total_tx
 
     def __find_block_by_key(self, key):
-        block = Block()
+        block = Block(channel_name=self.__channel_name)
 
         try:
             block_bytes = self.__confirmed_block_db.Get(key)
@@ -139,30 +147,21 @@ class BlockChain(metaclass=SingletonMetaClass):
                                             block_height.to_bytes(conf.BLOCK_HEIGHT_BYTES_LEN, byteorder='big'))
         return self.__find_block_by_key(key)
 
-    def add_block(self, block):
+    def add_block(self, block: Block):
         """
         인증된 블럭만 추가합니다.
         :param block: 인증완료된 추가하고자 하는 블럭
         :return:
         """
 
-        # 인증되지 않은 블럭이면 추가 하지 않음
-        try:
-            block.validate()
-        except Exception as e:
-            logging.error(e)
-            raise BlockchainError('Block is Not valid')
-
         if block.block_status is not BlockStatus.confirmed:
             raise BlockInValidError("미인증 블럭")
-        elif self.last_block is not None and self.last_block.height > 0:
-            if self.last_block.block_hash != block.prev_block_hash:
+        elif self.__last_block is not None and self.__last_block.height > 0:
+            if self.__last_block.block_hash != block.prev_block_hash:
                 # 마지막 블럭의 hash값이 추가되는 블럭의 prev_hash값과 다르면 추가 하지 않고 익셉션을 냅니다.
-                logging.debug("self.last_block.block_hash: " + self.last_block.block_hash)
+                logging.debug("self.last_block.block_hash: " + self.__last_block.block_hash)
                 logging.debug("block.prev_block_hash: " + block.prev_block_hash)
                 raise BlockError("최종 블럭과 해쉬값이 다릅니다.")
-
-        invoke_results = {}
 
         if ObjectManager().peer_service is None:
             # all results to success
@@ -188,8 +187,8 @@ class BlockChain(metaclass=SingletonMetaClass):
             block.height.to_bytes(conf.BLOCK_HEIGHT_BYTES_LEN, byteorder='big'),
             block.block_hash.encode(encoding='UTF-8'))
 
-        self.last_block = block
-        self.block_height = self.last_block.height
+        self.__last_block = block
+        self.__block_height = self.__last_block.height
 
         # logging.debug("ADD BLOCK Height : %i", block.height)
         # logging.debug("ADD BLOCK Hash : %s", block.block_hash)
@@ -217,15 +216,12 @@ class BlockChain(metaclass=SingletonMetaClass):
 
         for tx in block.confirmed_transaction_list:
             tx_hash = tx.get_tx_hash()
-
-            invoke_result = dict()
             invoke_result = invoke_results[tx_hash]
 
             tx_info = dict()
             tx_info['block_hash'] = block.block_hash
             tx_info['result'] = invoke_result
 
-            # logging.debug("tx hash: " + tx.get_tx_hash())
             self.__confirmed_block_db.Put(
                 tx.get_tx_hash().encode(encoding=conf.HASH_KEY_ENCODING),
                 json.dumps(tx_info).encode(encoding=conf.PEER_DATA_ENCODING))
@@ -272,7 +268,7 @@ class BlockChain(metaclass=SingletonMetaClass):
         """ find invoke result matching tx_hash and return result if not in blockchain return code delay
 
         :param tx_hash: tx_hash
-        :return: {"code" : "code", "error_message" : "`rror_message if not fail this is not exist"}
+        :return: {"code" : "code", "error_message" : "error_message if not fail this is not exist"}
         """
         try:
             tx_info = self.__find_tx_info(tx_hash)
@@ -302,7 +298,7 @@ class BlockChain(metaclass=SingletonMetaClass):
         :return:
         """
         logging.info("Make Genesis Block....")
-        block = Block()
+        block = Block(channel_name=self.__channel_name)
         block.block_status = BlockStatus.confirmed
         block.generate_block()
         # 제네시스 블럭을 추가 합니다.
@@ -316,16 +312,19 @@ class BlockChain(metaclass=SingletonMetaClass):
         :param unconfirmed_block: 인증되지 않은 Unconfirm블럭
         :return:인증값 : True 인증 , False 미인증
         """
+        logging.debug(f"blockchain::add_unconfirmed_block")
+
         # confirm 블럭
-        if (self.last_block.height + 1) != unconfirmed_block.height:
+        if (self.__last_block.height + 1) != unconfirmed_block.height:
             logging.error("블럭체인의 높이가 다릅니다.")
             return False, "block_height"
-        elif unconfirmed_block.prev_block_hash != self.last_block.block_hash:
-            logging.error("마지막 블럭의 해쉬값이 다릅니다. %s vs %s ", unconfirmed_block.prev_block_hash, self.last_block.block_hash)
+        elif unconfirmed_block.prev_block_hash != self.__last_block.block_hash:
+            logging.error("마지막 블럭의 해쉬값이 다릅니다. %s vs %s ", unconfirmed_block.prev_block_hash, self.__last_block.block_hash)
             return False, "prev_block_hash"
-        elif unconfirmed_block.block_hash != unconfirmed_block.generate_block(self.last_block):
+        elif unconfirmed_block.block_hash != unconfirmed_block.generate_block(self.__last_block):
             logging.error("%s의 값이 재생성한 블럭해쉬와 같지 않습니다.", unconfirmed_block.block_hash)
             return False, "generate_block_hash"
+
         # Save unconfirmed_block
         self.__confirmed_block_db.Put(BlockChain.UNCONFIRM_BLOCK_KEY, unconfirmed_block.serialize_block())
         return True, "No reason"
@@ -335,7 +334,7 @@ class BlockChain(metaclass=SingletonMetaClass):
         :param confirmed_block_hash: 인증된 블럭의 hash
         :return: Block 에 포함된 tx 의 갯수를 리턴한다.
         """
-        logging.debug("BlockChain::confirm_block")
+        logging.debug(f"BlockChain::confirm_block channel({self.__channel_name})")
 
         try:
             unconfirmed_block_byte = self.__confirmed_block_db.Get(BlockChain.UNCONFIRM_BLOCK_KEY)
@@ -344,7 +343,7 @@ class BlockChain(metaclass=SingletonMetaClass):
             logging.warning(except_msg)
             raise BlockchainError(except_msg)
 
-        unconfirmed_block = Block()
+        unconfirmed_block = Block(channel_name=self.__channel_name)
         unconfirmed_block.deserialize_block(unconfirmed_block_byte)
 
         if unconfirmed_block.block_hash != confirmed_block_hash:

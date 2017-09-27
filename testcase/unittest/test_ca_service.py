@@ -151,3 +151,7 @@ class TestCAService(unittest.TestCase):
         else:
             logging.error("result is False ")
             return None
+
+
+if __name__ == '__main__':
+    unittest.main()

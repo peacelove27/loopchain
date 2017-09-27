@@ -13,12 +13,10 @@
 # limitations under the License.
 """A consensus class based on the Siever algorithm for the loopchain"""
 
-import math
-
-from loopchain.blockchain import *
-from loopchain.peer.consensus_base import ConsensusBase
-from loopchain.peer import candidate_blocks
 from loopchain.baseservice import ObjectManager
+from loopchain.blockchain import *
+from loopchain.peer import candidate_blocks
+from loopchain.peer.consensus_base import ConsensusBase
 
 
 class ConsensusSiever(ConsensusBase):
@@ -42,7 +40,8 @@ class ConsensusSiever(ConsensusBase):
             if util.diff_in_seconds(e.block.time_stamp) > conf.BLOCK_VOTE_TIMEOUT:
                 # TODO vote 타임 아웃을 설정하고 타임 아웃 이내에 완성되지 않는 경우
                 # 우선 해당 블럭은 버리는 것으로 임시 처리, 타임 아웃 블럭에 대한 정책 필요
-                logging.warning("Time Outed Block: " + str(util.diff_in_seconds(e.block.time_stamp)))
+                logging.warning("Time Outed Block not confirmed duration: " + str(util.diff_in_seconds(e.block.time_stamp)))
+
                 self._candidate_blocks.remove_broken_block(e.block.block_hash)
             else:
                 peer_service = ObjectManager().peer_service
@@ -81,8 +80,9 @@ class ConsensusSiever(ConsensusBase):
             # block 에 수집된 tx 가 있으면
             if self._block is not None and self._block.confirmed_transaction_list.__len__() > 0:
                 # 검증 받을 블록의 hash 를 생성하고 후보로 등록한다.
-                logging.debug("add unconfirmed block to candidate blocks")
+                # logging.warning("add unconfirmed block to candidate blocks")
                 self._block.generate_block(self._candidate_blocks.get_last_block(self._blockchain))
+                self._block.sign(ObjectManager().peer_service.auth)
                 self._candidate_blocks.add_unconfirmed_block(self._block)
 
                 # logging.warning("blockchain.last_block_hash: " + self._blockchain.last_block.block_hash)
@@ -94,12 +94,14 @@ class ConsensusSiever(ConsensusBase):
 
             # 다음 검증 후보 블럭이 있는지 확인한다.
             candidate_block = self._candidate_blocks.get_candidate_block()
+            peer_manager = ObjectManager().peer_service.channel_manager.get_peer_manager(self._channel_name)
+
             if candidate_block is not None:
                 # 있으면 해당 블럭을 broadcast 하여 Peer 에게 검증을 요청한다.
                 self._current_vote_block_hash = candidate_block.block_hash
                 logging.info("candidate block hash: " + self._current_vote_block_hash)
 
-                candidate_block.next_leader_peer = ObjectManager().peer_service.peer_list.get_next_leader_peer().peer_id
+                candidate_block.next_leader_peer = peer_manager.get_next_leader_peer().peer_id
 
                 # 생성된 블럭을 투표 요청하기 위해서 broadcast 한다.
                 self._blockmanager.broadcast_send_unconfirmed_block(candidate_block)
@@ -109,7 +111,7 @@ class ConsensusSiever(ConsensusBase):
             elif self._block is not None and \
                     (self._block.prev_block_confirm is True) and \
                     (self._block.confirmed_transaction_list.__len__() == 0):
-                logging.debug("broadcast voting block (has no tx but has a vote result)")
+                # logging.warning("broadcast voting block (has no tx but has a vote result)")
 
                 # 검증할 후보 블럭이 없으면서 이전 블럭이 unconfirmed block 이면 투표가 담긴 빈 블럭을 전송한다.
                 self._block.prev_block_hash = confirmed_block.block_hash
@@ -118,7 +120,7 @@ class ConsensusSiever(ConsensusBase):
 
                 logging.debug(f"made_block_count({self.made_block_count})")
 
-                self._block.next_leader_peer = ObjectManager().peer_service.peer_list.get_next_leader_peer().peer_id
+                self._block.next_leader_peer = peer_manager.get_next_leader_peer().peer_id
 
                 self._blockmanager.broadcast_send_unconfirmed_block(self._block)
 
@@ -128,7 +130,7 @@ class ConsensusSiever(ConsensusBase):
                 else:
                     # TODO LEADER_BLOCK_CREATION_LIMIT 에서 무조건 리더가 변경된다. 잔여 tx 처리가 필요하다.
                     self._stop_gen_block()
-                    ObjectManager().peer_service.rotate_next_leader()
+                    ObjectManager().peer_service.rotate_next_leader(self._channel_name)
 
         self._makeup_block()
 

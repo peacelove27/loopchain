@@ -318,7 +318,7 @@ class PeerScore:
         return self.score_version(version, True)
 
     def invoke(self, transaction, block=None):
-        meta = transaction.get_meta()
+        meta = transaction.meta  # tx meta property has copy action so prevent duplicate action().
         # transaction 에서 version을 불러서 실행
         if Transaction.SCORE_VERSION_KEY in meta:
             score_version = self.score_version(meta[Transaction.SCORE_VERSION_KEY])

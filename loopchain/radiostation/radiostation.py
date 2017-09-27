@@ -37,7 +37,7 @@ class RadioStation:
         # TODO: 외부 관리 interface에 의해서 Group을 관리하는 기능을 만들어야 한다. 현재는 고정된 한개 Group만.
         return conf.ALL_GROUP_ID
 
-    def validate_group_id(self, group_id):
+    def validate_group_id(self, group_id: str):
         # TODO group id 를 검사하는 새로운 방법이 필요하다, 현재는 임시로 모두 통과 시킨다.
         return 0, "It's available group ID:"+group_id
 

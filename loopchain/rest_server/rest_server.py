@@ -18,6 +18,7 @@ import grpc
 import logging
 import ssl
 import _ssl
+import base64
 
 from grpc._channel import _Rendezvous
 
@@ -183,6 +184,10 @@ class Transaction(Resource):
             tx_data['meta'] = json.loads(response.meta)
 
         tx_data['more_info'] = response.more_info
+        b64_sign = base64.b64encode(response.signature)
+        tx_data['signature'] = b64_sign.decode()
+        b64_public_key = base64.b64encode(response.public_key)
+        tx_data['public_key'] = b64_public_key.decode()
 
         return tx_data
 

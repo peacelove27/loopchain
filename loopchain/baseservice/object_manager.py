@@ -20,5 +20,6 @@ class ObjectManager(metaclass=SingletonMetaClass):
     """Engine 내부 오브젝트들을 참조할 수 있는 인터페이스를 제공한다.
 
     """
+    rs_service = None
     peer_service = None
     score_service = None

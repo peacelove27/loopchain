@@ -13,22 +13,20 @@
 # limitations under the License.
 """Class for managing Peer and Radio station """
 
-import leveldb
 import logging
-import os.path as osp
-import pickle
 import queue
-import shutil
 import time
-import uuid
 from concurrent import futures
 
 import grpc
 
 import loopchain.utils as util
 from loopchain import configure as conf
-from loopchain.baseservice import BroadcastProcess, CommonThread, ObjectManager, PeerManager
+from loopchain.baseservice import BroadcastProcess, CommonThread, ObjectManager
 from loopchain.protos import loopchain_pb2, message_code
+
+# loopchain_pb2 를 아래와 같이 import 하지 않으면 broadcast 시도시 pickle 오류가 발생함
+import loopchain_pb2
 
 
 class CommonService(CommonThread):
@@ -36,8 +34,7 @@ class CommonService(CommonThread):
 
     """
 
-    def __init__(self, gRPC_module, level_db_identity="station",
-                 inner_service_port=conf.PORT_PEER + conf.PORT_DIFF_INNER_SERVICE):
+    def __init__(self, gRPC_module, inner_service_port=conf.PORT_PEER + conf.PORT_DIFF_INNER_SERVICE):
         # members for public (we don't use getter/setter but you can use @property for that)
         self.peer_id = ""
         self.inner_server = grpc.server(futures.ThreadPoolExecutor(max_workers=conf.MAX_WORKERS))
@@ -49,14 +46,12 @@ class CommonService(CommonThread):
         self.__inner_service_port = inner_service_port
         self.__peer_port = inner_service_port - conf.PORT_DIFF_INNER_SERVICE
         self.__subscriptions = queue.Queue()
-        self.__peer_type = loopchain_pb2.PEER
         self.__peer_target = util.get_private_ip() + ":" + str(self.__peer_port)
         self.__stub_to_blockgenerator = None
         self.__group_id = ""
 
         # broadcast process
         self.__broadcast_process = self.__run_broadcast_process()
-        self.__init_level_db(level_db_identity)
 
         self.__loop_functions = []
 
@@ -64,87 +59,14 @@ class CommonService(CommonThread):
     def broadcast_process(self):
         return self.__broadcast_process
 
-    def __init_level_db(self, level_db_identity):
-        """init Level Db
+    def set_peer_id(self, peer_id):
+        """set peer id
 
-        :param level_db_identity: identity for leveldb
-        :return:
         """
-        level_db = None
-
-        db_default_path = osp.join(conf.DEFAULT_STORAGE_PATH, 'db_' + level_db_identity)
-        db_path = db_default_path
-
-        retry_count = 0
-        while level_db is None and retry_count < conf.MAX_RETRY_CREATE_DB:
-            try:
-                level_db = leveldb.LevelDB(db_path, create_if_missing=True)
-            except leveldb.LevelDBError:
-                db_path = db_default_path + str(retry_count)
-            retry_count += 1
-
-        if level_db is None:
-            logging.error("Common Service Create LevelDB if Fail ")
-            raise leveldb.LevelDBError("Fail To Create Level DB(path): " + db_path)
-
-        self.__level_db = level_db
-        self.__level_db_path = db_path
+        self.peer_id = peer_id
 
     def get_peer_id(self):
-        """네트워크에서 Peer 를 식별하기 위한 UUID를 level db 에 생성한다.
-        """
-        try:
-            uuid_bytes = bytes(self.__level_db.Get(conf.LEVEL_DB_KEY_FOR_PEER_ID))
-            peer_id = uuid.UUID(bytes=uuid_bytes)
-        except KeyError:  # It's first Run
-            peer_id = None
-
-        if peer_id is None:
-            peer_id = uuid.uuid1()
-            logging.info("make new peer_id: " + str(peer_id))
-            self.__level_db.Put(conf.LEVEL_DB_KEY_FOR_PEER_ID, peer_id.bytes)
-
-        return str(peer_id)
-
-    def clear_level_db(self):
-        logging.debug(f"clear level db({self.__level_db_path})")
-        shutil.rmtree(self.__level_db_path)
-
-    def get_level_db(self):
-        return self.__level_db
-
-    def set_peer_type(self, peer_type):
-        self.__peer_type = peer_type
-
-    def save_peer_list(self, peer_list):
-        """peer_list 를 leveldb 에 저장한다.
-
-        :param peer_list:
-        """
-        try:
-            dump = peer_list.dump()
-            self.__level_db.Put(conf.LEVEL_DB_KEY_FOR_PEER_LIST, dump)
-            # 아래의 audience dump update 는 안정성에 문제를 야기한다. (원인 미파악)
-            # self.update_audience(dump)
-        except AttributeError as e:
-            logging.warning("Fail Save Peer_list: " + str(e))
-
-    def load_peer_manager(self):
-        """leveldb 로 부터 peer_manager 를 가져온다.
-
-        :return: peer_manager
-        """
-        peer_manager = PeerManager()
-
-        if conf.IS_LOAD_PEER_MANAGER_FROM_DB:
-            try:
-                peer_list_data = pickle.loads(self.__level_db.Get(conf.LEVEL_DB_KEY_FOR_PEER_LIST))
-                peer_manager.load(peer_list_data)
-                logging.debug("load peer_list_data on yours: " + peer_manager.get_peers_for_debug())
-            except KeyError:
-                logging.warning("There is no peer_list_data on yours")
-
-        return peer_manager
+        return self.peer_id
 
     def getstatus(self, block_manager):
         """
@@ -175,19 +97,21 @@ class CommonService(CommonThread):
                 # Score와 상관없이 TransactionTx는 블럭매니저가 관리 합니다.
                 total_tx = block_manager.get_total_tx()
 
-        status_data["status"] = "Service is online: " + str(self.__peer_type)
+        status_data["status"] = "Service is online: " + str(block_manager.peer_type)
 
         # TODO 더이상 사용하지 않는다. REST API 업데이트 후 제거할 것
         status_data["audience_count"] = "0"
 
         status_data["consensus"] = str(conf.CONSENSUS_ALGORITHM.name)
         status_data["peer_id"] = str(self.get_peer_id())
-        status_data["peer_type"] = str(self.__peer_type)
+        status_data["peer_type"] = str(block_manager.peer_type)
         status_data["block_height"] = block_height
         status_data["total_tx"] = total_tx
         status_data["peer_target"] = self.__peer_target
         if ObjectManager().peer_service is not None:
-            status_data["leader_complaint"] = ObjectManager().peer_service.tx_service.peer_status.value
+            # TODO tx service 는 더이상 사용되지 않는다. 아래 코드는 의도에 맞게 다시 작성되어야 한다.
+            # status_data["leader_complaint"] = ObjectManager().peer_service.tx_service.peer_status.value
+            status_data["leader_complaint"] = 1
 
         return status_data
 
@@ -199,20 +123,19 @@ class CommonService(CommonThread):
         wait_times = 0
         wait_for_process_start = None
 
-        time.sleep(conf.WAIT_SECONDS_FOR_SUB_PROCESS_START)
+        # TODO process wait loop 를 살리고 시간을 조정하였음, 이 상태에서 tx process 가 AWS infra 에서 시작되는지 확인 필요.
+        # time.sleep(conf.WAIT_SECONDS_FOR_SUB_PROCESS_START)
 
-        # while wait_for_process_start is None:
-        #     time.sleep(conf.SLEEP_SECONDS_FOR_SUB_PROCESS_START)
-        #     logging.debug(f"wait start broadcast process....")
-        #     wait_for_process_start = broadcast_process.get_receive("status")
-        #
-        #     if wait_for_process_start is None and wait_times > conf.WAIT_SUB_PROCESS_RETRY_TIMES:
-        #         util.exit_and_msg("Broadcast Process start Fail!")
+        while wait_for_process_start is None:
+            time.sleep(conf.SLEEP_SECONDS_FOR_SUB_PROCESS_START)
+            logging.debug(f"wait start broadcast process....")
+            wait_for_process_start = broadcast_process.get_receive("status")
 
-        if self.__peer_type == loopchain_pb2.PEER:
-            broadcast_process.send_to_process((BroadcastProcess.MAKE_SELF_PEER_CONNECTION_COMMAND, self.__peer_target))
+            if wait_for_process_start is None and wait_times > conf.WAIT_SUB_PROCESS_RETRY_TIMES:
+                util.exit_and_msg("Broadcast Process start Fail!")
 
-        # logging.debug(f"Broadcast Process start({wait_for_process_start})")
+        logging.debug(f"Broadcast Process start({wait_for_process_start})")
+        broadcast_process.send_to_process((BroadcastProcess.MAKE_SELF_PEER_CONNECTION_COMMAND, self.__peer_target))
 
         return broadcast_process
 
@@ -220,17 +143,21 @@ class CommonService(CommonThread):
         self.__broadcast_process.stop()
         self.__broadcast_process.wait()
 
-    def __subscribe(self, port, subscribe_stub, is_unsubscribe=False):
-        self.__peer_target = util.get_private_ip() + ":" + str(port)
-        # logging.info("peer_info: " + peer_target)
-        # logging.info("subscribe_stub type: " + str(subscribe_stub.stub.__module__))
+    def __subscribe(self, port, subscribe_stub, is_unsubscribe=False, channel_name=conf.LOOPCHAIN_DEFAULT_CHANNEL):
+        # self.__peer_target = util.get_private_ip() + ":" + str(port)
+        # logging.debug("peer_info: " + self.__peer_target)
+        # logging.debug("subscribe_stub type: " + str(subscribe_stub.stub.__module__))
+
+        # Subscribe 는 peer 의 type 정보를 사용하지 않지만, PeerRequest 의 required 값이라 임의의 type 정보를 할당한다.
+        subscribe_peer_type = loopchain_pb2.PEER
 
         try:
             if is_unsubscribe:
                 subscribe_stub.call(
                     "UnSubscribe",
                     self.__gRPC_module.PeerRequest(
-                        peer_target=self.__peer_target, peer_type=self.__peer_type,
+                        channel=channel_name,
+                        peer_target=self.__peer_target, peer_type=subscribe_peer_type,
                         peer_id=self.peer_id, group_id=self.__group_id
                     ),
                     is_stub_reuse=False
@@ -239,7 +166,8 @@ class CommonService(CommonThread):
                 subscribe_stub.call(
                     "Subscribe",
                     self.__gRPC_module.PeerRequest(
-                        peer_target=self.__peer_target, peer_type=self.__peer_type,
+                        channel=channel_name,
+                        peer_target=self.__peer_target, peer_type=subscribe_peer_type,
                         peer_id=self.peer_id, group_id=self.__group_id
                     ),
                     is_stub_reuse=False
@@ -257,7 +185,8 @@ class CommonService(CommonThread):
         """broadcast 를 수신 받을 peer 를 등록한다.
         :param peer_info: SubscribeRequest
         """
-        logging.debug("Try add audience: " + str(peer_info))
+        # prevent to show certificate content
+        # logging.debug("Try add audience: " + str(peer_info))
         if ObjectManager().peer_service is not None:
             ObjectManager().peer_service.tx_process.send_to_process(
                 (BroadcastProcess.SUBSCRIBE_COMMAND, peer_info.peer_target))
@@ -289,16 +218,16 @@ class CommonService(CommonThread):
         CommonThread.start(self)
         self.__broadcast_process.set_to_process(BroadcastProcess.PROCESS_INFO_KEY, f"peer_id({self.get_peer_id()})")
 
-    def subscribe(self, subscribe_stub, type=None):
-        self.__subscribe(self.__port, subscribe_stub)
+    def subscribe(self, subscribe_stub, type=None, channel_name=conf.LOOPCHAIN_DEFAULT_CHANNEL):
+        self.__subscribe(port=self.__port, subscribe_stub=subscribe_stub, channel_name=channel_name)
         self.__subscriptions.put(subscribe_stub)
 
-        if type == loopchain_pb2.BLOCK_GENERATOR:
+        if type == loopchain_pb2.BLOCK_GENERATOR or type == loopchain_pb2.PEER:
             # tx broadcast 를 위해서 leader 인 경우 자신의 audience 에 같이 추가를 한다.
             self.__broadcast_process.send_to_process((BroadcastProcess.SUBSCRIBE_COMMAND, subscribe_stub.target))
             self.__stub_to_blockgenerator = subscribe_stub
 
-    def vote_unconfirmed_block(self, block_hash, is_validated):
+    def vote_unconfirmed_block(self, block_hash, is_validated, channel_name=conf.LOOPCHAIN_DEFAULT_CHANNEL):
         logging.debug("vote_unconfirmed_block ....")
         if is_validated:
             vote_code, message = message_code.get_response(message_code.Response.success_validate_block)
@@ -306,15 +235,18 @@ class CommonService(CommonThread):
             vote_code, message = message_code.get_response(message_code.Response.fail_validate_block)
 
         if self.__stub_to_blockgenerator is not None:
-            self.__stub_to_blockgenerator.call(
-                "VoteUnconfirmedBlock",
-                loopchain_pb2.BlockVote(
-                    vote_code=vote_code,
-                    message=message,
-                    block_hash=block_hash,
-                    peer_id=ObjectManager().peer_service.peer_id,
-                    group_id=ObjectManager().peer_service.group_id)
-            )
+            block_vote = loopchain_pb2.BlockVote(
+                vote_code=vote_code,
+                channel=channel_name,
+                message=message,
+                block_hash=block_hash,
+                peer_id=ObjectManager().peer_service.peer_id,
+                group_id=ObjectManager().peer_service.group_id)
+
+            if conf.CONSENSUS_ALGORITHM == conf.ConsensusAlgorithm.lft:
+                self.broadcast("VoteUnconfirmedBlock", block_vote)
+            else:
+                self.__stub_to_blockgenerator.call("VoteUnconfirmedBlock", block_vote)
         else:
             logging.error("No block generator stub!")
 

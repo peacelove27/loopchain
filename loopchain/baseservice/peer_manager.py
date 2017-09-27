@@ -20,7 +20,7 @@ import threading
 
 import loopchain.utils as util
 from loopchain import configure as conf
-from loopchain.baseservice import ObjectManager, StubManager, PeerStatus, Peer
+from loopchain.baseservice import ObjectManager, StubManager, PeerStatus, PeerObject
 from loopchain.protos import loopchain_pb2, loopchain_pb2_grpc, message_code
 
 
@@ -30,47 +30,83 @@ class PeerListData:
     """
     def __init__(self):
         # TODO self.var -> self.__var and use @property 바꾸기~~ ^^
-        # { group_id: { peer_id:Peer } } 로 구성된 dictionary
-        self.peer_list = {}
+        # { group_id: { peer_id:PeerInfo } } 로 구성된 dictionary
+        self.__peer_info_list: dict = {}
         # { group_id : leader_order } 인 정보, 기존의 block_generator_target 정보를 대체한다.
-        self.peer_leader = {}
+        self.__peer_leader: dict = {}
         # { group_id : { order:peer_id } 인 order 순서 정보
-        self.peer_order_list = {}
+        self.__peer_order_list: dict = {}
+
+    @property
+    def peer_leader(self):
+        return self.__peer_leader
+
+    @peer_leader.setter
+    def peer_leader(self, peer_leader):
+        self.__peer_leader = peer_leader
+
+    @property
+    def peer_order_list(self):
+        return self.__peer_order_list
+
+    @peer_order_list.setter
+    def peer_order_list(self, peer_order_list):
+        self.__peer_order_list = peer_order_list
+
+    @property
+    def peer_info_list(self):
+        return self.__peer_info_list
+
+    @peer_info_list.setter
+    def peer_info_list(self, peer_info_list):
+        self.__peer_info_list = peer_info_list
 
 
 class PeerManager:
-    def __init__(self):
+    def __init__(self, channel_name=conf.LOOPCHAIN_DEFAULT_CHANNEL):
         # TODO self.var -> self.__var and use @property 바꾸기~~ ^^
         """DB에서 기존에 생성된 PeerList 를 가져온다.
         이때 peer status 는 unknown 으로 리셋한다.
-
         """
         self.peer_list_data = PeerListData()
-
-        # { group_id: { peer_id:Peer } } 로 구성된 dictionary
-        self.peer_list = {}
-        # { group_id : leader_order } 인 정보, 기존의 block_generator_target 정보를 대체한다.
-        self.peer_leader = {}
-        # { group_id : { order:peer_id } 인 order 순서 정보
-        self.peer_order_list = {}
-        # { group_id: { peer_id:Peer gRPC stub } } 로 구성된 dictionary
-        self.peer_stub_managers = {}
-        self.__set_data_object_from_data()  # TODO 왜 빈 PeerList 로 init 을 하지? 확인 하고 이유 적어 놓을것
-
+        self.__channel_name = channel_name
+        self.__peer_object_list = {}
         # peer group 은 전체 peer 가 등록된 ALL GROUP 과 개별 group_id 로 구분된 리스트가 존재한다.
         self.__init_peer_group(conf.ALL_GROUP_ID)
+        # lock object for if add new peer don't have order that must locking
+        self.__add_peer_lock: threading.Lock = threading.Lock()
 
     @property
-    def peers(self):
-        return self.peer_list
+    def peer_object_list(self) -> dict:
+        """
 
-    def __set_data_object_from_data(self):
-        # { group_id: { peer_id:Peer } } 로 구성된 dictionary
-        self.peer_list = self.peer_list_data.peer_list
-        # { group_id : leader_order } 인 정보, 기존의 block_generator_target 정보를 대체한다.
-        self.peer_leader = self.peer_list_data.peer_leader
-        # { group_id : { order:peer_id } 인 order 순서 정보
-        self.peer_order_list = self.peer_list_data.peer_order_list
+        :return:  group_id: { peer_id:Peer } }
+        """
+        return self.__peer_object_list
+
+    @property
+    def peer_list(self) -> dict:
+        """
+
+        :return: { group_id: { peer_id:PeerInfo } }
+        """
+        return self.peer_list_data.peer_info_list
+
+    @property
+    def peer_leader(self) -> dict:
+        """
+
+        :return: { group_id : leader_order }
+        """
+        return self.peer_list_data.peer_leader
+
+    @property
+    def peer_order_list(self) -> dict:
+        """
+
+        :return: { group_id : { order:peer_id }
+        """
+        return self.peer_list_data.peer_order_list
 
     def dump(self):
         """DB에 저장가능한 data dump를 제공한다.
@@ -86,40 +122,37 @@ class PeerManager:
         :param do_reset: RS 로부터 받았을 때에는 status 를 리셋하지 않는다.
         """
         self.peer_list_data = peer_list_data
-        self.__set_data_object_from_data()
         if do_reset:
             self.__reset_peer_status()
+        self.__set_peer_object_list()
 
         return self
 
-    @staticmethod
-    def make_peer(peer_id, group_id, peer_target, peer_status=PeerStatus.unknown, peer_auth="", peer_token=""):
-        peer = Peer()
-        peer.order = -1
-        peer.peer_id = peer_id
-        peer.group_id = group_id
-        peer.target = peer_target
-        peer.status = peer_status
-        peer.auth = peer_auth
-        peer.token = peer_token
-        return peer
+    def __set_peer_object_list(self):
+        """ peer_info_list convert peer_object_list"""
 
-    def add_peer(self, peer_id, group_id, peer_target, peer_status=PeerStatus.unknown, peer_auth="", peer_token=""):
-        """peer_id 에 해당하는 peer 의 정보를 추가 혹은 갱신한다.
-        RS가 시작한 이후에 접속처리된 사용자는 status 를 connected 로 기록하고
-        RS가 재시작하며 DB에서 가져왔을때에는 사용자 status 를 unknown 으로 기록한다.
-        명시적으로 로그아웃한 경우 disconnected 로 기록한다.
+        for group_id in self.peer_list_data.peer_info_list.keys():
+            self.__peer_object_list[group_id] = self.__set_peer_object_list_in_group(group_id)
 
-        :param peer_id:
-        :param group_id:
-        :param peer_target:
-        :param peer_status:
-        :param peer_auth:
-        :param peer_token
-        :return:
+    def __set_peer_object_list_in_group(self, group_id):
+        """peer_info_list[group_id] -> peer_object_list[group_id]
+
+        :param group_id: group_id
+        :return: {peer_id: PeerObject, ... }
         """
-        peer = self.make_peer(peer_id, group_id, peer_target, peer_status, peer_auth, peer_token)
-        return self.add_peer_object(peer)
+        def convert_peer_info_item_to_peer_item(item):
+            """(peer_id, PeerInfo) -> (peer_id, PeerObject)
+
+            :param item: (peer_id, PeerInfo)
+            :return: peer_id, PeerObject)
+            """
+            return item[0], PeerObject(item[1])
+        # PeerInfo List To PeerObjectList
+        # map(func, [a, b] ) -> [func(a), func(b)]
+        # dict([(a, b), (a1,b1)]) -> {a: b, a1, b1}
+        return dict(
+                    map(convert_peer_info_item_to_peer_item, self.peer_list_data.peer_info_list[group_id].items())
+                    )
 
     def __get_peer_by_target(self, peer_target):
         for group_id in self.peer_list.keys():
@@ -129,36 +162,61 @@ class PeerManager:
                     return peer_each
         return None
 
-    def add_peer_object(self, peer):
-        logging.debug("in peer_list::add_peer_object")
+    def add_peer(self, peer_info):
+        """add_peer to peer_manager
+
+        :param peer_info: PeerInfo
+        :return: create_peer_order
+        """
+        logging.debug(f"add peer id: {peer_info.peer_id}")
 
         # If exist same peer_target in peer_list, delete exist one.
         # this is temporary rule that will be argued.
-        if peer.peer_id not in self.peer_list[conf.ALL_GROUP_ID].keys():
-            exist_peer = self.__get_peer_by_target(peer.target)
-            if exist_peer is not None:
-                self.remove_peer(exist_peer.peer_id, exist_peer.group_id)
+        # if peer_info.peer_id not in self.peer_list[conf.ALL_GROUP_ID].keys():
+        #     exist_peer = self.__get_peer_by_target(peer_info.target)
+        #     if exist_peer is not None:
+        #         self.remove_peer(exist_peer.peer_id, exist_peer.group_id)
 
-        self.__init_peer_group(peer.group_id)
-        if peer.order <= 0:
-            peer.order = self.__make_peer_order(peer)
+        self.__init_peer_group(peer_info.group_id)
 
-        if (self.peer_leader[peer.group_id] == 0) or (len(self.peer_list[peer.group_id]) == 0):
-            logging.debug("Set Group Leader Peer: " + str(peer.order))
-            self.peer_leader[peer.group_id] = peer.order
+        util.logger.spam(f"peer_manager::add_peer try make PeerObject")
+        peer = PeerObject(peer_info)
+
+        is_new_order = False
+        # if peer don't have order, create new order and add peer
+        # this logic must be atomic
+        if peer_info.order <= 0:
+            if peer_info.peer_id in self.peer_list[peer_info.group_id]:
+                peer_info.order = self.peer_list[peer_info.group_id][peer_info.peer_id].order
+            else:
+                is_new_order = True
+
+        if is_new_order:
+            self.__add_peer_lock.acquire()
+            peer_info.order = self.__make_peer_order(peer_info)
+
+        logging.debug(f"new peer order {peer_info.peer_id} : {peer_info.order}")
+
+        # set to leader peer
+        if (self.peer_leader[peer_info.group_id] == 0) or (len(self.peer_list[peer_info.group_id]) == 0):
+            logging.debug("Set Group Leader Peer: " + str(peer_info.order))
+            self.peer_leader[peer_info.group_id] = peer_info.order
 
         if (self.peer_leader[conf.ALL_GROUP_ID] == 0) or (len(self.peer_list[conf.ALL_GROUP_ID]) == 0):
-            logging.debug("Set ALL Leader Peer: " + str(peer.order))
-            self.peer_leader[conf.ALL_GROUP_ID] = peer.order
+            logging.debug("Set ALL Leader Peer: " + str(peer_info.order))
+            self.peer_leader[conf.ALL_GROUP_ID] = peer_info.order
 
-        self.peer_list[peer.group_id][peer.peer_id] = peer
-        self.peer_list[conf.ALL_GROUP_ID][peer.peer_id] = peer
-        self.peer_order_list[peer.group_id][peer.order] = peer.peer_id
-        self.peer_order_list[conf.ALL_GROUP_ID][peer.order] = peer.peer_id
+        self.peer_list[peer_info.group_id][peer_info.peer_id] = peer_info
+        self.peer_list[conf.ALL_GROUP_ID][peer_info.peer_id] = peer_info
+        self.peer_order_list[peer_info.group_id][peer_info.order] = peer_info.peer_id
+        self.peer_order_list[conf.ALL_GROUP_ID][peer_info.order] = peer_info.peer_id
+        self.__peer_object_list[peer_info.group_id][peer_info.peer_id] = peer
+        self.__peer_object_list[conf.ALL_GROUP_ID][peer_info.peer_id] = peer
 
-        logging.debug("in peer_list::add_peer_object, Peer List is: " + str(self.peer_list))
+        if is_new_order:
+            self.__add_peer_lock.release()
 
-        return peer.order
+        return peer_info.order
 
     def update_peer_status(self, peer_id, group_id=conf.ALL_GROUP_ID, peer_status=PeerStatus.connected):
         try:
@@ -180,7 +238,7 @@ class PeerManager:
         """
 
         if self.get_peer(peer.peer_id, peer.group_id) is None:
-            self.add_peer_object(peer)
+            self.add_peer(peer)
 
         if group_id is None:
             self.peer_leader[conf.ALL_GROUP_ID] = peer.order
@@ -198,10 +256,12 @@ class PeerManager:
         search_group = conf.ALL_GROUP_ID
 
         try:
-            leader_peer_id = self.peer_order_list[search_group][self.peer_leader[search_group]]
+            leader_peer_id = self.get_leader_id(search_group)
+
             leader_peer = self.get_peer(leader_peer_id, search_group)
             return leader_peer
         except KeyError as e:
+            logging.exception(e)
             if is_complain_to_rs:
                 return self.leader_complain_to_rs(search_group)
             else:
@@ -209,6 +269,30 @@ class PeerManager:
                     util.exit_and_msg(f"Fail to find a leader of this network.... {e}")
                 else:
                     return None
+
+    def get_leader_id(self, search_group) -> str:
+        """ get leader's peer id
+
+        :param search_group:
+        :return: leader peer_id
+        """
+        leader_peer_order = self.peer_leader[search_group]
+        logging.debug(f"leader peer order {leader_peer_order}")
+        leader_peer_id = self.peer_order_list[search_group][leader_peer_order]
+        return leader_peer_id
+
+    def get_leader_object(self) -> PeerObject:
+        """ get leader peer object
+
+        :param search_group:
+        :return: leader peer object
+        """
+
+        search_group = conf.ALL_GROUP_ID
+        # TODO group 별 리더가 필요하면 그에 맞춰 구현
+        leader_id = self.get_leader_id(search_group)
+        leader_object = self.peer_object_list[search_group][leader_id]
+        return leader_object
 
     def leader_complain_to_rs(self, group_id, is_announce_new_peer=True):
         """When fail to find a leader, Ask to RS.
@@ -316,7 +400,6 @@ class PeerManager:
         :param group_id:
         :return: peer, stub manager
         """
-
         # TODO 피어 재시작 후의 접속하는 피어의 connected 상태 변경 확인할 것
         # connected peer 만 순회하도록 수정할 것, 현재는 확인 되지 않았으므로 전체 순회로 구현함
         # max_retry = self.get_connected_peer_count(group_id)
@@ -345,20 +428,15 @@ class PeerManager:
         return None, None
 
     def get_peer_stub_manager(self, peer, group_id=None):
+        logging.debug("get_peer_stub_manager")
+        logging.debug(f"peer_info : {peer.peer_id} {peer.group_id}")
         if group_id is None:
                 group_id = conf.ALL_GROUP_ID
         try:
-            return self.peer_stub_managers[group_id][peer.peer_id]
-        except KeyError:
-            try:
-                self.__init_peer_group(peer.group_id)
-                stub_manager = StubManager(peer.target, loopchain_pb2_grpc.PeerServiceStub)
-                self.peer_stub_managers[group_id][peer.peer_id] = stub_manager
-                return stub_manager
-            except Exception as e:
-                logging.debug("try get peer stub except: " + str(e))
-                logging.warning("fail make peer stub: " + peer.target)
-                return None
+            return self.__peer_object_list[group_id][peer.peer_id].stub_manager
+        except Exception as e:
+            logging.debug("try get peer stub except: " + str(e))
+            return None
 
     def announce_new_leader(self, complained_leader_id, new_leader_id, is_broadcast=True):
         """Announce New Leader Id to Network
@@ -368,9 +446,9 @@ class PeerManager:
         :param is_broadcast: False(notify to RS only), True(broadcast to network include RS)
         :return:
         """
-
         announce_message = loopchain_pb2.ComplainLeaderRequest(
             complained_leader_id=complained_leader_id,
+            channel=self.__channel_name,
             new_leader_id=new_leader_id,
             message="Announce New Leader"
         )
@@ -445,7 +523,7 @@ class PeerManager:
         most_height_peer = None
         for peer_id in list(self.peer_list[group_id]):
             peer_each = self.peer_list[group_id][peer_id]
-            stub_manager = self.get_peer_stub_manager(peer_each, group_id)
+            stub_manager = peer_each.stub_manager
             try:
                 response = stub_manager.call("GetStatus",
                                              loopchain_pb2.StatusRequest(request="reset peers in group"),
@@ -460,6 +538,7 @@ class PeerManager:
 
         if len(self.peer_list[group_id]) == 0 and group_id != conf.ALL_GROUP_ID:
             del self.peer_list[group_id]
+            del self.peer_object_list[group_id]
 
         return most_height_peer
 
@@ -467,24 +546,45 @@ class PeerManager:
         delete_peer_list = []
         alive_peer_last = None
         check_leader_peer_count = 0
-        for peer_id in list(self.peer_list[group_id]):
+        for peer_id in list(self.__peer_object_list[group_id]):
             peer_each = self.peer_list[group_id][peer_id]
             stub_manager = self.get_peer_stub_manager(peer_each, group_id)
+            peer_object_each = self.__peer_object_list[group_id][peer_id]
+
             try:
-                response = stub_manager.call("GetStatus", loopchain_pb2.StatusRequest(request=""), is_stub_reuse=True)
+                response = stub_manager.call(
+                    "Request", loopchain_pb2.Message(code=message_code.Request.status), is_stub_reuse=True)
                 if response is None:
                     raise Exception
+
+                peer_object_each.no_response_count_reset()
                 peer_each.status = PeerStatus.connected
-                peer_status = json.loads(response.status)
+                peer_status = json.loads(response.meta)
+
                 # logging.debug(f"Check Peer Status ({peer_status['peer_type']})")
-                if peer_status["peer_type"] == "1":
+                if peer_status["peer_type"] == str(loopchain_pb2.BLOCK_GENERATOR):
                     check_leader_peer_count += 1
+
                 alive_peer_last = peer_each
+
             except Exception as e:
                 logging.warning("there is disconnected peer peer_id(" + peer_each.peer_id +
                                 ") gRPC Exception: " + str(e))
-                peer_each.status = PeerStatus.disconnected
-                logging.debug(f"diff mins {util.datetime_diff_in_mins(peer_each.status_update_time)}")
+                peer_object_each.no_response_count_up()
+
+                util.logger.spam(
+                    f"peer_manager::check_peer_status "
+                    f"peer_id({peer_object_each.peer_info.peer_id}) "
+                    f"no response count up({peer_object_each.no_response_count})")
+
+                if peer_object_each.no_response_count >= conf.NO_RESPONSE_COUNT_ALLOW_BY_HEARTBEAT:
+                    peer_each.status = PeerStatus.disconnected
+                    logging.debug(f"peer status update time: {peer_each.status_update_time}")
+                    logging.debug(f"this peer will remove {peer_each.peer_id}")
+                    self.remove_peer(peer_each.peer_id, peer_each.group_id)
+                    delete_peer_list.append(peer_each)
+
+                # logging.debug(f"diff mins {util.datetime_diff_in_mins(peer_each.status_update_time)}")
                 # if util.datetime_diff_in_mins(peer_each.status_update_time) >= conf.TIMEOUT_PEER_REMOVE_IN_LIST:
                 #     logging.debug(f"peer status update time: {peer_each.status_update_time}")
                 #     logging.debug(f"this peer will remove {peer_each.peer_id}")
@@ -492,9 +592,10 @@ class PeerManager:
                 #     delete_peer_list.append(peer_each)
 
         logging.debug(f"Leader Peer Count: ({check_leader_peer_count})")
-        if check_leader_peer_count != 1:
-            # reset network leader by RS
+        if len(delete_peer_list) > 0 and check_leader_peer_count != 1:
             if alive_peer_last is not None:
+                logging.warning(f"reset network leader by RS new leader({alive_peer_last.peer_id})")
+                # TODO rs 에 의한 leader reset 은 임시 구현으로 현재 멀티 채널을 지원하지 않는다.
                 self.set_leader_peer(alive_peer_last, None)
                 self.announce_new_leader(
                     complained_leader_id=alive_peer_last.peer_id, new_leader_id=alive_peer_last.peer_id,
@@ -530,17 +631,16 @@ class PeerManager:
 
         if len(self.peer_list[group_id]) == 0 and group_id != conf.ALL_GROUP_ID:
             del self.peer_list[group_id]
+            del self.peer_object_list[group_id]
 
     def __init_peer_group(self, group_id):
+        logging.debug(f"before init order list {self.peer_order_list}")
         if group_id not in self.peer_list.keys():
             logging.debug("init group: " + str(group_id))
             self.peer_list[group_id] = {}
             self.peer_order_list[group_id] = {}
             self.peer_leader[group_id] = 0
-
-        if group_id not in self.peer_stub_managers.keys():
-            # peer_stub_managers 는 다른 data 와 생성 경로가 다르므로 별도로 체크한다.
-            self.peer_stub_managers[group_id] = {}
+            self.__peer_object_list[group_id] = {}
 
     def __make_peer_order(self, peer):
         """소속된 그룹과 상관없이 전체 peer 가 순서에 대한 order 값을 가진다.
@@ -549,18 +649,11 @@ class PeerManager:
         :param peer:
         :return:
         """
-
-        # TODO peer order 발급 과정은 thread safe 하여야 한다. 임시로 적용. Thread 동작 관계는 추후 검토 필요.
-        lock = threading.Lock()
-        lock.acquire()
-
         last_order = 0
         # logging.debug("Peer List is: " + str(self.peer_list))
         # logging.debug("Peer List of peer group: " + str(self.peer_list[peer.group_id]))
 
         # 기존에 등록된 peer_id 는 같은 order 를 재사용한다.
-        if peer.peer_id in self.peer_list[peer.group_id]:
-            return self.peer_list[peer.group_id][peer.peer_id].order
 
         for group_id in self.peer_list.keys():
             for peer_id in self.peer_list[group_id]:
@@ -569,7 +662,6 @@ class PeerManager:
                 last_order = [last_order, peer_each.order][last_order < peer_each.order]
 
         last_order += 1
-        lock.release()
 
         return last_order
 
@@ -600,27 +692,34 @@ class PeerManager:
             return None
 
     def remove_peer(self, peer_id, group_id=None):
+        logging.debug(f"remove peer : {peer_id}")
+
         if group_id is None:
             group_id = conf.ALL_GROUP_ID
         try:
             remove_peer = self.peer_list[group_id].pop(peer_id)
+            self.__peer_object_list[group_id].pop(peer_id)
             if group_id != conf.ALL_GROUP_ID:
                 self.peer_list[conf.ALL_GROUP_ID].pop(peer_id)
+                self.__peer_object_list[conf.ALL_GROUP_ID].pop(peer_id)
+
             logging.debug("remove_peer: " + str(remove_peer.order))
 
             if remove_peer.order in self.peer_order_list[group_id].keys():
                 del self.peer_order_list[group_id][remove_peer.order]
-            if peer_id in self.peer_stub_managers[group_id].keys():
-                del self.peer_stub_managers[group_id][peer_id]
 
             if remove_peer.order in self.peer_order_list[conf.ALL_GROUP_ID].keys():
                 del self.peer_order_list[conf.ALL_GROUP_ID][remove_peer.order]
-            if peer_id in self.peer_stub_managers[conf.ALL_GROUP_ID].keys():
-                del self.peer_stub_managers[conf.ALL_GROUP_ID][peer_id]
+
+            if ObjectManager().peer_service is not None:
+                util.logger.spam(f"peer_manager:remove_peer try remove audience in sub processes")
+                ObjectManager().peer_service.common_service.remove_audience(peer_id, remove_peer.target)
 
             return True
-        except KeyError:
-            return False
+        except KeyError as e:
+            logging.debug(f"peer_manager:remove_peer there is no peer({e})")
+
+        return False
 
     def get_peer_count(self, group_id=None):
         count = 0

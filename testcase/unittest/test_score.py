@@ -23,8 +23,9 @@ import unittest
 
 import loopchain.utils as util
 import testcase.unittest.test_util as test_util
-from loopchain.blockchain import BlockChain, BlockStatus, Transaction, Block
+from loopchain.blockchain import BlockChain, BlockStatus, Block
 from loopchain.blockchain import ScoreBase
+
 
 util.set_log_level_debug()
 
@@ -33,6 +34,7 @@ class TestScore(unittest.TestCase):
     chain = None
     test_block_db = 'test_chain_code_block'
     score = None
+    __peer_id = 'aaa'
 
     @classmethod
     def setUpClass(cls):
@@ -44,6 +46,10 @@ class TestScore(unittest.TestCase):
         cls.assertIsNotNone(test_db, "DB생성 불가")
         cls.chain = BlockChain(test_db)
         cls.score = cls.SampleScore()
+
+    def setUp(self):
+        test_util.print_testname(self._testMethodName)
+        self.__peer_auth = test_util.create_peer_auth()
 
     @classmethod
     def tearDownClass(cls):
@@ -60,8 +66,7 @@ class TestScore(unittest.TestCase):
 
         block = Block()
         for x in range(10):
-            tx = Transaction()
-            tx.put_data("{args:[]}")
+            tx = test_util.create_basic_tx(self.__peer_id, self.__peer_auth)
             block.put_transaction(tx)
         block.generate_block(self.chain.last_block)
         return block
@@ -105,7 +110,6 @@ class TestScore(unittest.TestCase):
         생성된 블럭체인에 Score를 실행하고
         체인코드에서 쿼리로 블럭데이터를 가져와, 블럭을 검증하는 테스트 코드
         """
-        test_util.print_testname("test_invoke_and_query")
 
         for x in range(10):
             block = self.generate_block()
@@ -120,3 +124,6 @@ class TestScore(unittest.TestCase):
             block_index = self.chain.last_block.find_transaction_index(row[1])
             logging.debug(block_index)
             logging.debug(self.chain.last_block.mk_merkle_proof(block_index))
+
+if __name__ == '__main__':
+    unittest.main()

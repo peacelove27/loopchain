@@ -17,5 +17,4 @@ from .container import *
 from .score_service import *
 from .rest_service import *
 from .rest_service_rs import *
-from .tx_service import *
 from .common_service import *

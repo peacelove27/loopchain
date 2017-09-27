@@ -20,7 +20,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='loopchain.proto',
   package='',
   syntax='proto2',
-  serialized_pb=_b('\n\x0floopchain.proto\"F\n\x07Message\x12\x0c\n\x04\x63ode\x18\x01 \x02(\x05\x12\x0f\n\x07message\x18\x02 \x01(\t\x12\x0c\n\x04meta\x18\x03 \x01(\t\x12\x0e\n\x06object\x18\x04 \x01(\x0c\"]\n\x15\x43omplainLeaderRequest\x12\x1c\n\x14\x63omplained_leader_id\x18\x01 \x02(\t\x12\x15\n\rnew_leader_id\x18\x02 \x02(\t\x12\x0f\n\x07message\x18\x03 \x02(\t\"\x1d\n\x08PeerList\x12\x11\n\tpeer_list\x18\x01 \x02(\x0c\"\x1f\n\x0f\x43reateTxRequest\x12\x0c\n\x04\x64\x61ta\x18\x01 \x02(\t\"J\n\rCreateTxReply\x12\x15\n\rresponse_code\x18\x01 \x02(\x05\x12\x0f\n\x07tx_hash\x18\x02 \x02(\t\x12\x11\n\tmore_info\x18\x03 \x02(\t\"\x14\n\x06TxSend\x12\n\n\x02tx\x18\x01 \x02(\x0c\"r\n\x0fGetBlockRequest\x12\x12\n\nblock_hash\x18\x01 \x01(\t\x12\x18\n\x0c\x62lock_height\x18\x02 \x01(\x05:\x02-1\x12\x19\n\x11\x62lock_data_filter\x18\x03 \x02(\t\x12\x16\n\x0etx_data_filter\x18\x04 \x02(\t\"i\n\rGetBlockReply\x12\x15\n\rresponse_code\x18\x01 \x02(\x05\x12\x12\n\nblock_hash\x18\x02 \x02(\t\x12\x17\n\x0f\x62lock_data_json\x18\x03 \x02(\t\x12\x14\n\x0ctx_data_json\x18\x04 \x03(\t\"\x1e\n\x0cQueryRequest\x12\x0e\n\x06params\x18\x01 \x02(\t\"5\n\nQueryReply\x12\x15\n\rresponse_code\x18\x01 \x02(\x05\x12\x10\n\x08response\x18\x02 \x02(\t\"\x1f\n\x0cGetTxRequest\x12\x0f\n\x07tx_hash\x18\x01 \x02(\t\"R\n\nGetTxReply\x12\x15\n\rresponse_code\x18\x01 \x02(\x05\x12\x0c\n\x04meta\x18\x02 \x02(\t\x12\x0c\n\x04\x64\x61ta\x18\x03 \x02(\t\x12\x11\n\tmore_info\x18\x04 \x02(\t\")\n\x16GetInvokeResultRequest\x12\x0f\n\x07tx_hash\x18\x01 \x02(\t\"=\n\x14GetInvokeResultReply\x12\x15\n\rresponse_code\x18\x01 \x02(\x05\x12\x0e\n\x06result\x18\x02 \x01(\t\"&\n\x10\x42lockSyncRequest\x12\x12\n\nblock_hash\x18\x01 \x02(\t\"f\n\x0e\x42lockSyncReply\x12\x15\n\rresponse_code\x18\x01 \x02(\x05\x12\x14\n\x0c\x62lock_height\x18\x02 \x02(\x05\x12\x18\n\x10max_block_height\x18\x03 \x02(\x05\x12\r\n\x05\x62lock\x18\x04 \x02(\x0c\"\x1a\n\tBlockSend\x12\r\n\x05\x62lock\x18\x01 \x02(\x0c\"H\n\nBlockReply\x12\x15\n\rresponse_code\x18\x01 \x02(\x05\x12\x0f\n\x07message\x18\x02 \x02(\t\x12\x12\n\nblock_hash\x18\x03 \x02(\t\"f\n\tBlockVote\x12\x11\n\tvote_code\x18\x01 \x02(\x05\x12\x0f\n\x07message\x18\x02 \x02(\t\x12\x12\n\nblock_hash\x18\x03 \x02(\t\x12\x0f\n\x07peer_id\x18\x04 \x02(\t\x12\x10\n\x08group_id\x18\x05 \x02(\t\"2\n\rBlockAnnounce\x12\x12\n\nblock_hash\x18\x01 \x02(\t\x12\r\n\x05\x62lock\x18\x02 \x01(\x0c\"2\n\rCommonRequest\x12\x0f\n\x07request\x18\x01 \x02(\t\x12\x10\n\x08group_id\x18\x02 \x01(\t\"5\n\x0b\x43ommonReply\x12\x15\n\rresponse_code\x18\x01 \x02(\x05\x12\x0f\n\x07message\x18\x02 \x02(\t\" \n\rStatusRequest\x12\x0f\n\x07request\x18\x01 \x02(\t\"d\n\x0bStatusReply\x12\x0e\n\x06status\x18\x01 \x02(\t\x12\x14\n\x0c\x62lock_height\x18\x02 \x02(\x05\x12\x10\n\x08total_tx\x18\x03 \x02(\x05\x12\x1d\n\x15is_leader_complaining\x18\x04 \x01(\x05\"\x1d\n\x0bStopRequest\x12\x0e\n\x06reason\x18\x01 \x02(\t\"\x1b\n\tStopReply\x12\x0e\n\x06status\x18\x01 \x02(\t\"\x9b\x01\n\x0bPeerRequest\x12\x0f\n\x07peer_id\x18\x01 \x02(\t\x12\x13\n\x0bpeer_target\x18\x02 \x02(\t\x12\x10\n\x08group_id\x18\x03 \x02(\t\x12\x1c\n\tpeer_type\x18\x04 \x02(\x0e\x32\t.PeerType\x12\r\n\x05token\x18\x05 \x01(\t\x12\x12\n\npeer_order\x18\x06 \x01(\x05\x12\x13\n\x0bpeer_object\x18\x07 \x01(\x0c\"+\n\x06PeerID\x12\x0f\n\x07peer_id\x18\x02 \x02(\t\x12\x10\n\x08group_id\x18\x04 \x02(\t\"A\n\tPeerReply\x12\x0e\n\x06status\x18\x01 \x02(\x05\x12\x11\n\tpeer_list\x18\x02 \x02(\x0c\x12\x11\n\tmore_info\x18\x03 \x01(\t*<\n\x08PeerType\x12\x08\n\x04PEER\x10\x00\x12\x13\n\x0f\x42LOCK_GENERATOR\x10\x01\x12\x11\n\rRADIO_STATION\x10\x02\x32\xf2\x07\n\x0cInnerService\x12\x1f\n\x07Request\x12\x08.Message\x1a\x08.Message\"\x00\x12+\n\tGetStatus\x12\x0e.StatusRequest\x1a\x0c.StatusReply\"\x00\x12\x30\n\x0eGetScoreStatus\x12\x0e.StatusRequest\x1a\x0c.StatusReply\"\x00\x12\"\n\x04Stop\x12\x0c.StopRequest\x1a\n.StopReply\"\x00\x12%\n\x05GetTx\x12\r.GetTxRequest\x1a\x0b.GetTxReply\"\x00\x12.\n\x08GetBlock\x12\x10.GetBlockRequest\x1a\x0e.GetBlockReply\"\x00\x12%\n\x05Query\x12\r.QueryRequest\x1a\x0b.QueryReply\"\x00\x12\x31\n\tBlockSync\x12\x11.BlockSyncRequest\x1a\x0f.BlockSyncReply\"\x00\x12\x36\n\x18\x41nnounceUnconfirmedBlock\x12\n.BlockSend\x1a\x0c.CommonReply\"\x00\x12\x38\n\x16\x41nnounceConfirmedBlock\x12\x0e.BlockAnnounce\x1a\x0c.CommonReply\"\x00\x12/\n\x0f\x41nnounceNewPeer\x12\x0c.PeerRequest\x1a\x0c.CommonReply\"\x00\x12&\n\x04\x45\x63ho\x12\x0e.CommonRequest\x1a\x0c.CommonReply\"\x00\x12\x38\n\x0e\x43omplainLeader\x12\x16.ComplainLeaderRequest\x1a\x0c.CommonReply\"\x00\x12;\n\x11\x41nnounceNewLeader\x12\x16.ComplainLeaderRequest\x1a\x0c.CommonReply\"\x00\x12\x31\n\x10GetLastBlockHash\x12\x0e.CommonRequest\x1a\x0b.BlockReply\"\x00\x12)\n\tSubscribe\x12\x0c.PeerRequest\x1a\x0c.CommonReply\"\x00\x12+\n\x0bUnSubscribe\x12\x0c.PeerRequest\x1a\x0c.CommonReply\"\x00\x12 \n\x05\x41\x64\x64Tx\x12\x07.TxSend\x1a\x0c.CommonReply\"\x00\x12\x32\n\x14VoteUnconfirmedBlock\x12\n.BlockVote\x1a\x0c.CommonReply\"\x00\x12\x34\n\x12NotifyLeaderBroken\x12\x0e.CommonRequest\x1a\x0c.CommonReply\"\x00\x12\x34\n\x12NotifyProcessError\x12\x0e.CommonRequest\x1a\x0c.CommonReply\"\x00\x32\xa9\x08\n\x0bPeerService\x12\x1f\n\x07Request\x12\x08.Message\x1a\x08.Message\"\x00\x12+\n\tGetStatus\x12\x0e.StatusRequest\x1a\x0c.StatusReply\"\x00\x12\x30\n\x0eGetScoreStatus\x12\x0e.StatusRequest\x1a\x0c.StatusReply\"\x00\x12\"\n\x04Stop\x12\x0c.StopRequest\x1a\n.StopReply\"\x00\x12.\n\x08\x43reateTx\x12\x10.CreateTxRequest\x1a\x0e.CreateTxReply\"\x00\x12%\n\x05GetTx\x12\r.GetTxRequest\x1a\x0b.GetTxReply\"\x00\x12.\n\x08GetBlock\x12\x10.GetBlockRequest\x1a\x0e.GetBlockReply\"\x00\x12%\n\x05Query\x12\r.QueryRequest\x1a\x0b.QueryReply\"\x00\x12\x43\n\x0fGetInvokeResult\x12\x17.GetInvokeResultRequest\x1a\x15.GetInvokeResultReply\"\x00\x12\x31\n\tBlockSync\x12\x11.BlockSyncRequest\x1a\x0f.BlockSyncReply\"\x00\x12\x36\n\x18\x41nnounceUnconfirmedBlock\x12\n.BlockSend\x1a\x0c.CommonReply\"\x00\x12\x38\n\x16\x41nnounceConfirmedBlock\x12\x0e.BlockAnnounce\x1a\x0c.CommonReply\"\x00\x12/\n\x0f\x41nnounceNewPeer\x12\x0c.PeerRequest\x1a\x0c.CommonReply\"\x00\x12-\n\x12\x41nnounceDeletePeer\x12\x07.PeerID\x1a\x0c.CommonReply\"\x00\x12&\n\x04\x45\x63ho\x12\x0e.CommonRequest\x1a\x0c.CommonReply\"\x00\x12\x38\n\x0e\x43omplainLeader\x12\x16.ComplainLeaderRequest\x1a\x0c.CommonReply\"\x00\x12;\n\x11\x41nnounceNewLeader\x12\x16.ComplainLeaderRequest\x1a\x0c.CommonReply\"\x00\x12\x31\n\x10GetLastBlockHash\x12\x0e.CommonRequest\x1a\x0b.BlockReply\"\x00\x12)\n\tSubscribe\x12\x0c.PeerRequest\x1a\x0c.CommonReply\"\x00\x12+\n\x0bUnSubscribe\x12\x0c.PeerRequest\x1a\x0c.CommonReply\"\x00\x12 \n\x05\x41\x64\x64Tx\x12\x07.TxSend\x1a\x0c.CommonReply\"\x00\x12\x32\n\x14VoteUnconfirmedBlock\x12\n.BlockVote\x1a\x0c.CommonReply\"\x00\x32\x96\x03\n\x0cRadioStation\x12\x1f\n\x07Request\x12\x08.Message\x1a\x08.Message\"\x00\x12+\n\tGetStatus\x12\x0e.StatusRequest\x1a\x0c.StatusReply\"\x00\x12\"\n\x04Stop\x12\x0c.StopRequest\x1a\n.StopReply\"\x00\x12)\n\x0b\x43onnectPeer\x12\x0c.PeerRequest\x1a\n.PeerReply\"\x00\x12*\n\x0bGetPeerList\x12\x0e.CommonRequest\x1a\t.PeerList\"\x00\x12(\n\rGetPeerStatus\x12\x07.PeerID\x1a\x0c.StatusReply\"\x00\x12;\n\x11\x41nnounceNewLeader\x12\x16.ComplainLeaderRequest\x1a\x0c.CommonReply\"\x00\x12)\n\tSubscribe\x12\x0c.PeerRequest\x1a\x0c.CommonReply\"\x00\x12+\n\x0bUnSubscribe\x12\x0c.PeerRequest\x1a\x0c.CommonReply\"\x00\x32,\n\tContainer\x12\x1f\n\x07Request\x12\x08.Message\x1a\x08.Message\"\x00')
+  serialized_pb=_b('\n\x0floopchain.proto\"W\n\x07Message\x12\x0c\n\x04\x63ode\x18\x01 \x02(\x05\x12\x0f\n\x07\x63hannel\x18\x02 \x01(\t\x12\x0f\n\x07message\x18\x03 \x01(\t\x12\x0c\n\x04meta\x18\x04 \x01(\t\x12\x0e\n\x06object\x18\x05 \x01(\x0c\"n\n\x15\x43omplainLeaderRequest\x12\x1c\n\x14\x63omplained_leader_id\x18\x01 \x02(\t\x12\x0f\n\x07\x63hannel\x18\x02 \x01(\t\x12\x15\n\rnew_leader_id\x18\x03 \x02(\t\x12\x0f\n\x07message\x18\x04 \x02(\t\"\x1d\n\x08PeerList\x12\x11\n\tpeer_list\x18\x01 \x02(\x0c\"0\n\x0f\x43reateTxRequest\x12\x0c\n\x04\x64\x61ta\x18\x01 \x02(\t\x12\x0f\n\x07\x63hannel\x18\x02 \x01(\t\"J\n\rCreateTxReply\x12\x15\n\rresponse_code\x18\x01 \x02(\x05\x12\x0f\n\x07tx_hash\x18\x02 \x02(\t\x12\x11\n\tmore_info\x18\x03 \x02(\t\"%\n\x06TxSend\x12\n\n\x02tx\x18\x01 \x02(\x0c\x12\x0f\n\x07\x63hannel\x18\x02 \x01(\t\"\x83\x01\n\x0fGetBlockRequest\x12\x12\n\nblock_hash\x18\x01 \x01(\t\x12\x0f\n\x07\x63hannel\x18\x02 \x01(\t\x12\x18\n\x0c\x62lock_height\x18\x03 \x01(\x05:\x02-1\x12\x19\n\x11\x62lock_data_filter\x18\x04 \x02(\t\x12\x16\n\x0etx_data_filter\x18\x05 \x02(\t\"i\n\rGetBlockReply\x12\x15\n\rresponse_code\x18\x01 \x02(\x05\x12\x12\n\nblock_hash\x18\x02 \x02(\t\x12\x17\n\x0f\x62lock_data_json\x18\x03 \x02(\t\x12\x14\n\x0ctx_data_json\x18\x04 \x03(\t\"/\n\x0cQueryRequest\x12\x0e\n\x06params\x18\x01 \x02(\t\x12\x0f\n\x07\x63hannel\x18\x02 \x01(\t\"5\n\nQueryReply\x12\x15\n\rresponse_code\x18\x01 \x02(\x05\x12\x10\n\x08response\x18\x02 \x02(\t\"0\n\x0cGetTxRequest\x12\x0f\n\x07tx_hash\x18\x01 \x02(\t\x12\x0f\n\x07\x63hannel\x18\x02 \x01(\t\"y\n\nGetTxReply\x12\x15\n\rresponse_code\x18\x01 \x02(\x05\x12\x0c\n\x04meta\x18\x02 \x02(\t\x12\x0c\n\x04\x64\x61ta\x18\x03 \x02(\t\x12\x11\n\tmore_info\x18\x04 \x02(\t\x12\x11\n\tsignature\x18\x05 \x02(\x0c\x12\x12\n\npublic_key\x18\x06 \x02(\x0c\":\n\x16GetInvokeResultRequest\x12\x0f\n\x07tx_hash\x18\x01 \x02(\t\x12\x0f\n\x07\x63hannel\x18\x02 \x01(\t\"=\n\x14GetInvokeResultReply\x12\x15\n\rresponse_code\x18\x01 \x02(\x05\x12\x0e\n\x06result\x18\x02 \x01(\t\"7\n\x10\x42lockSyncRequest\x12\x12\n\nblock_hash\x18\x01 \x02(\t\x12\x0f\n\x07\x63hannel\x18\x02 \x01(\t\"f\n\x0e\x42lockSyncReply\x12\x15\n\rresponse_code\x18\x01 \x02(\x05\x12\x14\n\x0c\x62lock_height\x18\x02 \x02(\x05\x12\x18\n\x10max_block_height\x18\x03 \x02(\x05\x12\r\n\x05\x62lock\x18\x04 \x02(\x0c\"+\n\tBlockSend\x12\r\n\x05\x62lock\x18\x01 \x02(\x0c\x12\x0f\n\x07\x63hannel\x18\x02 \x01(\t\"H\n\nBlockReply\x12\x15\n\rresponse_code\x18\x01 \x02(\x05\x12\x0f\n\x07message\x18\x02 \x02(\t\x12\x12\n\nblock_hash\x18\x03 \x02(\t\"w\n\tBlockVote\x12\x11\n\tvote_code\x18\x01 \x02(\x05\x12\x0f\n\x07\x63hannel\x18\x02 \x01(\t\x12\x0f\n\x07message\x18\x03 \x02(\t\x12\x12\n\nblock_hash\x18\x04 \x02(\t\x12\x0f\n\x07peer_id\x18\x05 \x02(\t\x12\x10\n\x08group_id\x18\x06 \x02(\t\"C\n\rBlockAnnounce\x12\x12\n\nblock_hash\x18\x01 \x02(\t\x12\x0f\n\x07\x63hannel\x18\x02 \x01(\t\x12\r\n\x05\x62lock\x18\x03 \x01(\x0c\"C\n\rCommonRequest\x12\x0f\n\x07request\x18\x01 \x02(\t\x12\x0f\n\x07\x63hannel\x18\x02 \x01(\t\x12\x10\n\x08group_id\x18\x03 \x01(\t\"5\n\x0b\x43ommonReply\x12\x15\n\rresponse_code\x18\x01 \x02(\x05\x12\x0f\n\x07message\x18\x02 \x02(\t\"1\n\rStatusRequest\x12\x0f\n\x07request\x18\x01 \x02(\t\x12\x0f\n\x07\x63hannel\x18\x02 \x01(\t\"d\n\x0bStatusReply\x12\x0e\n\x06status\x18\x01 \x02(\t\x12\x14\n\x0c\x62lock_height\x18\x02 \x02(\x05\x12\x10\n\x08total_tx\x18\x03 \x02(\x05\x12\x1d\n\x15is_leader_complaining\x18\x04 \x01(\x05\"\x1d\n\x0bStopRequest\x12\x0e\n\x06reason\x18\x01 \x02(\t\"\x1b\n\tStopReply\x12\x0e\n\x06status\x18\x01 \x02(\t\"\xab\x01\n\x0bPeerRequest\x12\x0f\n\x07peer_id\x18\x01 \x02(\t\x12\x0f\n\x07\x63hannel\x18\x02 \x01(\t\x12\x13\n\x0bpeer_target\x18\x03 \x02(\t\x12\x10\n\x08group_id\x18\x04 \x02(\t\x12\x1c\n\tpeer_type\x18\x05 \x02(\x0e\x32\t.PeerType\x12\x0c\n\x04\x63\x65rt\x18\x06 \x01(\x0c\x12\x12\n\npeer_order\x18\x07 \x01(\x05\x12\x13\n\x0bpeer_object\x18\x08 \x01(\x0c\"<\n\x06PeerID\x12\x0f\n\x07peer_id\x18\x01 \x02(\t\x12\x0f\n\x07\x63hannel\x18\x02 \x01(\t\x12\x10\n\x08group_id\x18\x03 \x02(\t\"Z\n\x10\x43onnectPeerReply\x12\x0e\n\x06status\x18\x01 \x02(\x05\x12\x11\n\tpeer_list\x18\x02 \x02(\x0c\x12\x10\n\x08\x63hannels\x18\x03 \x03(\t\x12\x11\n\tmore_info\x18\x04 \x01(\t*<\n\x08PeerType\x12\x08\n\x04PEER\x10\x00\x12\x13\n\x0f\x42LOCK_GENERATOR\x10\x01\x12\x11\n\rRADIO_STATION\x10\x02\x32\xf5\x03\n\x0cInnerService\x12\x1f\n\x07Request\x12\x08.Message\x1a\x08.Message\"\x00\x12+\n\tGetStatus\x12\x0e.StatusRequest\x1a\x0c.StatusReply\"\x00\x12\x30\n\x0eGetScoreStatus\x12\x0e.StatusRequest\x1a\x0c.StatusReply\"\x00\x12\"\n\x04Stop\x12\x0c.StopRequest\x1a\n.StopReply\"\x00\x12&\n\x04\x45\x63ho\x12\x0e.CommonRequest\x1a\x0c.CommonReply\"\x00\x12.\n\x08GetBlock\x12\x10.GetBlockRequest\x1a\x0e.GetBlockReply\"\x00\x12%\n\x05Query\x12\r.QueryRequest\x1a\x0b.QueryReply\"\x00\x12)\n\tSubscribe\x12\x0c.PeerRequest\x1a\x0c.CommonReply\"\x00\x12+\n\x0bUnSubscribe\x12\x0c.PeerRequest\x1a\x0c.CommonReply\"\x00\x12\x34\n\x12NotifyLeaderBroken\x12\x0e.CommonRequest\x1a\x0c.CommonReply\"\x00\x12\x34\n\x12NotifyProcessError\x12\x0e.CommonRequest\x1a\x0c.CommonReply\"\x00\x32\xa9\x08\n\x0bPeerService\x12\x1f\n\x07Request\x12\x08.Message\x1a\x08.Message\"\x00\x12+\n\tGetStatus\x12\x0e.StatusRequest\x1a\x0c.StatusReply\"\x00\x12\x30\n\x0eGetScoreStatus\x12\x0e.StatusRequest\x1a\x0c.StatusReply\"\x00\x12\"\n\x04Stop\x12\x0c.StopRequest\x1a\n.StopReply\"\x00\x12.\n\x08\x43reateTx\x12\x10.CreateTxRequest\x1a\x0e.CreateTxReply\"\x00\x12%\n\x05GetTx\x12\r.GetTxRequest\x1a\x0b.GetTxReply\"\x00\x12.\n\x08GetBlock\x12\x10.GetBlockRequest\x1a\x0e.GetBlockReply\"\x00\x12%\n\x05Query\x12\r.QueryRequest\x1a\x0b.QueryReply\"\x00\x12\x43\n\x0fGetInvokeResult\x12\x17.GetInvokeResultRequest\x1a\x15.GetInvokeResultReply\"\x00\x12\x31\n\tBlockSync\x12\x11.BlockSyncRequest\x1a\x0f.BlockSyncReply\"\x00\x12\x36\n\x18\x41nnounceUnconfirmedBlock\x12\n.BlockSend\x1a\x0c.CommonReply\"\x00\x12\x38\n\x16\x41nnounceConfirmedBlock\x12\x0e.BlockAnnounce\x1a\x0c.CommonReply\"\x00\x12/\n\x0f\x41nnounceNewPeer\x12\x0c.PeerRequest\x1a\x0c.CommonReply\"\x00\x12-\n\x12\x41nnounceDeletePeer\x12\x07.PeerID\x1a\x0c.CommonReply\"\x00\x12&\n\x04\x45\x63ho\x12\x0e.CommonRequest\x1a\x0c.CommonReply\"\x00\x12\x38\n\x0e\x43omplainLeader\x12\x16.ComplainLeaderRequest\x1a\x0c.CommonReply\"\x00\x12;\n\x11\x41nnounceNewLeader\x12\x16.ComplainLeaderRequest\x1a\x0c.CommonReply\"\x00\x12\x31\n\x10GetLastBlockHash\x12\x0e.CommonRequest\x1a\x0b.BlockReply\"\x00\x12)\n\tSubscribe\x12\x0c.PeerRequest\x1a\x0c.CommonReply\"\x00\x12+\n\x0bUnSubscribe\x12\x0c.PeerRequest\x1a\x0c.CommonReply\"\x00\x12 \n\x05\x41\x64\x64Tx\x12\x07.TxSend\x1a\x0c.CommonReply\"\x00\x12\x32\n\x14VoteUnconfirmedBlock\x12\n.BlockVote\x1a\x0c.CommonReply\"\x00\x32\x9d\x03\n\x0cRadioStation\x12\x1f\n\x07Request\x12\x08.Message\x1a\x08.Message\"\x00\x12+\n\tGetStatus\x12\x0e.StatusRequest\x1a\x0c.StatusReply\"\x00\x12\"\n\x04Stop\x12\x0c.StopRequest\x1a\n.StopReply\"\x00\x12\x30\n\x0b\x43onnectPeer\x12\x0c.PeerRequest\x1a\x11.ConnectPeerReply\"\x00\x12*\n\x0bGetPeerList\x12\x0e.CommonRequest\x1a\t.PeerList\"\x00\x12(\n\rGetPeerStatus\x12\x07.PeerID\x1a\x0c.StatusReply\"\x00\x12;\n\x11\x41nnounceNewLeader\x12\x16.ComplainLeaderRequest\x1a\x0c.CommonReply\"\x00\x12)\n\tSubscribe\x12\x0c.PeerRequest\x1a\x0c.CommonReply\"\x00\x12+\n\x0bUnSubscribe\x12\x0c.PeerRequest\x1a\x0c.CommonReply\"\x00\x32,\n\tContainer\x12\x1f\n\x07Request\x12\x08.Message\x1a\x08.Message\"\x00')
 )
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
@@ -45,8 +45,8 @@ _PEERTYPE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   options=None,
-  serialized_start=1856,
-  serialized_end=1916,
+  serialized_start=2192,
+  serialized_end=2252,
 )
 _sym_db.RegisterEnumDescriptor(_PEERTYPE)
 
@@ -72,22 +72,29 @@ _MESSAGE = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='message', full_name='Message.message', index=1,
+      name='channel', full_name='Message.channel', index=1,
       number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='meta', full_name='Message.meta', index=2,
+      name='message', full_name='Message.message', index=2,
       number=3, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='object', full_name='Message.object', index=3,
-      number=4, type=12, cpp_type=9, label=1,
+      name='meta', full_name='Message.meta', index=3,
+      number=4, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='object', full_name='Message.object', index=4,
+      number=5, type=12, cpp_type=9, label=1,
       has_default_value=False, default_value=_b(""),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
@@ -105,7 +112,7 @@ _MESSAGE = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=19,
-  serialized_end=89,
+  serialized_end=106,
 )
 
 
@@ -124,15 +131,22 @@ _COMPLAINLEADERREQUEST = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='new_leader_id', full_name='ComplainLeaderRequest.new_leader_id', index=1,
-      number=2, type=9, cpp_type=9, label=2,
+      name='channel', full_name='ComplainLeaderRequest.channel', index=1,
+      number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='message', full_name='ComplainLeaderRequest.message', index=2,
+      name='new_leader_id', full_name='ComplainLeaderRequest.new_leader_id', index=2,
       number=3, type=9, cpp_type=9, label=2,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='message', full_name='ComplainLeaderRequest.message', index=3,
+      number=4, type=9, cpp_type=9, label=2,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
@@ -149,8 +163,8 @@ _COMPLAINLEADERREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=91,
-  serialized_end=184,
+  serialized_start=108,
+  serialized_end=218,
 )
 
 
@@ -180,8 +194,8 @@ _PEERLIST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=186,
-  serialized_end=215,
+  serialized_start=220,
+  serialized_end=249,
 )
 
 
@@ -199,6 +213,13 @@ _CREATETXREQUEST = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
+    _descriptor.FieldDescriptor(
+      name='channel', full_name='CreateTxRequest.channel', index=1,
+      number=2, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
   ],
   extensions=[
   ],
@@ -211,8 +232,8 @@ _CREATETXREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=217,
-  serialized_end=248,
+  serialized_start=251,
+  serialized_end=299,
 )
 
 
@@ -256,8 +277,8 @@ _CREATETXREPLY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=250,
-  serialized_end=324,
+  serialized_start=301,
+  serialized_end=375,
 )
 
 
@@ -275,6 +296,13 @@ _TXSEND = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
+    _descriptor.FieldDescriptor(
+      name='channel', full_name='TxSend.channel', index=1,
+      number=2, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
   ],
   extensions=[
   ],
@@ -287,8 +315,8 @@ _TXSEND = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=326,
-  serialized_end=346,
+  serialized_start=377,
+  serialized_end=414,
 )
 
 
@@ -307,22 +335,29 @@ _GETBLOCKREQUEST = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='block_height', full_name='GetBlockRequest.block_height', index=1,
-      number=2, type=5, cpp_type=1, label=1,
-      has_default_value=True, default_value=-1,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-    _descriptor.FieldDescriptor(
-      name='block_data_filter', full_name='GetBlockRequest.block_data_filter', index=2,
-      number=3, type=9, cpp_type=9, label=2,
+      name='channel', full_name='GetBlockRequest.channel', index=1,
+      number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='tx_data_filter', full_name='GetBlockRequest.tx_data_filter', index=3,
+      name='block_height', full_name='GetBlockRequest.block_height', index=2,
+      number=3, type=5, cpp_type=1, label=1,
+      has_default_value=True, default_value=-1,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='block_data_filter', full_name='GetBlockRequest.block_data_filter', index=3,
       number=4, type=9, cpp_type=9, label=2,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='tx_data_filter', full_name='GetBlockRequest.tx_data_filter', index=4,
+      number=5, type=9, cpp_type=9, label=2,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
@@ -339,8 +374,8 @@ _GETBLOCKREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=348,
-  serialized_end=462,
+  serialized_start=417,
+  serialized_end=548,
 )
 
 
@@ -391,8 +426,8 @@ _GETBLOCKREPLY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=464,
-  serialized_end=569,
+  serialized_start=550,
+  serialized_end=655,
 )
 
 
@@ -410,6 +445,13 @@ _QUERYREQUEST = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
+    _descriptor.FieldDescriptor(
+      name='channel', full_name='QueryRequest.channel', index=1,
+      number=2, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
   ],
   extensions=[
   ],
@@ -422,8 +464,8 @@ _QUERYREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=571,
-  serialized_end=601,
+  serialized_start=657,
+  serialized_end=704,
 )
 
 
@@ -460,8 +502,8 @@ _QUERYREPLY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=603,
-  serialized_end=656,
+  serialized_start=706,
+  serialized_end=759,
 )
 
 
@@ -479,6 +521,13 @@ _GETTXREQUEST = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
+    _descriptor.FieldDescriptor(
+      name='channel', full_name='GetTxRequest.channel', index=1,
+      number=2, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
   ],
   extensions=[
   ],
@@ -491,8 +540,8 @@ _GETTXREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=658,
-  serialized_end=689,
+  serialized_start=761,
+  serialized_end=809,
 )
 
 
@@ -531,6 +580,20 @@ _GETTXREPLY = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
+    _descriptor.FieldDescriptor(
+      name='signature', full_name='GetTxReply.signature', index=4,
+      number=5, type=12, cpp_type=9, label=2,
+      has_default_value=False, default_value=_b(""),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='public_key', full_name='GetTxReply.public_key', index=5,
+      number=6, type=12, cpp_type=9, label=2,
+      has_default_value=False, default_value=_b(""),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
   ],
   extensions=[
   ],
@@ -543,8 +606,8 @@ _GETTXREPLY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=691,
-  serialized_end=773,
+  serialized_start=811,
+  serialized_end=932,
 )
 
 
@@ -562,6 +625,13 @@ _GETINVOKERESULTREQUEST = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
+    _descriptor.FieldDescriptor(
+      name='channel', full_name='GetInvokeResultRequest.channel', index=1,
+      number=2, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
   ],
   extensions=[
   ],
@@ -574,8 +644,8 @@ _GETINVOKERESULTREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=775,
-  serialized_end=816,
+  serialized_start=934,
+  serialized_end=992,
 )
 
 
@@ -612,8 +682,8 @@ _GETINVOKERESULTREPLY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=818,
-  serialized_end=879,
+  serialized_start=994,
+  serialized_end=1055,
 )
 
 
@@ -631,6 +701,13 @@ _BLOCKSYNCREQUEST = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
+    _descriptor.FieldDescriptor(
+      name='channel', full_name='BlockSyncRequest.channel', index=1,
+      number=2, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
   ],
   extensions=[
   ],
@@ -643,8 +720,8 @@ _BLOCKSYNCREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=881,
-  serialized_end=919,
+  serialized_start=1057,
+  serialized_end=1112,
 )
 
 
@@ -695,8 +772,8 @@ _BLOCKSYNCREPLY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=921,
-  serialized_end=1023,
+  serialized_start=1114,
+  serialized_end=1216,
 )
 
 
@@ -714,6 +791,13 @@ _BLOCKSEND = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
+    _descriptor.FieldDescriptor(
+      name='channel', full_name='BlockSend.channel', index=1,
+      number=2, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
   ],
   extensions=[
   ],
@@ -726,8 +810,8 @@ _BLOCKSEND = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1025,
-  serialized_end=1051,
+  serialized_start=1218,
+  serialized_end=1261,
 )
 
 
@@ -771,8 +855,8 @@ _BLOCKREPLY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1053,
-  serialized_end=1125,
+  serialized_start=1263,
+  serialized_end=1335,
 )
 
 
@@ -791,29 +875,36 @@ _BLOCKVOTE = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='message', full_name='BlockVote.message', index=1,
-      number=2, type=9, cpp_type=9, label=2,
+      name='channel', full_name='BlockVote.channel', index=1,
+      number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='block_hash', full_name='BlockVote.block_hash', index=2,
+      name='message', full_name='BlockVote.message', index=2,
       number=3, type=9, cpp_type=9, label=2,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='peer_id', full_name='BlockVote.peer_id', index=3,
+      name='block_hash', full_name='BlockVote.block_hash', index=3,
       number=4, type=9, cpp_type=9, label=2,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='group_id', full_name='BlockVote.group_id', index=4,
+      name='peer_id', full_name='BlockVote.peer_id', index=4,
       number=5, type=9, cpp_type=9, label=2,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='group_id', full_name='BlockVote.group_id', index=5,
+      number=6, type=9, cpp_type=9, label=2,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
@@ -830,8 +921,8 @@ _BLOCKVOTE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1127,
-  serialized_end=1229,
+  serialized_start=1337,
+  serialized_end=1456,
 )
 
 
@@ -850,8 +941,15 @@ _BLOCKANNOUNCE = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='block', full_name='BlockAnnounce.block', index=1,
-      number=2, type=12, cpp_type=9, label=1,
+      name='channel', full_name='BlockAnnounce.channel', index=1,
+      number=2, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='block', full_name='BlockAnnounce.block', index=2,
+      number=3, type=12, cpp_type=9, label=1,
       has_default_value=False, default_value=_b(""),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
@@ -868,8 +966,8 @@ _BLOCKANNOUNCE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1231,
-  serialized_end=1281,
+  serialized_start=1458,
+  serialized_end=1525,
 )
 
 
@@ -888,8 +986,15 @@ _COMMONREQUEST = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='group_id', full_name='CommonRequest.group_id', index=1,
+      name='channel', full_name='CommonRequest.channel', index=1,
       number=2, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='group_id', full_name='CommonRequest.group_id', index=2,
+      number=3, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
@@ -906,8 +1011,8 @@ _COMMONREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1283,
-  serialized_end=1333,
+  serialized_start=1527,
+  serialized_end=1594,
 )
 
 
@@ -944,8 +1049,8 @@ _COMMONREPLY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1335,
-  serialized_end=1388,
+  serialized_start=1596,
+  serialized_end=1649,
 )
 
 
@@ -963,6 +1068,13 @@ _STATUSREQUEST = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
+    _descriptor.FieldDescriptor(
+      name='channel', full_name='StatusRequest.channel', index=1,
+      number=2, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
   ],
   extensions=[
   ],
@@ -975,8 +1087,8 @@ _STATUSREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1390,
-  serialized_end=1422,
+  serialized_start=1651,
+  serialized_end=1700,
 )
 
 
@@ -1027,8 +1139,8 @@ _STATUSREPLY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1424,
-  serialized_end=1524,
+  serialized_start=1702,
+  serialized_end=1802,
 )
 
 
@@ -1058,8 +1170,8 @@ _STOPREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1526,
-  serialized_end=1555,
+  serialized_start=1804,
+  serialized_end=1833,
 )
 
 
@@ -1089,8 +1201,8 @@ _STOPREPLY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1557,
-  serialized_end=1584,
+  serialized_start=1835,
+  serialized_end=1862,
 )
 
 
@@ -1109,43 +1221,50 @@ _PEERREQUEST = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='peer_target', full_name='PeerRequest.peer_target', index=1,
-      number=2, type=9, cpp_type=9, label=2,
+      name='channel', full_name='PeerRequest.channel', index=1,
+      number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='group_id', full_name='PeerRequest.group_id', index=2,
+      name='peer_target', full_name='PeerRequest.peer_target', index=2,
       number=3, type=9, cpp_type=9, label=2,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='peer_type', full_name='PeerRequest.peer_type', index=3,
-      number=4, type=14, cpp_type=8, label=2,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-    _descriptor.FieldDescriptor(
-      name='token', full_name='PeerRequest.token', index=4,
-      number=5, type=9, cpp_type=9, label=1,
+      name='group_id', full_name='PeerRequest.group_id', index=3,
+      number=4, type=9, cpp_type=9, label=2,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='peer_order', full_name='PeerRequest.peer_order', index=5,
-      number=6, type=5, cpp_type=1, label=1,
+      name='peer_type', full_name='PeerRequest.peer_type', index=4,
+      number=5, type=14, cpp_type=8, label=2,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='peer_object', full_name='PeerRequest.peer_object', index=6,
-      number=7, type=12, cpp_type=9, label=1,
+      name='cert', full_name='PeerRequest.cert', index=5,
+      number=6, type=12, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b(""),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='peer_order', full_name='PeerRequest.peer_order', index=6,
+      number=7, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='peer_object', full_name='PeerRequest.peer_object', index=7,
+      number=8, type=12, cpp_type=9, label=1,
       has_default_value=False, default_value=_b(""),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
@@ -1162,8 +1281,8 @@ _PEERREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1587,
-  serialized_end=1742,
+  serialized_start=1865,
+  serialized_end=2036,
 )
 
 
@@ -1176,14 +1295,21 @@ _PEERID = _descriptor.Descriptor(
   fields=[
     _descriptor.FieldDescriptor(
       name='peer_id', full_name='PeerID.peer_id', index=0,
-      number=2, type=9, cpp_type=9, label=2,
+      number=1, type=9, cpp_type=9, label=2,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='group_id', full_name='PeerID.group_id', index=1,
-      number=4, type=9, cpp_type=9, label=2,
+      name='channel', full_name='PeerID.channel', index=1,
+      number=2, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='group_id', full_name='PeerID.group_id', index=2,
+      number=3, type=9, cpp_type=9, label=2,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
@@ -1200,35 +1326,42 @@ _PEERID = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1744,
-  serialized_end=1787,
+  serialized_start=2038,
+  serialized_end=2098,
 )
 
 
-_PEERREPLY = _descriptor.Descriptor(
-  name='PeerReply',
-  full_name='PeerReply',
+_CONNECTPEERREPLY = _descriptor.Descriptor(
+  name='ConnectPeerReply',
+  full_name='ConnectPeerReply',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='status', full_name='PeerReply.status', index=0,
+      name='status', full_name='ConnectPeerReply.status', index=0,
       number=1, type=5, cpp_type=1, label=2,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='peer_list', full_name='PeerReply.peer_list', index=1,
+      name='peer_list', full_name='ConnectPeerReply.peer_list', index=1,
       number=2, type=12, cpp_type=9, label=2,
       has_default_value=False, default_value=_b(""),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='more_info', full_name='PeerReply.more_info', index=2,
-      number=3, type=9, cpp_type=9, label=1,
+      name='channels', full_name='ConnectPeerReply.channels', index=2,
+      number=3, type=9, cpp_type=9, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='more_info', full_name='ConnectPeerReply.more_info', index=3,
+      number=4, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
@@ -1245,8 +1378,8 @@ _PEERREPLY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1789,
-  serialized_end=1854,
+  serialized_start=2100,
+  serialized_end=2190,
 )
 
 _PEERREQUEST.fields_by_name['peer_type'].enum_type = _PEERTYPE
@@ -1278,7 +1411,7 @@ DESCRIPTOR.message_types_by_name['StopRequest'] = _STOPREQUEST
 DESCRIPTOR.message_types_by_name['StopReply'] = _STOPREPLY
 DESCRIPTOR.message_types_by_name['PeerRequest'] = _PEERREQUEST
 DESCRIPTOR.message_types_by_name['PeerID'] = _PEERID
-DESCRIPTOR.message_types_by_name['PeerReply'] = _PEERREPLY
+DESCRIPTOR.message_types_by_name['ConnectPeerReply'] = _CONNECTPEERREPLY
 DESCRIPTOR.enum_types_by_name['PeerType'] = _PEERTYPE
 
 Message = _reflection.GeneratedProtocolMessageType('Message', (_message.Message,), dict(
@@ -1477,12 +1610,12 @@ PeerID = _reflection.GeneratedProtocolMessageType('PeerID', (_message.Message,),
   ))
 _sym_db.RegisterMessage(PeerID)
 
-PeerReply = _reflection.GeneratedProtocolMessageType('PeerReply', (_message.Message,), dict(
-  DESCRIPTOR = _PEERREPLY,
+ConnectPeerReply = _reflection.GeneratedProtocolMessageType('ConnectPeerReply', (_message.Message,), dict(
+  DESCRIPTOR = _CONNECTPEERREPLY,
   __module__ = 'loopchain_pb2'
-  # @@protoc_insertion_point(class_scope:PeerReply)
+  # @@protoc_insertion_point(class_scope:ConnectPeerReply)
   ))
-_sym_db.RegisterMessage(PeerReply)
+_sym_db.RegisterMessage(ConnectPeerReply)
 
 
 try:
@@ -1526,10 +1659,10 @@ try:
           request_serializer=StopRequest.SerializeToString,
           response_deserializer=StopReply.FromString,
           )
-      self.GetTx = channel.unary_unary(
-          '/InnerService/GetTx',
-          request_serializer=GetTxRequest.SerializeToString,
-          response_deserializer=GetTxReply.FromString,
+      self.Echo = channel.unary_unary(
+          '/InnerService/Echo',
+          request_serializer=CommonRequest.SerializeToString,
+          response_deserializer=CommonReply.FromString,
           )
       self.GetBlock = channel.unary_unary(
           '/InnerService/GetBlock',
@@ -1541,46 +1674,6 @@ try:
           request_serializer=QueryRequest.SerializeToString,
           response_deserializer=QueryReply.FromString,
           )
-      self.BlockSync = channel.unary_unary(
-          '/InnerService/BlockSync',
-          request_serializer=BlockSyncRequest.SerializeToString,
-          response_deserializer=BlockSyncReply.FromString,
-          )
-      self.AnnounceUnconfirmedBlock = channel.unary_unary(
-          '/InnerService/AnnounceUnconfirmedBlock',
-          request_serializer=BlockSend.SerializeToString,
-          response_deserializer=CommonReply.FromString,
-          )
-      self.AnnounceConfirmedBlock = channel.unary_unary(
-          '/InnerService/AnnounceConfirmedBlock',
-          request_serializer=BlockAnnounce.SerializeToString,
-          response_deserializer=CommonReply.FromString,
-          )
-      self.AnnounceNewPeer = channel.unary_unary(
-          '/InnerService/AnnounceNewPeer',
-          request_serializer=PeerRequest.SerializeToString,
-          response_deserializer=CommonReply.FromString,
-          )
-      self.Echo = channel.unary_unary(
-          '/InnerService/Echo',
-          request_serializer=CommonRequest.SerializeToString,
-          response_deserializer=CommonReply.FromString,
-          )
-      self.ComplainLeader = channel.unary_unary(
-          '/InnerService/ComplainLeader',
-          request_serializer=ComplainLeaderRequest.SerializeToString,
-          response_deserializer=CommonReply.FromString,
-          )
-      self.AnnounceNewLeader = channel.unary_unary(
-          '/InnerService/AnnounceNewLeader',
-          request_serializer=ComplainLeaderRequest.SerializeToString,
-          response_deserializer=CommonReply.FromString,
-          )
-      self.GetLastBlockHash = channel.unary_unary(
-          '/InnerService/GetLastBlockHash',
-          request_serializer=CommonRequest.SerializeToString,
-          response_deserializer=BlockReply.FromString,
-          )
       self.Subscribe = channel.unary_unary(
           '/InnerService/Subscribe',
           request_serializer=PeerRequest.SerializeToString,
@@ -1589,16 +1682,6 @@ try:
       self.UnSubscribe = channel.unary_unary(
           '/InnerService/UnSubscribe',
           request_serializer=PeerRequest.SerializeToString,
-          response_deserializer=CommonReply.FromString,
-          )
-      self.AddTx = channel.unary_unary(
-          '/InnerService/AddTx',
-          request_serializer=TxSend.SerializeToString,
-          response_deserializer=CommonReply.FromString,
-          )
-      self.VoteUnconfirmedBlock = channel.unary_unary(
-          '/InnerService/VoteUnconfirmedBlock',
-          request_serializer=BlockVote.SerializeToString,
           response_deserializer=CommonReply.FromString,
           )
       self.NotifyLeaderBroken = channel.unary_unary(
@@ -1640,7 +1723,7 @@ try:
       context.set_details('Method not implemented!')
       raise NotImplementedError('Method not implemented!')
 
-    def GetTx(self, request, context):
+    def Echo(self, request, context):
       context.set_code(grpc.StatusCode.UNIMPLEMENTED)
       context.set_details('Method not implemented!')
       raise NotImplementedError('Method not implemented!')
@@ -1655,62 +1738,7 @@ try:
       context.set_details('Method not implemented!')
       raise NotImplementedError('Method not implemented!')
 
-    def BlockSync(self, request, context):
-      """Peer 의 Block Height 보정용 interface
-      """
-      context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-      context.set_details('Method not implemented!')
-      raise NotImplementedError('Method not implemented!')
-
-    def AnnounceUnconfirmedBlock(self, request, context):
-      """Subscribe 후 broadcast 받는 인터페이스는 Announce- 로 시작한다.
-      """
-      context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-      context.set_details('Method not implemented!')
-      raise NotImplementedError('Method not implemented!')
-
-    def AnnounceConfirmedBlock(self, request, context):
-      context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-      context.set_details('Method not implemented!')
-      raise NotImplementedError('Method not implemented!')
-
-    def AnnounceNewPeer(self, request, context):
-      context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-      context.set_details('Method not implemented!')
-      raise NotImplementedError('Method not implemented!')
-
-    def Echo(self, request, context):
-      """Test 검증을 위한 인터페이스
-      """
-      context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-      context.set_details('Method not implemented!')
-      raise NotImplementedError('Method not implemented!')
-
-    def ComplainLeader(self, request, context):
-      """Leader 선정을 위한 인터페이스
-      """
-      context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-      context.set_details('Method not implemented!')
-      raise NotImplementedError('Method not implemented!')
-
-    def AnnounceNewLeader(self, request, context):
-      context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-      context.set_details('Method not implemented!')
-      raise NotImplementedError('Method not implemented!')
-
-    def GetLastBlockHash(self, request, context):
-      """/////////////////////////////////////////////////////////////////////
-      BlockGenerator (leader) 에게만 허용되어야 하는 interface
-      /////////////////////////////////////////////////////////////////////
-      RadioStation 에서 GetLastBlockHash 는 Block Height Sync 를 위해서 사용된다.
-      """
-      context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-      context.set_details('Method not implemented!')
-      raise NotImplementedError('Method not implemented!')
-
     def Subscribe(self, request, context):
-      """Subscribe 와 UnSubscribe 는 Broadcast 관련 메소드로 radiostation.proto 와 동일하게 구성되어야 한다.
-      """
       context.set_code(grpc.StatusCode.UNIMPLEMENTED)
       context.set_details('Method not implemented!')
       raise NotImplementedError('Method not implemented!')
@@ -1720,22 +1748,7 @@ try:
       context.set_details('Method not implemented!')
       raise NotImplementedError('Method not implemented!')
 
-    def AddTx(self, request, context):
-      context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-      context.set_details('Method not implemented!')
-      raise NotImplementedError('Method not implemented!')
-
-    def VoteUnconfirmedBlock(self, request, context):
-      context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-      context.set_details('Method not implemented!')
-      raise NotImplementedError('Method not implemented!')
-
     def NotifyLeaderBroken(self, request, context):
-      """/////////////////////////////////////////////////////////////////////
-      Inner channel 전용 메시지, 내부의 Process 가 요청하는 interface
-      Notify- 로 시작한다.
-      /////////////////////////////////////////////////////////////////////
-      """
       context.set_code(grpc.StatusCode.UNIMPLEMENTED)
       context.set_details('Method not implemented!')
       raise NotImplementedError('Method not implemented!')
@@ -1768,10 +1781,10 @@ try:
             request_deserializer=StopRequest.FromString,
             response_serializer=StopReply.SerializeToString,
         ),
-        'GetTx': grpc.unary_unary_rpc_method_handler(
-            servicer.GetTx,
-            request_deserializer=GetTxRequest.FromString,
-            response_serializer=GetTxReply.SerializeToString,
+        'Echo': grpc.unary_unary_rpc_method_handler(
+            servicer.Echo,
+            request_deserializer=CommonRequest.FromString,
+            response_serializer=CommonReply.SerializeToString,
         ),
         'GetBlock': grpc.unary_unary_rpc_method_handler(
             servicer.GetBlock,
@@ -1783,46 +1796,6 @@ try:
             request_deserializer=QueryRequest.FromString,
             response_serializer=QueryReply.SerializeToString,
         ),
-        'BlockSync': grpc.unary_unary_rpc_method_handler(
-            servicer.BlockSync,
-            request_deserializer=BlockSyncRequest.FromString,
-            response_serializer=BlockSyncReply.SerializeToString,
-        ),
-        'AnnounceUnconfirmedBlock': grpc.unary_unary_rpc_method_handler(
-            servicer.AnnounceUnconfirmedBlock,
-            request_deserializer=BlockSend.FromString,
-            response_serializer=CommonReply.SerializeToString,
-        ),
-        'AnnounceConfirmedBlock': grpc.unary_unary_rpc_method_handler(
-            servicer.AnnounceConfirmedBlock,
-            request_deserializer=BlockAnnounce.FromString,
-            response_serializer=CommonReply.SerializeToString,
-        ),
-        'AnnounceNewPeer': grpc.unary_unary_rpc_method_handler(
-            servicer.AnnounceNewPeer,
-            request_deserializer=PeerRequest.FromString,
-            response_serializer=CommonReply.SerializeToString,
-        ),
-        'Echo': grpc.unary_unary_rpc_method_handler(
-            servicer.Echo,
-            request_deserializer=CommonRequest.FromString,
-            response_serializer=CommonReply.SerializeToString,
-        ),
-        'ComplainLeader': grpc.unary_unary_rpc_method_handler(
-            servicer.ComplainLeader,
-            request_deserializer=ComplainLeaderRequest.FromString,
-            response_serializer=CommonReply.SerializeToString,
-        ),
-        'AnnounceNewLeader': grpc.unary_unary_rpc_method_handler(
-            servicer.AnnounceNewLeader,
-            request_deserializer=ComplainLeaderRequest.FromString,
-            response_serializer=CommonReply.SerializeToString,
-        ),
-        'GetLastBlockHash': grpc.unary_unary_rpc_method_handler(
-            servicer.GetLastBlockHash,
-            request_deserializer=CommonRequest.FromString,
-            response_serializer=BlockReply.SerializeToString,
-        ),
         'Subscribe': grpc.unary_unary_rpc_method_handler(
             servicer.Subscribe,
             request_deserializer=PeerRequest.FromString,
@@ -1831,16 +1804,6 @@ try:
         'UnSubscribe': grpc.unary_unary_rpc_method_handler(
             servicer.UnSubscribe,
             request_deserializer=PeerRequest.FromString,
-            response_serializer=CommonReply.SerializeToString,
-        ),
-        'AddTx': grpc.unary_unary_rpc_method_handler(
-            servicer.AddTx,
-            request_deserializer=TxSend.FromString,
-            response_serializer=CommonReply.SerializeToString,
-        ),
-        'VoteUnconfirmedBlock': grpc.unary_unary_rpc_method_handler(
-            servicer.VoteUnconfirmedBlock,
-            request_deserializer=BlockVote.FromString,
             response_serializer=CommonReply.SerializeToString,
         ),
         'NotifyLeaderBroken': grpc.unary_unary_rpc_method_handler(
@@ -2260,7 +2223,7 @@ try:
       self.ConnectPeer = channel.unary_unary(
           '/RadioStation/ConnectPeer',
           request_serializer=PeerRequest.SerializeToString,
-          response_deserializer=PeerReply.FromString,
+          response_deserializer=ConnectPeerReply.FromString,
           )
       self.GetPeerList = channel.unary_unary(
           '/RadioStation/GetPeerList',
@@ -2364,7 +2327,7 @@ try:
         'ConnectPeer': grpc.unary_unary_rpc_method_handler(
             servicer.ConnectPeer,
             request_deserializer=PeerRequest.FromString,
-            response_serializer=PeerReply.SerializeToString,
+            response_serializer=ConnectPeerReply.SerializeToString,
         ),
         'GetPeerList': grpc.unary_unary_rpc_method_handler(
             servicer.GetPeerList,
@@ -2458,57 +2421,17 @@ try:
       context.code(beta_interfaces.StatusCode.UNIMPLEMENTED)
     def Stop(self, request, context):
       context.code(beta_interfaces.StatusCode.UNIMPLEMENTED)
-    def GetTx(self, request, context):
+    def Echo(self, request, context):
       context.code(beta_interfaces.StatusCode.UNIMPLEMENTED)
     def GetBlock(self, request, context):
       context.code(beta_interfaces.StatusCode.UNIMPLEMENTED)
     def Query(self, request, context):
       context.code(beta_interfaces.StatusCode.UNIMPLEMENTED)
-    def BlockSync(self, request, context):
-      """Peer 의 Block Height 보정용 interface
-      """
-      context.code(beta_interfaces.StatusCode.UNIMPLEMENTED)
-    def AnnounceUnconfirmedBlock(self, request, context):
-      """Subscribe 후 broadcast 받는 인터페이스는 Announce- 로 시작한다.
-      """
-      context.code(beta_interfaces.StatusCode.UNIMPLEMENTED)
-    def AnnounceConfirmedBlock(self, request, context):
-      context.code(beta_interfaces.StatusCode.UNIMPLEMENTED)
-    def AnnounceNewPeer(self, request, context):
-      context.code(beta_interfaces.StatusCode.UNIMPLEMENTED)
-    def Echo(self, request, context):
-      """Test 검증을 위한 인터페이스
-      """
-      context.code(beta_interfaces.StatusCode.UNIMPLEMENTED)
-    def ComplainLeader(self, request, context):
-      """Leader 선정을 위한 인터페이스
-      """
-      context.code(beta_interfaces.StatusCode.UNIMPLEMENTED)
-    def AnnounceNewLeader(self, request, context):
-      context.code(beta_interfaces.StatusCode.UNIMPLEMENTED)
-    def GetLastBlockHash(self, request, context):
-      """/////////////////////////////////////////////////////////////////////
-      BlockGenerator (leader) 에게만 허용되어야 하는 interface
-      /////////////////////////////////////////////////////////////////////
-      RadioStation 에서 GetLastBlockHash 는 Block Height Sync 를 위해서 사용된다.
-      """
-      context.code(beta_interfaces.StatusCode.UNIMPLEMENTED)
     def Subscribe(self, request, context):
-      """Subscribe 와 UnSubscribe 는 Broadcast 관련 메소드로 radiostation.proto 와 동일하게 구성되어야 한다.
-      """
       context.code(beta_interfaces.StatusCode.UNIMPLEMENTED)
     def UnSubscribe(self, request, context):
       context.code(beta_interfaces.StatusCode.UNIMPLEMENTED)
-    def AddTx(self, request, context):
-      context.code(beta_interfaces.StatusCode.UNIMPLEMENTED)
-    def VoteUnconfirmedBlock(self, request, context):
-      context.code(beta_interfaces.StatusCode.UNIMPLEMENTED)
     def NotifyLeaderBroken(self, request, context):
-      """/////////////////////////////////////////////////////////////////////
-      Inner channel 전용 메시지, 내부의 Process 가 요청하는 interface
-      Notify- 로 시작한다.
-      /////////////////////////////////////////////////////////////////////
-      """
       context.code(beta_interfaces.StatusCode.UNIMPLEMENTED)
     def NotifyProcessError(self, request, context):
       context.code(beta_interfaces.StatusCode.UNIMPLEMENTED)
@@ -2537,72 +2460,22 @@ try:
     def Stop(self, request, timeout, metadata=None, with_call=False, protocol_options=None):
       raise NotImplementedError()
     Stop.future = None
-    def GetTx(self, request, timeout, metadata=None, with_call=False, protocol_options=None):
+    def Echo(self, request, timeout, metadata=None, with_call=False, protocol_options=None):
       raise NotImplementedError()
-    GetTx.future = None
+    Echo.future = None
     def GetBlock(self, request, timeout, metadata=None, with_call=False, protocol_options=None):
       raise NotImplementedError()
     GetBlock.future = None
     def Query(self, request, timeout, metadata=None, with_call=False, protocol_options=None):
       raise NotImplementedError()
     Query.future = None
-    def BlockSync(self, request, timeout, metadata=None, with_call=False, protocol_options=None):
-      """Peer 의 Block Height 보정용 interface
-      """
-      raise NotImplementedError()
-    BlockSync.future = None
-    def AnnounceUnconfirmedBlock(self, request, timeout, metadata=None, with_call=False, protocol_options=None):
-      """Subscribe 후 broadcast 받는 인터페이스는 Announce- 로 시작한다.
-      """
-      raise NotImplementedError()
-    AnnounceUnconfirmedBlock.future = None
-    def AnnounceConfirmedBlock(self, request, timeout, metadata=None, with_call=False, protocol_options=None):
-      raise NotImplementedError()
-    AnnounceConfirmedBlock.future = None
-    def AnnounceNewPeer(self, request, timeout, metadata=None, with_call=False, protocol_options=None):
-      raise NotImplementedError()
-    AnnounceNewPeer.future = None
-    def Echo(self, request, timeout, metadata=None, with_call=False, protocol_options=None):
-      """Test 검증을 위한 인터페이스
-      """
-      raise NotImplementedError()
-    Echo.future = None
-    def ComplainLeader(self, request, timeout, metadata=None, with_call=False, protocol_options=None):
-      """Leader 선정을 위한 인터페이스
-      """
-      raise NotImplementedError()
-    ComplainLeader.future = None
-    def AnnounceNewLeader(self, request, timeout, metadata=None, with_call=False, protocol_options=None):
-      raise NotImplementedError()
-    AnnounceNewLeader.future = None
-    def GetLastBlockHash(self, request, timeout, metadata=None, with_call=False, protocol_options=None):
-      """/////////////////////////////////////////////////////////////////////
-      BlockGenerator (leader) 에게만 허용되어야 하는 interface
-      /////////////////////////////////////////////////////////////////////
-      RadioStation 에서 GetLastBlockHash 는 Block Height Sync 를 위해서 사용된다.
-      """
-      raise NotImplementedError()
-    GetLastBlockHash.future = None
     def Subscribe(self, request, timeout, metadata=None, with_call=False, protocol_options=None):
-      """Subscribe 와 UnSubscribe 는 Broadcast 관련 메소드로 radiostation.proto 와 동일하게 구성되어야 한다.
-      """
       raise NotImplementedError()
     Subscribe.future = None
     def UnSubscribe(self, request, timeout, metadata=None, with_call=False, protocol_options=None):
       raise NotImplementedError()
     UnSubscribe.future = None
-    def AddTx(self, request, timeout, metadata=None, with_call=False, protocol_options=None):
-      raise NotImplementedError()
-    AddTx.future = None
-    def VoteUnconfirmedBlock(self, request, timeout, metadata=None, with_call=False, protocol_options=None):
-      raise NotImplementedError()
-    VoteUnconfirmedBlock.future = None
     def NotifyLeaderBroken(self, request, timeout, metadata=None, with_call=False, protocol_options=None):
-      """/////////////////////////////////////////////////////////////////////
-      Inner channel 전용 메시지, 내부의 Process 가 요청하는 interface
-      Notify- 로 시작한다.
-      /////////////////////////////////////////////////////////////////////
-      """
       raise NotImplementedError()
     NotifyLeaderBroken.future = None
     def NotifyProcessError(self, request, timeout, metadata=None, with_call=False, protocol_options=None):
@@ -2617,19 +2490,10 @@ try:
     file not marked beta) for all further purposes. This function was
     generated only to ease transition from grpcio<0.15.0 to grpcio>=0.15.0"""
     request_deserializers = {
-      ('InnerService', 'AddTx'): TxSend.FromString,
-      ('InnerService', 'AnnounceConfirmedBlock'): BlockAnnounce.FromString,
-      ('InnerService', 'AnnounceNewLeader'): ComplainLeaderRequest.FromString,
-      ('InnerService', 'AnnounceNewPeer'): PeerRequest.FromString,
-      ('InnerService', 'AnnounceUnconfirmedBlock'): BlockSend.FromString,
-      ('InnerService', 'BlockSync'): BlockSyncRequest.FromString,
-      ('InnerService', 'ComplainLeader'): ComplainLeaderRequest.FromString,
       ('InnerService', 'Echo'): CommonRequest.FromString,
       ('InnerService', 'GetBlock'): GetBlockRequest.FromString,
-      ('InnerService', 'GetLastBlockHash'): CommonRequest.FromString,
       ('InnerService', 'GetScoreStatus'): StatusRequest.FromString,
       ('InnerService', 'GetStatus'): StatusRequest.FromString,
-      ('InnerService', 'GetTx'): GetTxRequest.FromString,
       ('InnerService', 'NotifyLeaderBroken'): CommonRequest.FromString,
       ('InnerService', 'NotifyProcessError'): CommonRequest.FromString,
       ('InnerService', 'Query'): QueryRequest.FromString,
@@ -2637,22 +2501,12 @@ try:
       ('InnerService', 'Stop'): StopRequest.FromString,
       ('InnerService', 'Subscribe'): PeerRequest.FromString,
       ('InnerService', 'UnSubscribe'): PeerRequest.FromString,
-      ('InnerService', 'VoteUnconfirmedBlock'): BlockVote.FromString,
     }
     response_serializers = {
-      ('InnerService', 'AddTx'): CommonReply.SerializeToString,
-      ('InnerService', 'AnnounceConfirmedBlock'): CommonReply.SerializeToString,
-      ('InnerService', 'AnnounceNewLeader'): CommonReply.SerializeToString,
-      ('InnerService', 'AnnounceNewPeer'): CommonReply.SerializeToString,
-      ('InnerService', 'AnnounceUnconfirmedBlock'): CommonReply.SerializeToString,
-      ('InnerService', 'BlockSync'): BlockSyncReply.SerializeToString,
-      ('InnerService', 'ComplainLeader'): CommonReply.SerializeToString,
       ('InnerService', 'Echo'): CommonReply.SerializeToString,
       ('InnerService', 'GetBlock'): GetBlockReply.SerializeToString,
-      ('InnerService', 'GetLastBlockHash'): BlockReply.SerializeToString,
       ('InnerService', 'GetScoreStatus'): StatusReply.SerializeToString,
       ('InnerService', 'GetStatus'): StatusReply.SerializeToString,
-      ('InnerService', 'GetTx'): GetTxReply.SerializeToString,
       ('InnerService', 'NotifyLeaderBroken'): CommonReply.SerializeToString,
       ('InnerService', 'NotifyProcessError'): CommonReply.SerializeToString,
       ('InnerService', 'Query'): QueryReply.SerializeToString,
@@ -2660,22 +2514,12 @@ try:
       ('InnerService', 'Stop'): StopReply.SerializeToString,
       ('InnerService', 'Subscribe'): CommonReply.SerializeToString,
       ('InnerService', 'UnSubscribe'): CommonReply.SerializeToString,
-      ('InnerService', 'VoteUnconfirmedBlock'): CommonReply.SerializeToString,
     }
     method_implementations = {
-      ('InnerService', 'AddTx'): face_utilities.unary_unary_inline(servicer.AddTx),
-      ('InnerService', 'AnnounceConfirmedBlock'): face_utilities.unary_unary_inline(servicer.AnnounceConfirmedBlock),
-      ('InnerService', 'AnnounceNewLeader'): face_utilities.unary_unary_inline(servicer.AnnounceNewLeader),
-      ('InnerService', 'AnnounceNewPeer'): face_utilities.unary_unary_inline(servicer.AnnounceNewPeer),
-      ('InnerService', 'AnnounceUnconfirmedBlock'): face_utilities.unary_unary_inline(servicer.AnnounceUnconfirmedBlock),
-      ('InnerService', 'BlockSync'): face_utilities.unary_unary_inline(servicer.BlockSync),
-      ('InnerService', 'ComplainLeader'): face_utilities.unary_unary_inline(servicer.ComplainLeader),
       ('InnerService', 'Echo'): face_utilities.unary_unary_inline(servicer.Echo),
       ('InnerService', 'GetBlock'): face_utilities.unary_unary_inline(servicer.GetBlock),
-      ('InnerService', 'GetLastBlockHash'): face_utilities.unary_unary_inline(servicer.GetLastBlockHash),
       ('InnerService', 'GetScoreStatus'): face_utilities.unary_unary_inline(servicer.GetScoreStatus),
       ('InnerService', 'GetStatus'): face_utilities.unary_unary_inline(servicer.GetStatus),
-      ('InnerService', 'GetTx'): face_utilities.unary_unary_inline(servicer.GetTx),
       ('InnerService', 'NotifyLeaderBroken'): face_utilities.unary_unary_inline(servicer.NotifyLeaderBroken),
       ('InnerService', 'NotifyProcessError'): face_utilities.unary_unary_inline(servicer.NotifyProcessError),
       ('InnerService', 'Query'): face_utilities.unary_unary_inline(servicer.Query),
@@ -2683,7 +2527,6 @@ try:
       ('InnerService', 'Stop'): face_utilities.unary_unary_inline(servicer.Stop),
       ('InnerService', 'Subscribe'): face_utilities.unary_unary_inline(servicer.Subscribe),
       ('InnerService', 'UnSubscribe'): face_utilities.unary_unary_inline(servicer.UnSubscribe),
-      ('InnerService', 'VoteUnconfirmedBlock'): face_utilities.unary_unary_inline(servicer.VoteUnconfirmedBlock),
     }
     server_options = beta_implementations.server_options(request_deserializers=request_deserializers, response_serializers=response_serializers, thread_pool=pool, thread_pool_size=pool_size, default_timeout=default_timeout, maximum_timeout=maximum_timeout)
     return beta_implementations.server(method_implementations, options=server_options)
@@ -2696,19 +2539,10 @@ try:
     file not marked beta) for all further purposes. This function was
     generated only to ease transition from grpcio<0.15.0 to grpcio>=0.15.0"""
     request_serializers = {
-      ('InnerService', 'AddTx'): TxSend.SerializeToString,
-      ('InnerService', 'AnnounceConfirmedBlock'): BlockAnnounce.SerializeToString,
-      ('InnerService', 'AnnounceNewLeader'): ComplainLeaderRequest.SerializeToString,
-      ('InnerService', 'AnnounceNewPeer'): PeerRequest.SerializeToString,
-      ('InnerService', 'AnnounceUnconfirmedBlock'): BlockSend.SerializeToString,
-      ('InnerService', 'BlockSync'): BlockSyncRequest.SerializeToString,
-      ('InnerService', 'ComplainLeader'): ComplainLeaderRequest.SerializeToString,
       ('InnerService', 'Echo'): CommonRequest.SerializeToString,
       ('InnerService', 'GetBlock'): GetBlockRequest.SerializeToString,
-      ('InnerService', 'GetLastBlockHash'): CommonRequest.SerializeToString,
       ('InnerService', 'GetScoreStatus'): StatusRequest.SerializeToString,
       ('InnerService', 'GetStatus'): StatusRequest.SerializeToString,
-      ('InnerService', 'GetTx'): GetTxRequest.SerializeToString,
       ('InnerService', 'NotifyLeaderBroken'): CommonRequest.SerializeToString,
       ('InnerService', 'NotifyProcessError'): CommonRequest.SerializeToString,
       ('InnerService', 'Query'): QueryRequest.SerializeToString,
@@ -2716,22 +2550,12 @@ try:
       ('InnerService', 'Stop'): StopRequest.SerializeToString,
       ('InnerService', 'Subscribe'): PeerRequest.SerializeToString,
       ('InnerService', 'UnSubscribe'): PeerRequest.SerializeToString,
-      ('InnerService', 'VoteUnconfirmedBlock'): BlockVote.SerializeToString,
     }
     response_deserializers = {
-      ('InnerService', 'AddTx'): CommonReply.FromString,
-      ('InnerService', 'AnnounceConfirmedBlock'): CommonReply.FromString,
-      ('InnerService', 'AnnounceNewLeader'): CommonReply.FromString,
-      ('InnerService', 'AnnounceNewPeer'): CommonReply.FromString,
-      ('InnerService', 'AnnounceUnconfirmedBlock'): CommonReply.FromString,
-      ('InnerService', 'BlockSync'): BlockSyncReply.FromString,
-      ('InnerService', 'ComplainLeader'): CommonReply.FromString,
       ('InnerService', 'Echo'): CommonReply.FromString,
       ('InnerService', 'GetBlock'): GetBlockReply.FromString,
-      ('InnerService', 'GetLastBlockHash'): BlockReply.FromString,
       ('InnerService', 'GetScoreStatus'): StatusReply.FromString,
       ('InnerService', 'GetStatus'): StatusReply.FromString,
-      ('InnerService', 'GetTx'): GetTxReply.FromString,
       ('InnerService', 'NotifyLeaderBroken'): CommonReply.FromString,
       ('InnerService', 'NotifyProcessError'): CommonReply.FromString,
       ('InnerService', 'Query'): QueryReply.FromString,
@@ -2739,22 +2563,12 @@ try:
       ('InnerService', 'Stop'): StopReply.FromString,
       ('InnerService', 'Subscribe'): CommonReply.FromString,
       ('InnerService', 'UnSubscribe'): CommonReply.FromString,
-      ('InnerService', 'VoteUnconfirmedBlock'): CommonReply.FromString,
     }
     cardinalities = {
-      'AddTx': cardinality.Cardinality.UNARY_UNARY,
-      'AnnounceConfirmedBlock': cardinality.Cardinality.UNARY_UNARY,
-      'AnnounceNewLeader': cardinality.Cardinality.UNARY_UNARY,
-      'AnnounceNewPeer': cardinality.Cardinality.UNARY_UNARY,
-      'AnnounceUnconfirmedBlock': cardinality.Cardinality.UNARY_UNARY,
-      'BlockSync': cardinality.Cardinality.UNARY_UNARY,
-      'ComplainLeader': cardinality.Cardinality.UNARY_UNARY,
       'Echo': cardinality.Cardinality.UNARY_UNARY,
       'GetBlock': cardinality.Cardinality.UNARY_UNARY,
-      'GetLastBlockHash': cardinality.Cardinality.UNARY_UNARY,
       'GetScoreStatus': cardinality.Cardinality.UNARY_UNARY,
       'GetStatus': cardinality.Cardinality.UNARY_UNARY,
-      'GetTx': cardinality.Cardinality.UNARY_UNARY,
       'NotifyLeaderBroken': cardinality.Cardinality.UNARY_UNARY,
       'NotifyProcessError': cardinality.Cardinality.UNARY_UNARY,
       'Query': cardinality.Cardinality.UNARY_UNARY,
@@ -2762,7 +2576,6 @@ try:
       'Stop': cardinality.Cardinality.UNARY_UNARY,
       'Subscribe': cardinality.Cardinality.UNARY_UNARY,
       'UnSubscribe': cardinality.Cardinality.UNARY_UNARY,
-      'VoteUnconfirmedBlock': cardinality.Cardinality.UNARY_UNARY,
     }
     stub_options = beta_implementations.stub_options(host=host, metadata_transformer=metadata_transformer, request_serializers=request_serializers, response_deserializers=response_deserializers, thread_pool=pool, thread_pool_size=pool_size)
     return beta_implementations.dynamic_stub(channel, 'InnerService', cardinalities, options=stub_options)
@@ -3190,7 +3003,7 @@ try:
     }
     response_serializers = {
       ('RadioStation', 'AnnounceNewLeader'): CommonReply.SerializeToString,
-      ('RadioStation', 'ConnectPeer'): PeerReply.SerializeToString,
+      ('RadioStation', 'ConnectPeer'): ConnectPeerReply.SerializeToString,
       ('RadioStation', 'GetPeerList'): PeerList.SerializeToString,
       ('RadioStation', 'GetPeerStatus'): StatusReply.SerializeToString,
       ('RadioStation', 'GetStatus'): StatusReply.SerializeToString,
@@ -3233,7 +3046,7 @@ try:
     }
     response_deserializers = {
       ('RadioStation', 'AnnounceNewLeader'): CommonReply.FromString,
-      ('RadioStation', 'ConnectPeer'): PeerReply.FromString,
+      ('RadioStation', 'ConnectPeer'): ConnectPeerReply.FromString,
       ('RadioStation', 'GetPeerList'): PeerList.FromString,
       ('RadioStation', 'GetPeerStatus'): StatusReply.FromString,
       ('RadioStation', 'GetStatus'): StatusReply.FromString,

@@ -204,3 +204,4 @@ score/.database_store/
 .storage
 
 deploy/LOOPCHAIN_VERSION
+parser_py.py

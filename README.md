@@ -83,10 +83,48 @@ After installation, execute the whole unit test like the following in order to c
 $ ./run_test.sh
 ```
 
+## loopchain configuration settings
+
+Basically, loopchain settings are managed by files.
+* ./loopchain/**configure_default.py**
+    - This is the file that records the default setting of loopchain.
+    - It's an essential file that must exists.
+
+* ./loopchain/**configure_user.py**
+    - This is the file that records the custom settings of loopchain.
+    - You can add this file if necessary. It's not a required file.
+    - It has a higher priority over the configure_default.py file.
+    - You can record the configurations that need to be changed depending on your development environment.
+    - For example, if you want to change the value of "IP_LOCAL", add the configuration you want to change to the `configure_user.py` file. : **IP_LOCAL = '123.456.789.10'**
+
+* ./loopchain/**configure.json**
+    - This file is also a configuration file that can be customized depending on your development environment.
+    - You can add the configuration settings according to the json format.
+    - It has **the highest priority** of all configuation files (configure_default.py, configure_user.py, etc.).
+    - When you run `peer.py` or `radiostation.py`, you can apply it by appending `-o {JSON FILE PATH}` or `--configure_file_path {JSON FILE PATH}` option.
+
+#### Example
+
+Let's say you want to change the "PORT_PEER" path to 7500. 
+First, you should add the following setting to the `/loopchain/configure.json` file.
+```json
+{
+  “PORT_PEER”: 7500
+}
+```
+
+Later when you launch peer, you should add one of these following options:
+```
+$ ./peer.py -o loopchain/configure.json                      # or
+$ ./peer.py --configure_file_path loopchain/configure.json
+```
+
+This will modify your default "PORT_PEER" path 7100 to 7500. You can also apply the same logic to `radiostation.py` as well.
+
 ## Deployment
 There are two ways to run a loopchain:
 
-### Launch blockchain in on-promese.
+### Launch blockchain in on-premise.
 
  Launch blockchain network in the following order:
 
@@ -113,7 +151,12 @@ There are two ways to run a loopchain:
  $ source bin/activate  # Open python virtual workspace.
  $ ./peer.py            # Launch peer.
    ```
-
+ 
+ However, if you have additional settings in configure.json file, type the following when you launch peer.
+ ```
+ $ ./peer.py -o loopchain/configure.json
+ ```
+ 
  Then you will see the following log.
 
  ```buildoutcfg

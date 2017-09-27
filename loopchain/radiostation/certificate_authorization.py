@@ -44,7 +44,7 @@ class CertificateAuthorization:
         pass
 
     # def load_pki(self, ca_cert_path, private_key_path):
-    def load_pki(self, cert_path, cert_pass=None):
+    def load_pki(self, cert_path: str, cert_pass=None):
         """
         인증서 로드
 
@@ -76,7 +76,7 @@ class CertificateAuthorization:
         else:
             return self.__ca_cert.public_key
 
-    def sign_data(self, data):
+    def sign_data(self, data: bytes) -> bytes:
         """
         CA 개인키로 DATA 서명
         :param data: 서명 대상 원문
@@ -96,7 +96,7 @@ class CertificateAuthorization:
             logging.debug("Unknown PrivateKey Type : %s", type(self.__ca_pri))
             return None
 
-    def verify_data(self, data, signature):
+    def verify_data(self, data: bytes, signature: bytes) -> bool:
         """
         CA 개인키로 서명한 DATA 검증
         :param data: 서명 대상 원문
@@ -106,7 +106,7 @@ class CertificateAuthorization:
         pub_key = self.__ca_cert.public_key()
         return self.verify_data_with_publickey(public_key=pub_key, data=data, signature=signature)
 
-    def verify_data_with_publickey(self, public_key, data, signature):
+    def verify_data_with_publickey(self, public_key, data: bytes, signature: bytes) -> bool:
         """
         서명한 DATA검증
         :param public_key: 검증용 공개키
@@ -140,7 +140,7 @@ class CertificateAuthorization:
 
         return False
 
-    def verify_data_with_dercert(self, cert_der, data, signature):
+    def verify_data_with_dercert(self, cert_der, data: bytes, signature: bytes) -> bool:
         """
         서명 및 인증서 검증
         :param cert_der: 인증서(der bytes)
@@ -151,7 +151,7 @@ class CertificateAuthorization:
         cert = x509.load_der_x509_certificate(cert_der, default_backend())
         return self.verify_data_with_cert(cert=cert, data=data, signature=signature)
 
-    def verify_data_with_cert(self, cert, data, signature):
+    def verify_data_with_cert(self, cert, data: bytes, signature: bytes) -> bool:
         """
         서명 및 인증서 검증
         :param cert: 인증서
@@ -272,7 +272,7 @@ class CertificateAuthorization:
                               peer.target.encode('utf-8'),
                               peer.group_id.encode('utf-8')]) + bytes([peer_type])
 
-        peer_cert = x509.load_der_x509_certificate(bytes.fromhex(peer.auth), default_backend())
+        peer_cert = x509.load_der_x509_certificate(bytes.fromhex(peer.cert), default_backend())
         peer_pub = peer_cert.public_key().public_bytes(encoding=serialization.Encoding.DER,
                                                        format=PublicFormat.SubjectPublicKeyInfo)
 

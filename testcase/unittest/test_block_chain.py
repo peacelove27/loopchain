@@ -25,7 +25,6 @@ import loopchain.utils as util
 import testcase.unittest.test_util as test_util
 from loopchain.blockchain import Block
 from loopchain.blockchain import BlockChain, BlockStatus
-from loopchain.blockchain import Transaction
 from loopchain.protos import message_code
 
 util.set_log_level_debug()
@@ -34,6 +33,7 @@ util.set_log_level_debug()
 class TestBlockChain(unittest.TestCase):
     chain = None
     db_name = 'blockchain_db'
+    __peer_id = 'aaa'
 
     def setUp(self):
         test_util.print_testname(self._testMethodName)
@@ -43,6 +43,8 @@ class TestBlockChain(unittest.TestCase):
         self.chain = BlockChain(test_db)
 
         test_util.print_testname(self._testMethodName)
+        self.__peer_auth = test_util.create_peer_auth()
+
 
     def tearDown(self):
         # Blockchain을 삭제
@@ -56,9 +58,8 @@ class TestBlockChain(unittest.TestCase):
 
         block = Block()
         for x in range(0, 10):
-            tx = Transaction()
-            hashed_value = tx.put_data("{args:[]}")
-            self.assertNotEqual(hashed_value, "", "트랜잭션 생성 실패")
+            tx = test_util.create_basic_tx(self.__peer_id, self.__peer_auth)
+            self.assertNotEqual(tx.tx_hash, "", "트랜잭션 생성 실패")
             self.assertTrue(block.put_transaction(tx), "Block에 트랜잭션 추가 실패")
 
         return block
@@ -138,7 +139,8 @@ class TestBlockChain(unittest.TestCase):
         """block db 에 block_hash - block_object 를 저장할때, tx_hash - tx_object 도 저장한다.
         get tx by tx_hash 시 해당 block 을 효율적으로 찾기 위해서
         """
-        tx = self.__add_single_tx_to_block_return_tx_with_test()
+        tx = self.__add_single_tx_block_blockchain_return_tx()
+        logging.debug("add tx hash : " + tx.get_tx_hash())
 
         saved_tx = self.chain.find_tx_by_key(tx.get_tx_hash())
         logging.debug("saved_tx: " + str(saved_tx.get_tx_hash()))
@@ -149,26 +151,25 @@ class TestBlockChain(unittest.TestCase):
         """invoke_result = "{"code" : "invoke_result_code" , "error_message": "message" }"
 
         """
-        tx = self.__add_single_tx_to_block_return_tx_with_test()
+        tx = self.__add_single_tx_block_blockchain_return_tx()
 
         invoke_result = self.chain.find_invoke_result_by_tx_hash(tx.get_tx_hash())
         self.assertEqual(invoke_result['code'], message_code.Response.success)
 
-    def __add_single_tx_to_block_return_tx_with_test(self):
+    def __add_single_tx_block_blockchain_return_tx(self):
         last_block = self.chain.last_block
         block = Block()
-        tx = Transaction()
-        hashed_value = tx.put_data("1234")
-        self.assertNotEqual(hashed_value, "", "트랜잭션 생성 실패")
-        self.assertTrue(block.put_transaction(tx), "Block에 트랜잭션 추가 실패")
+        tx = test_util.create_basic_tx(self.__peer_id, self.__peer_auth)
+        block.put_transaction(tx)
 
         logging.debug("tx_hash: " + tx.get_tx_hash())
 
         block.generate_block(last_block)
         block.block_status = BlockStatus.confirmed
-        # add_block include __add_tx_to_block_db what we want to test
+
+        # add_block to blockchain
         self.assertTrue(self.chain.add_block(block),
-                        "Fail Add Block to BlockChain in test_add_tx_to_block_db")
+                        "Fail Add Block to BlockChain")
         return tx
 
     def test_unicode_decode_error(self):
@@ -179,11 +180,14 @@ class TestBlockChain(unittest.TestCase):
         unexpected_transaction = self.chain.find_tx_by_key(last_block.block_hash)
         self.assertIsNone(unexpected_transaction, "unexpected_transaction is not None")
 
+    # blockchain is no more singleton. (for multi chain)
+    @unittest.skip
     def test_blockchain_is_singleton(self):
         x = BlockChain(test_util.make_level_db())
         y = BlockChain(test_util.make_level_db())
 
         self.assertTrue((x is y))
+
 
 if __name__ == '__main__':
     unittest.main()

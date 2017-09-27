@@ -16,13 +16,14 @@
 import json
 import logging
 import pickle
-import secrets
 import time
 import timeit
 
+import loopchain.utils as util
 from loopchain import configure as conf
-from loopchain.baseservice import PeerStatus
+from loopchain.baseservice import PeerStatus, PeerInfo
 from loopchain.container import RestServiceRS, CommonService
+from loopchain.peer import ChannelManager
 from loopchain.protos import loopchain_pb2_grpc, message_code
 from loopchain.radiostation import RadioStation
 from .certificate_authorization import CertificateAuthorization
@@ -58,9 +59,7 @@ class RadioStationService(loopchain_pb2_grpc.RadioStationServicer):
 
         self._rs = RadioStation()
         self.__common_service = CommonService(loopchain_pb2)
-        self.__common_service.set_peer_type(loopchain_pb2.RADIO_STATION)
-        self.__peer_manager = self.__common_service.load_peer_manager()
-
+        self.__channel_manager = ChannelManager(self.__common_service)
         self.__rest_service = None
 
         # 인증 클래스
@@ -72,6 +71,10 @@ class RadioStationService(loopchain_pb2_grpc.RadioStationServicer):
 
         logging.info("Current group ID:"+self._rs.get_group_id())
         logging.info("Current RadioStation SECURITY_MODE : " + str(self.__ca.is_secure))
+
+    @property
+    def channel_manager(self):
+        return self.__channel_manager
 
     def __handler_status(self, request, context):
         return loopchain_pb2.Message(code=message_code.Response.success)
@@ -85,7 +88,8 @@ class RadioStationService(loopchain_pb2_grpc.RadioStationServicer):
         """
 
         # TODO 현재는 peer_list.get_leader_peer 가 서브 그룹 리더에 대한 처리를 제공하지 않고 있다.
-        leader_peer = self.__peer_manager.get_leader_peer(group_id=request.message, is_peer=False)
+        leader_peer = self.__channel_manager.get_peer_manager(
+            conf.LOOPCHAIN_DEFAULT_CHANNEL).get_leader_peer(group_id=request.message, is_peer=False)
         if leader_peer is not None:
             logging.debug(f"leader_peer ({leader_peer.peer_id})")
             peer_dump = pickle.dumps(leader_peer)
@@ -109,7 +113,8 @@ class RadioStationService(loopchain_pb2_grpc.RadioStationServicer):
         # get_leader_peer 한 내용과 다르면 AnnounceNewLeader 를 broadcast 하여야 한다.
 
         logging.debug("in complain leader (radiostation)")
-        leader_peer = self.__peer_manager.complain_leader(group_id=request.message)
+        leader_peer = self.__channel_manager.get_peer_manager(
+            conf.LOOPCHAIN_DEFAULT_CHANNEL).complain_leader(group_id=request.message)
         if leader_peer is not None:
             logging.warning(f"leader_peer after complain({leader_peer.peer_id})")
             peer_dump = pickle.dumps(leader_peer)
@@ -185,7 +190,7 @@ class RadioStationService(loopchain_pb2_grpc.RadioStationServicer):
             status=json.dumps(peer_status),
             block_height=peer_status["block_height"],
             total_tx=peer_status["total_tx"])
-
+    
     def Stop(self, request, context):
         """RadioStation을 종료한다.
 
@@ -197,121 +202,62 @@ class RadioStationService(loopchain_pb2_grpc.RadioStationServicer):
         self.__common_service.stop()
         return loopchain_pb2.StopReply(status="0")
 
-    def ConnectPeer(self, request, context):
+    def ConnectPeer(self, request: loopchain_pb2.PeerRequest, context):
         """RadioStation 에 접속한다. 응답으로 기존의 접속된 Peer 목록을 받는다.
 
         :param request: PeerRequest
         :param context:
-        :return: PeerReply
+        :return: ConnectPeerReply
         """
         logging.info("Trying to connect peer: "+request.peer_id)
 
         res, info = self._rs.validate_group_id(request.group_id)
         if res < 0:  # send null list(b'') while wrong input.
-            return loopchain_pb2.PeerReply(status=message_code.Response.fail, peer_list=b'', more_info=info)
+            return loopchain_pb2.ConnectPeerReply(status=message_code.Response.fail, peer_list=b'', more_info=info)
+
+        # TODO check peer's authorization for channel
+        channel_name = conf.LOOPCHAIN_DEFAULT_CHANNEL if not request.channel else request.channel
+        logging.debug(f"ConnectPeer channel_name({channel_name})")
+
+        channels: list = self.__channel_manager.authorized_channels(request.peer_id)
+        if channel_name not in channels:
+            return loopchain_pb2.ConnectPeerReply(
+                status=message_code.Response.fail,
+                peer_list=b'',
+                more_info=f"channel({channel_name}) is not authorized for peer_id({request.peer_id})")
 
         logging.debug("Connect Peer "
                       + "\nPeer_id : " + request.peer_id
                       + "\nGroup_id : " + request.group_id
                       + "\nPeer_target : " + request.peer_target)
 
-        auth = ""
-        token = ""
-        logging.info("CA SECURITY_MODE : " + str(self.__ca.is_secure))
-        if self.__ca.is_secure:
-            logging.debug("RadioStation is secure mode")
-            if request.token is None or request.token is "":
-                info = "Peer Token is None"
-                return loopchain_pb2.PeerReply(status=message_code.Response.fail, peer_list=b'', more_info=info)
+        peer = PeerInfo(request.peer_id, request.group_id, request.peer_target, PeerStatus.unknown, cert=request.cert)
 
-            else:
-                # TOKEN : "00", CERT : "01", SIGN : "02"
-                tag = request.token[:2]
-                data = request.token[2:]
-                logging.debug("TOKEN TYPE : %s", tag)
-
-                if tag == conf.TOKEN_TYPE_TOKEN:
-                    peer = self.__peer_manager.get_peer(request.peer_id, request.group_id)
-                    if peer is None:
-                        info = "Invalid Peer_ID[" + request.peer_id + "], Group_ID[" + request.group_id + "%s]"
-                        return loopchain_pb2.PeerReply(status=message_code.Response.fail, peer_list=b'', more_info=info)
-                    else:
-                        peer_type = request.peer_type
-                        if peer_type is loopchain_pb2.BLOCK_GENERATOR:
-                            peer_type = loopchain_pb2.PEER
-
-                        if self.__ca.verify_peer_token(peer_token=data, peer=peer, peer_type=peer_type):
-                            auth = peer.auth
-                            token = request.token
-                        else:
-                            info = "Invalid TOKEN"
-                            return loopchain_pb2.PeerReply(status=message_code.Response.fail, peer_list=b'', more_info=info)
-
-                elif tag == conf.TOKEN_TYPE_CERT:
-                    # TODO: 인증서와 Peer_ID가 연결될 수 있는 장치가 필요(인증서 내부 정보 활용)
-                    if self.__ca.verify_certificate_der(bytes.fromhex(data)):
-                        rand_key = secrets.token_bytes(16).hex()
-                        self._rs.auth[request.peer_id] = {'rand_key': rand_key, 'auth': data}
-                        return loopchain_pb2.PeerReply(status=message_code.Response.success, peer_list=b'', more_info=rand_key)
-                    else:
-                        info = "Invalid Peer Certificate"
-                        return loopchain_pb2.PeerReply(status=message_code.Response.fail, peer_list=b'', more_info=info)
-
-                elif tag == conf.TOKEN_TYPE_SIGN:
-                    try:
-                        peer_auth = self._rs.auth[request.peer_id]
-                        rand_key = peer_auth['rand_key']
-                        auth = peer_auth['auth']
-                    except KeyError:
-                        info = "No Peer Info"
-                        return loopchain_pb2.PeerReply(status=message_code.Response.fail, peer_list=b'', more_info=info)
-                    logging.debug("Get Rand_key: %s, auth: %s", rand_key, auth)
-
-                    new_token = self.__ca.generate_peer_token(peer_sign=bytes.fromhex(data),
-                                                              peer_cert=bytes.fromhex(auth),
-                                                              peer_id=request.peer_id,
-                                                              peer_target=request.peer_target,
-                                                              group_id=request.group_id,
-                                                              peer_type=request.peer_type,
-                                                              rand_key=bytes.fromhex(rand_key),
-                                                              token_interval=conf.TOKEN_INTERVAL)
-
-                    if new_token is not None:
-                        self._rs.auth[request.peer_id] = {}
-
-                    token = conf.TOKEN_TYPE_TOKEN + new_token
-
-                else:
-                    info = "Unknown token type(" + tag + ")"
-                    return loopchain_pb2.PeerReply(status=message_code.Response.fail, peer_list=b'', more_info=info)
-
-        peer = self.__peer_manager.make_peer(request.peer_id,
-                                             request.group_id,
-                                             request.peer_target,
-                                             PeerStatus.unknown,
-                                             peer_auth=auth,
-                                             peer_token=token)
-
-        peer_order = self.__peer_manager.add_peer_object(peer)
-        self.__common_service.save_peer_list(self.__peer_manager)
+        util.logger.spam(f"service::ConnectPeer try add_peer")
+        peer_order = self.__channel_manager.get_peer_manager(channel_name).add_peer(peer)
+        util.logger.spam(f"service::ConnectPeer try save_peer_manager")
+        self.__channel_manager.save_peer_manager(self.__channel_manager.get_peer_manager(channel_name))
 
         peer_list_dump = b''
         status, reason = message_code.get_response(message_code.Response.fail)
 
         if peer_order > 0:
             try:
-                peer_list_dump = self.__peer_manager.dump()
+                peer_list_dump = self.__channel_manager.get_peer_manager(channel_name).dump()
                 status, reason = message_code.get_response(message_code.Response.success)
-                # TODO 현재는 reason 을 token return 으로 사용하고 있음, 이 용도로 reason 을 사용할 때에는 token 만 담겨있어야 함
-                # 추후 메시지를 확장할 때 리팩토링 할 것
-                reason = token
+
             except pickle.PicklingError as e:
                 logging.warning("fail peer_list dump")
                 reason += " " + str(e)
 
-        return loopchain_pb2.PeerReply(
+        if channel_name != conf.LOOPCHAIN_DEFAULT_CHANNEL:
+            # return channels info for default channel only.
+            channels = None
+
+        return loopchain_pb2.ConnectPeerReply(
             status=status,
             peer_list=peer_list_dump,
+            channels=channels,
             more_info=reason
         )
 
@@ -322,8 +268,9 @@ class RadioStationService(loopchain_pb2_grpc.RadioStationServicer):
         :param context:
         :return: PeerList
         """
+        channel_name = conf.LOOPCHAIN_DEFAULT_CHANNEL if not request.channel else request.channel
         try:
-            peer_list_dump = self.__peer_manager.dump()
+            peer_list_dump = self.__channel_manager.get_peer_manager(channel_name).dump()
         except pickle.PicklingError as e:
             logging.warning("fail peer_list dump")
             peer_list_dump = b''
@@ -334,10 +281,13 @@ class RadioStationService(loopchain_pb2_grpc.RadioStationServicer):
 
     def GetPeerStatus(self, request, context):
         # request parsing
+        channel_name = conf.LOOPCHAIN_DEFAULT_CHANNEL if not request.channel else request.channel
         logging.debug(f"rs service GetPeerStatus peer_id({request.peer_id}) group_id({request.group_id})")
 
         # get stub of target peer
-        peer_stub_manager = self.__peer_manager.get_peer_stub_manager(self.__peer_manager.get_peer(request.peer_id))
+        peer_stub_manager = self.__channel_manager.get_peer_manager(
+            conf.LOOPCHAIN_DEFAULT_CHANNEL).get_peer_stub_manager(
+            self.__channel_manager.get_peer_manager(channel_name).get_peer(request.peer_id))
         if peer_stub_manager is not None:
             try:
                 response = peer_stub_manager.call_in_times(
@@ -351,10 +301,12 @@ class RadioStationService(loopchain_pb2_grpc.RadioStationServicer):
         return loopchain_pb2.StatusReply(status="", block_height=0, total_tx=0)
 
     def AnnounceNewLeader(self, request, context):
-        new_leader_peer = self.__peer_manager.get_peer(request.new_leader_id, None)
+        new_leader_peer = self.__channel_manager.get_peer_manager(
+            conf.LOOPCHAIN_DEFAULT_CHANNEL).get_peer(request.new_leader_id, None)
         logging.debug(f"AnnounceNewLeader({request.new_leader_id})({new_leader_peer.target}): " + request.message)
 
-        self.__peer_manager.set_leader_peer(new_leader_peer, None)
+        self.__channel_manager.get_peer_manager(
+            conf.LOOPCHAIN_DEFAULT_CHANNEL).set_leader_peer(new_leader_peer, None)
 
         return loopchain_pb2.CommonReply(response_code=message_code.Response.success, message="success")
 
@@ -365,10 +317,13 @@ class RadioStationService(loopchain_pb2_grpc.RadioStationServicer):
         :param context:
         :return: CommonReply
         """
+        channel_name = conf.LOOPCHAIN_DEFAULT_CHANNEL if request.channel == '' else request.channel
         logging.debug("Radio Station Subscription peer_id: " + str(request))
         self.__common_service.add_audience(request)
 
-        peer = self.__peer_manager.update_peer_status(peer_id=request.peer_id, peer_status=PeerStatus.connected)
+        peer = self.__channel_manager.get_peer_manager(
+            conf.LOOPCHAIN_DEFAULT_CHANNEL).update_peer_status(
+            peer_id=request.peer_id, peer_status=PeerStatus.connected)
 
         try:
             peer_dump = pickle.dumps(peer)
@@ -382,7 +337,7 @@ class RadioStationService(loopchain_pb2_grpc.RadioStationServicer):
             # block 되는 구조. broadcast Process 를 peer_list 를 이용한 broadcast 에서도 활용할 수 있게 하거나.
             # RS 혹은 Leader 가 재시작 후에 Subscribe 정보를 복원하게 하거나.
             # 혹은 peer_list 가 broadcast 하여도 성능상(동시성에 있어) 문제가 없는지 보증하여야 한다. TODO TODO TODO
-            self.__peer_manager.announce_new_peer(request)
+            self.__channel_manager.get_peer_manager(channel_name).announce_new_peer(request)
 
             # logging.debug("get_IP_of_peers_in_group: " + str(self.__peer_manager.get_IP_of_peers_in_group()))
 
@@ -402,8 +357,9 @@ class RadioStationService(loopchain_pb2_grpc.RadioStationServicer):
         :param context:
         :return: CommonReply
         """
+        channel_name = conf.LOOPCHAIN_DEFAULT_CHANNEL if request.channel == '' else request.channel
         logging.debug("Radio Station UnSubscription peer_id: " + request.peer_target)
-        self.__peer_manager.remove_peer(request.peer_id, request.group_id)
+        self.__channel_manager.get_peer_manager(channel_name).remove_peer(request.peer_id, request.group_id)
         self.__common_service.remove_audience(request.peer_id, request.peer_target)
         return loopchain_pb2.CommonReply(response_code=0, message="success")
 
@@ -420,8 +376,10 @@ class RadioStationService(loopchain_pb2_grpc.RadioStationServicer):
         :return:
         """
         time.sleep(conf.SLEEP_SECONDS_IN_RADIOSTATION_HEARTBEAT)
+        util.logger.spam(f"Radio Station Heartbeat for reset Leader and delete no response Peer")
 
-        delete_peer_list = self.__peer_manager.check_peer_status()
+        delete_peer_list = self.__channel_manager.get_peer_manager(
+            conf.LOOPCHAIN_DEFAULT_CHANNEL).check_peer_status()
 
         for delete_peer in delete_peer_list:
             logging.debug(f"delete peer {delete_peer.peer_id}")
@@ -441,7 +399,8 @@ class RadioStationService(loopchain_pb2_grpc.RadioStationServicer):
         loopchain_pb2_grpc.add_RadioStationServicer_to_server(self, self.__common_service.outer_server)
         logging.info("Start peer service at port: " + str(port))
 
-        self.__common_service.add_loop(self.check_peer_status)
+        if conf.ENABLE_RADIOSTATION_HEARTBEAT:
+            self.__common_service.add_loop(self.check_peer_status)
         self.__common_service.start(port)
 
         stopwatch_duration = timeit.default_timer() - stopwatch_start
