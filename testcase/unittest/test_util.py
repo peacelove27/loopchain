@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 # Copyright 2017 theloop, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -28,10 +31,12 @@ import loopchain.utils as util
 from loopchain import configure as conf
 from loopchain.baseservice import ObjectManager, StubManager
 from loopchain.baseservice.SingletonMetaClass import *
+from loopchain.blockchain import Transaction
 from loopchain.container import ScoreService
-from loopchain.peer import PeerService
+from loopchain.peer import PeerService, PeerAuthorization
 from loopchain.protos import loopchain_pb2, loopchain_pb2_grpc
 from loopchain.radiostation import RadioStationService
+from testcase.integration.black_service import BlackService
 
 util.set_log_level_debug()
 
@@ -50,6 +55,17 @@ def run_peer_server(port, radiostation_port=conf.PORT_RADIOSTATION, group_id=Non
         logging.debug("Score Load Fail")
         # test 코드 실행 위치에 따라서(use IDE or use console) 경로 문제가 발생 할 수 있다.
         # ObjectManager().peer_service.serve(port, score_path)
+
+
+def run_black_peer_server(port, radiostation_port=conf.PORT_RADIOSTATION, group_id=None):
+    ObjectManager().peer_service = BlackService(group_id, conf.IP_RADIOSTATION, radiostation_port)
+    conf.DEFAULT_SCORE_REPOSITORY_PATH = \
+        os.path.join(os.path.dirname(__file__), '..', '..', 'resources', 'test_score_repository')
+    try:
+        ObjectManager().peer_service.serve(port)
+    except FileNotFoundError:
+        # test 코드 실행 위치에 따라서(use IDE or use console) 경로 문제가 발생 할 수 있다.
+        ObjectManager().peer_service.serve(port, "loopchain/default")
 
 
 def run_radio_station(port):
@@ -82,6 +98,20 @@ def run_peer_server_as_process_and_stub_manager(
     stub_manager = StubManager.get_stub_manager_to_server(
         'localhost:' + str(port), loopchain_pb2_grpc.PeerServiceStub)
     return process, stub_manager
+
+
+def run_black_peer_server_as_process(port, radiostation_port=conf.PORT_RADIOSTATION, group_id=None):
+    process = multiprocessing.Process(target=run_black_peer_server, args=(port, radiostation_port, group_id,))
+    process.start()
+    time.sleep(1)
+    return process
+
+
+def run_black_peer_server_as_process_and_stub(port, radiostation_port=conf.PORT_RADIOSTATION, group_id=None):
+    process = run_black_peer_server_as_process(port, radiostation_port, group_id)
+    channel = grpc.insecure_channel('localhost:' + str(port))
+    stub = loopchain_pb2_grpc.PeerServiceStub(channel)
+    return process, stub
 
 
 def run_radio_station_as_process(port):
@@ -141,6 +171,7 @@ def close_open_python_process():
     # ubuntu patch
     if platform == "darwin":
         os.system("pkill -f python")
+        os.system("pkill -f Python")
     else:
         os.system("pgrep -f python | tail -$((`pgrep -f python | wc -l` - 1)) | xargs kill -9")
 
@@ -154,6 +185,7 @@ def clean_up_temp_db_files(kill_process=True):
     os.system(f'rm -rf $(find {module_root_path} -name *test_db*)')
     os.system(f'rm -rf $(find {module_root_path} -name *_block)')
     os.system("rm -rf ./testcase/db_*")
+    os.system("rm -rf ./storage/db_*")
     os.system("rm -rf chaindb_*")
     os.system("rm -rf ./blockchain_db*")
     os.system("rm -rf ./testcase/chaindb_*")
@@ -163,6 +195,27 @@ def clean_up_temp_db_files(kill_process=True):
     os.system("rm -rf ./resources/test_score_deploy")
     os.system("rm -rf ./resources/test_score_repository/loopchain")
     time.sleep(1)
+
+
+def create_basic_tx(peer_id: str, peer_auth: PeerAuthorization) -> Transaction:
+    """ create basic tx data is "{args:[]}"
+
+    :param peer_id: peer_id
+    :param peer_auth:
+    :return: transaction
+    """
+    tx = Transaction()
+    tx.put_meta('peer_id', peer_id)
+    tx.put_data("{args:[]}")
+    tx.sign_hash(peer_auth)
+    return tx
+
+
+def create_peer_auth() -> PeerAuthorization:
+    peer_auth = PeerAuthorization(cert_file=conf.CERT_PATH,
+                                  pri_file=conf.PRIVATE_PATH,
+                                  cert_pass=conf.DEFAULT_PW)
+    return peer_auth
 
 
 class TestServerManager(metaclass=SingletonMetaClass):

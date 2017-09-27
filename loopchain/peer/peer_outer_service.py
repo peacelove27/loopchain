@@ -41,17 +41,30 @@ class OuterService(loopchain_pb2_grpc.PeerServiceServicer):
         return ObjectManager().peer_service
 
     def __handler_status(self, request, context):
-        return loopchain_pb2.Message(code=message_code.Response.success)
+        util.logger.debug(f"peer_outer_service:handler_status")
+        channel_name = conf.LOOPCHAIN_DEFAULT_CHANNEL if request.channel == '' else request.channel
+        status = dict()
+        if ObjectManager().peer_service is not None:
+            status['peer_type'] = \
+                str(self.peer_service.channel_manager.get_block_manager(channel_name).peer_type)
+        else:
+            status['peer_type'] = '0'
+        status_json = json.dumps(status)
+
+        return loopchain_pb2.Message(code=message_code.Response.success, meta=status_json)
 
     def __handler_peer_list(self, request, context):
-        message = "All Group Peers count: " + str(len(self.peer_service.peer_list.peer_list[conf.ALL_GROUP_ID]))
+        channel_name = conf.LOOPCHAIN_DEFAULT_CHANNEL if request.channel == '' else request.channel
+        peer_manager = self.peer_service.channel_manager.get_peer_manager(channel_name)
+        message = "All Group Peers count: " + str(len(peer_manager.peer_list[conf.ALL_GROUP_ID]))
+
         return loopchain_pb2.Message(
             code=message_code.Response.success,
             message=message,
-            meta=str(self.peer_service.peer_list.peer_list))
+            meta=str(peer_manager.peer_list))
 
     def Request(self, request, context):
-        logging.debug("Peer Service got request: " + str(request))
+        # util.logger.debug(f"Peer Service got request({request.code})")
 
         if request.code in self.__handler_map.keys():
             return self.__handler_map[request.code](request, context)
@@ -65,8 +78,10 @@ class OuterService(loopchain_pb2_grpc.PeerServiceServicer):
         :param context:
         :return:
         """
+        channel_name = conf.LOOPCHAIN_DEFAULT_CHANNEL if request.channel == '' else request.channel
         logging.debug("Peer GetStatus : %s", request)
-        peer_status = self.peer_service.common_service.getstatus(self.peer_service.block_manager)
+        peer_status = self.peer_service.common_service.getstatus(
+            self.peer_service.channel_manager.get_block_manager(channel_name))
 
         return loopchain_pb2.StatusReply(
             status=json.dumps(peer_status),
@@ -131,13 +146,13 @@ class OuterService(loopchain_pb2_grpc.PeerServiceServicer):
                                          message=request.request)
 
     def CreateTx(self, request, context):
-        """Tx 생성을 요청 받고 입력된 데이터로 tx 생성, Block Generator 로 전송
+        """make tx by client request and broadcast it to the network
 
         :param request:
         :param context:
         :return:
         """
-        # logging.debug(f"peer_outer_service::CreateTx request({request.data})")
+        # logging.debug(f"peer_outer_service::CreateTx request({request.data}), channel({request.channel})")
 
         tx = Transaction()
         # TODO self.__score 의 id 및 version 은 peer_score 에서 가져오고, expire 시킴
@@ -152,62 +167,71 @@ class OuterService(loopchain_pb2_grpc.PeerServiceServicer):
             score_id = self.peer_service.score_info[message_code.MetaParams.ScoreInfo.score_id]
             score_version = self.peer_service.score_info[message_code.MetaParams.ScoreInfo.score_version]
 
-        tx.init_meta(self.peer_service.peer_id, score_id, score_version)
+        channel_name = conf.LOOPCHAIN_DEFAULT_CHANNEL if request.channel == '' else request.channel
+
+        tx.init_meta(self.peer_service.peer_id, score_id, score_version, channel_name)
         result_hash = tx.put_data(request.data)
+        tx.sign_hash(self.peer_service.auth)
         # logging.debug("peer_outer_service result hash : " + result_hash)
 
         self.peer_service.send_to_process_thread.send_to_process((BroadcastProcess.CREATE_TX_COMMAND, tx))
-
-        # TODO gRPC receiver 가 별도로 구현되지 않은 현재 상태에서는 tx broadcast 는 로드 테스트를 견디지 못한다.
-        # gRPC receiver 구현 후 다시 테스트 할 것
-        # tx_dump = pickle.dumps(tx)
-        # self.peer_service.common_service.broadcast("AddTx", (loopchain_pb2.TxSend(tx=tx_dump)))
 
         return loopchain_pb2.CreateTxReply(
             response_code=result_code,
             tx_hash=result_hash,
             more_info=more_info)
 
-    def AddTx(self, request, context):
+    def AddTx(self, request: loopchain_pb2.TxSend, context):
         """Add tx to Block Manager
 
         :param request:
         :param context:
         :return:
         """
+        channel_name = conf.LOOPCHAIN_DEFAULT_CHANNEL if request.channel == '' else request.channel
+        # logging.debug(f"peer_outer_service::AddTx channel({channel_name})")
 
-        if self.peer_service.peer_type == loopchain_pb2.BLOCK_GENERATOR \
-                and self.peer_service.block_manager.consensus.block is None:
+        block_manager = self.peer_service.channel_manager.get_block_manager(channel_name)
+
+        if block_manager.peer_type == loopchain_pb2.BLOCK_GENERATOR and block_manager.consensus.block is None:
             return loopchain_pb2.CommonReply(
                 response_code=message_code.Response.fail_made_block_count_limited,
                 message="this leader can't make more block")
 
-        self.peer_service.block_manager.add_tx_unloaded(request.tx)
+        block_manager.add_tx_unloaded(request.tx)
 
         return loopchain_pb2.CommonReply(response_code=message_code.Response.success, message="success")
 
     def GetTx(self, request, context):
-        """ 트랜잭션을 가져옵니다.
+        """get transaction
 
         :param request: tx_hash
         :param context:
         :return:
         """
-        tx = self.peer_service.block_manager.get_tx(request.tx_hash)
+        channel_name = conf.LOOPCHAIN_DEFAULT_CHANNEL if request.channel == '' else request.channel
+        # logging.debug(f"peer_outer_service::GetTx channel({channel_name})")
+        tx = self.peer_service.channel_manager.get_block_manager(channel_name).get_tx(request.tx_hash)
 
         # TODO 지금은 일반적인 fail 메시지로만 처리한다. 상세화 여지 있음, 필요시 추가 가능 (by winDy)
         response_code, response_msg = message_code.get_response(message_code.Response.fail)
         response_meta = ""
         response_data = ""
+        response_sign = b''
+        response_public_key = b''
 
         if tx is not None:
             response_code, response_msg = message_code.get_response(message_code.Response.success)
-            response_meta = json.dumps(tx.get_meta())
+            response_meta = json.dumps(tx.meta)
             response_data = tx.get_data().decode(conf.PEER_DATA_ENCODING)
+            response_sign = tx.signature
+            response_public_key = tx.public_key
 
         return loopchain_pb2.GetTxReply(response_code=response_code,
                                         meta=response_meta,
                                         data=response_data,
+                                        signature=response_sign,
+                                        public_key=response_public_key,
                                         more_info=response_msg)
 
     def GetLastBlockHash(self, request, context):
@@ -217,8 +241,10 @@ class OuterService(loopchain_pb2_grpc.PeerServiceServicer):
         :param context:
         :return: 마지막 블럭
         """
+        channel_name = conf.LOOPCHAIN_DEFAULT_CHANNEL if request.channel == '' else request.channel
         # Peer To Client
-        last_block = self.peer_service.block_manager.get_blockchain().last_block
+        block_manager = self.peer_service.channel_manager.get_block_manager(channel_name)
+        last_block = block_manager.get_blockchain().last_block
         response_code, response_msg = message_code.get_response(message_code.Response.fail)
         block_hash = None
 
@@ -230,7 +256,7 @@ class OuterService(loopchain_pb2_grpc.PeerServiceServicer):
                                         message=(response_msg +
                                                  (" This is for block height sync",
                                                   " This is for Test Validation")
-                                                 [self.peer_service.peer_type == loopchain_pb2.PEER]),
+                                                 [block_manager.peer_type == loopchain_pb2.PEER]),
                                         block_hash=block_hash)
 
     def GetBlock(self, request, context):
@@ -250,8 +276,11 @@ class OuterService(loopchain_pb2_grpc.PeerServiceServicer):
         block_hash = request.block_hash
         block = None
 
+        channel_name = conf.LOOPCHAIN_DEFAULT_CHANNEL if request.channel == '' else request.channel
+        block_manager = self.peer_service.channel_manager.get_block_manager(channel_name)
+
         if request.block_hash == "" and request.block_height == -1:
-            block_hash = self.peer_service.block_manager.get_blockchain().last_block.block_hash
+            block_hash = block_manager.get_blockchain().last_block.block_hash
 
         block_filter = re.sub(r'\s', '', request.block_data_filter).split(",")
         tx_filter = re.sub(r'\s', '', request.tx_data_filter).split(",")
@@ -261,9 +290,9 @@ class OuterService(loopchain_pb2_grpc.PeerServiceServicer):
         block_data_json = json.loads("{}")
 
         if block_hash != "":
-            block = self.peer_service.block_manager.get_blockchain().find_block_by_hash(block_hash)
+            block = block_manager.get_blockchain().find_block_by_hash(block_hash)
         elif request.block_height != -1:
-            block = self.peer_service.block_manager.get_blockchain().find_block_by_height(request.block_height)
+            block = block_manager.get_blockchain().find_block_by_height(request.block_height)
 
         if block is None:
             return loopchain_pb2.GetBlockReply(response_code=message_code.Response.fail_wrong_block_hash,
@@ -347,9 +376,11 @@ class OuterService(loopchain_pb2_grpc.PeerServiceServicer):
         :param context:
         :return: verify result
         """
+        channel_name = conf.LOOPCHAIN_DEFAULT_CHANNEL if request.channel == '' else request.channel
         logging.debug('GetInvokeResult')
         try:
-            invoke_result = self.peer_service.block_manager.get_invoke_result(request.tx_hash)
+            invoke_result = \
+                self.peer_service.channel_manager.get_block_manager(channel_name).get_invoke_result(request.tx_hash)
             invoke_result_str = json.dumps(invoke_result)
             logging.debug('invoke_result : ' + invoke_result_str)
             return loopchain_pb2.GetInvokeResultReply(response_code=message_code.Response.success
@@ -365,7 +396,8 @@ class OuterService(loopchain_pb2_grpc.PeerServiceServicer):
         :param context:
         :return:
         """
-
+        channel_name = conf.LOOPCHAIN_DEFAULT_CHANNEL if request.channel == '' else request.channel
+        # logging.debug(f"peer_outer_service::AnnounceUnconfirmedBlock channel({channel_name})")
         unconfirmed_block = pickle.loads(request.block)
 
         # logging.debug(f"#block \n"
@@ -374,13 +406,13 @@ class OuterService(loopchain_pb2_grpc.PeerServiceServicer):
         #               f"block_type({unconfirmed_block.block_type})\n"
         #               f"is_divided_block({unconfirmed_block.is_divided_block})\n")
 
-        # self.peer_service.add_unconfirm_block(request.block)
-        self.peer_service.block_manager.add_unconfirmed_block(unconfirmed_block)
+        # self.peer_service.add_unconfirm_block(request.block, channel_name)
+        self.peer_service.channel_manager.get_block_manager(channel_name).add_unconfirmed_block(unconfirmed_block)
 
         if unconfirmed_block.made_block_count >= conf.LEADER_BLOCK_CREATION_LIMIT \
                 and unconfirmed_block.block_type is BlockType.vote \
                 and unconfirmed_block.is_divided_block is False:
-            self.peer_service.reset_leader(unconfirmed_block.next_leader_peer)
+            self.peer_service.reset_leader(unconfirmed_block.next_leader_peer, channel_name)
 
         # if unconfirmed_block.block_type is BlockType.peer_list:
         #     peer_list_data = pickle.loads(unconfirmed_block.peer_manager)
@@ -394,6 +426,8 @@ class OuterService(loopchain_pb2_grpc.PeerServiceServicer):
         :param context: gRPC parameter
         :return: CommonReply of loopchain.proto
         """
+        channel_name = conf.LOOPCHAIN_DEFAULT_CHANNEL if request.channel == '' else request.channel
+
         # Peer To BlockGenerator
         logging.debug("AnnounceConfirmedBlock block hash: " + request.block_hash)
         response_code, response_msg = message_code.get_response(message_code.Response.fail_announce_block)
@@ -408,10 +442,10 @@ class OuterService(loopchain_pb2_grpc.PeerServiceServicer):
         if len(request.block) > 0:
             logging.warning("AnnounceConfirmedBlock without Consensus ====================")
             # 아래의 return 값을 확인하지 않아도 예외인 경우 아래 except 에서 확인된다.
-            self.peer_service.add_unconfirm_block(request.block)
+            self.peer_service.add_unconfirm_block(request.block, channel_name)
 
         try:
-            self.peer_service.block_manager.confirm_block(request.block_hash)
+            self.peer_service.channel_manager.get_block_manager(channel_name).confirm_block(request.block_hash)
             response_code, response_msg = message_code.get_response(message_code.Response.success_announce_block)
         except (BlockchainError, BlockInValidError, BlockError) as e:
             logging.error("AnnounceConfirmedBlock: " + str(e))
@@ -420,14 +454,16 @@ class OuterService(loopchain_pb2_grpc.PeerServiceServicer):
 
     def BlockSync(self, request, context):
         # Peer To Peer
+        channel_name = conf.LOOPCHAIN_DEFAULT_CHANNEL if request.channel == '' else request.channel
         logging.info("BlockSync request: " + request.block_hash)
+        block_manager = self.peer_service.channel_manager.get_block_manager(channel_name)
 
-        block = self.peer_service.block_manager.get_blockchain().find_block_by_hash(request.block_hash)
+        block = block_manager.get_blockchain().find_block_by_hash(request.block_hash)
         if block is None:
             return loopchain_pb2.BlockSyncReply(
                 response_code=message_code.Response.fail_wrong_block_hash,
                 block_height=-1,
-                max_block_height=self.peer_service.block_manager.get_blockchain().block_height,
+                max_block_height=block_manager.get_blockchain().block_height,
                 block=b"")
 
         dump = pickle.dumps(block)
@@ -435,7 +471,7 @@ class OuterService(loopchain_pb2_grpc.PeerServiceServicer):
         return loopchain_pb2.BlockSyncReply(
             response_code=message_code.Response.success,
             block_height=block.height,
-            max_block_height=self.peer_service.block_manager.get_blockchain().block_height,
+            max_block_height=block_manager.get_blockchain().block_height,
             block=dump)
 
     def Subscribe(self, request, context):
@@ -475,75 +511,111 @@ class OuterService(loopchain_pb2_grpc.PeerServiceServicer):
         :return:
         """
         # RadioStation To Peer
-        logging.info('Here Comes new peer: ' + str(request))
+        # prevent to show certificate content
+        # logging.info('Here Comes new peer: ' + str(request))
+        channel_name = conf.LOOPCHAIN_DEFAULT_CHANNEL if request.channel == '' else request.channel
+        # logging.debug(f"peer outer service::AnnounceNewPeer channel({channel_name})")
+        peer_manager = self.peer_service.channel_manager.get_peer_manager(channel_name)
+
         if len(request.peer_object) > 0:
             peer = pickle.loads(request.peer_object)
             # 서버로부터 발급된 토큰 검증
             # Secure 인 경우 검증에 통과하여야만 peer_list에 추가함
-            if self.peer_service.auth.is_secure\
-                    and self.peer_service.auth.verify_new_peer(peer, loopchain_pb2.PEER) is False:
-                # TODO AnnounceNewPeer 과정을 실패로 처리한다.
-                logging.debug("New Peer Validation Fail")
-            else:
-                logging.debug("Add New Peer: " + str(peer.peer_id))
-                self.peer_service.peer_list.add_peer_object(peer)
-                logging.debug("Try save peer list...")
-                self.peer_service.common_service.save_peer_list(self.peer_service.peer_list)
-        self.peer_service.show_peers()
+            # TODO KMS 확정 전까지 보류 토큰 사용 안할 가능성이 높음
+            # if self.peer_service.auth.is_secure\
+            #         and self.peer_service.auth.verify_new_peer(peer, loopchain_pb2.PEER) is False:
+            #     # TODO AnnounceNewPeer 과정을 실패로 처리한다.
+            #     logging.debug("New Peer Validation Fail")
+            # else:
+            #     logging.debug("Add New Peer: " + str(peer.peer_id))
+            #     self.peer_service.peer_manager.add_peer(peer)
+            #     logging.debug("Try save peer list...")
+            #     self.peer_service.common_service.save_peer_list(self.peer_service.peer_manager)
+
+            logging.debug("Add New Peer: " + str(peer.peer_id))
+
+            peer_manager.add_peer(peer)
+            # broadcast the new peer to the others for adding an audience
+            self.peer_service.common_service.add_audience(request)
+
+            logging.debug("Try save peer list...")
+            self.peer_service.channel_manager.save_peer_manager(peer_manager, channel_name)
+
+        self.peer_service.show_peers(channel_name)
 
         # Block generator makes a peer_manager block up when a new peer joins the network.
-        if self.peer_service.peer_type is loopchain_pb2.BLOCK_GENERATOR:
-            self.add_peer_manager_tx()
+        if self.peer_service.channel_manager.get_block_manager(channel_name).peer_type is loopchain_pb2.BLOCK_GENERATOR:
+            # TODO leader 가 peer manager tx 를 생성하여 블록에 peer 정보를 담는다면 채널별로 peer manager 를 저장할 필요도 있지
+            # 않을까? 현재는 default 채널의 peer 만 announce new peer 와 peer manager tx 생성이 이뤄지고 있다.
+            self.add_peer_manager_tx(channel_name)
 
         return loopchain_pb2.CommonReply(response_code=0, message="success")
 
-    def add_peer_manager_tx(self):
-        """ peer_manager block을 생성하기 위한 Transaction을 추가한다
+    def add_peer_manager_tx(self, channel_name):
+        """peer_manager block을 생성하기 위한 Transaction을 추가한다
         이 기능은 Block Generator 에서만 동작해야 한다. 일반 Peer 는 이 기능을 사용할 권한을 가져서는 안된다.
 
         :return:
         """
         tx = Transaction()
         tx.type = TransactionType.peer_list
+        tx.put_meta(Transaction.CHANNEL_KEY, channel_name)
         tx.put_meta(Transaction.PEER_ID_KEY, self.peer_service.peer_id)
-        tx.put_data(self.peer_service.peer_manager.dump())
+        tx.put_data(self.peer_service.channel_manager.get_peer_manager(channel_name).dump())
 
         self.peer_service.send_to_process_thread.send_to_process(("create_tx", tx))
 
-        if self.peer_service.block_manager.consensus.block is None:
+        if self.peer_service.channel_manager.get_block_manager(channel_name).consensus.block is None:
             logging.debug("this leader can't make more block")
 
-        self.peer_service.block_manager.add_tx_unloaded(pickle.dumps(tx))
+        self.peer_service.channel_manager.get_block_manager(channel_name).add_tx_unloaded(pickle.dumps(tx))
 
     def AnnounceDeletePeer(self, request, context):
-        logging.debug(f"AnnounceDeletePeer peer_id({request.peer_id}) group_id({request.group_id})")
-        self.peer_service.peer_list.remove_peer(request.peer_id, request.group_id)
+        """delete peer by radio station heartbeat, It delete peer info over whole channels.
+
+        :param request:
+        :param context:
+        :return:
+        """
+        # channel_name = conf.LOOPCHAIN_DEFAULT_CHANNEL if request.channel == '' else request.channel
+        # logging.debug(f"AnnounceDeletePeer peer_id({request.peer_id}) group_id({request.group_id})")
+        self.peer_service.channel_manager.remove_peer(request.peer_id, request.group_id)
+
         return loopchain_pb2.CommonReply(response_code=0, message="success")
 
     def VoteUnconfirmedBlock(self, request, context):
-        if self.peer_service.peer_type == loopchain_pb2.PEER:
-            return loopchain_pb2.CommonReply(
-                response_code=message_code.Response.fail_no_leader_peer,
-                message=message_code.get_response_msg(message_code.Response.fail_no_leader_peer))
-        else:
-            logging.info("Peer vote to : " + request.block_hash + " " + str(request.vote_code))
-            self.peer_service.block_manager.get_candidate_blocks().vote_to_block(
-                request.block_hash, (False, True)[request.vote_code == message_code.Response.success_validate_block],
-                request.peer_id, request.group_id)
+        channel_name = conf.LOOPCHAIN_DEFAULT_CHANNEL if request.channel == '' else request.channel
+        block_manager = self.peer_service.channel_manager.get_block_manager(channel_name)
 
-            return loopchain_pb2.CommonReply(response_code=message_code.Response.success, message="success")
+        if conf.CONSENSUS_ALGORITHM != conf.ConsensusAlgorithm.lft:
+            if block_manager.peer_type == loopchain_pb2.PEER:
+                return loopchain_pb2.CommonReply(
+                    response_code=message_code.Response.fail_no_leader_peer,
+                    message=message_code.get_response_msg(message_code.Response.fail_no_leader_peer))
+
+        logging.info("Peer vote to : " + request.block_hash + " " + str(request.vote_code)
+                     + f"from {request.peer_id}")
+
+        block_manager.get_candidate_blocks().vote_to_block(
+            request.block_hash, (False, True)[request.vote_code == message_code.Response.success_validate_block],
+            request.peer_id, request.group_id)
+
+        return loopchain_pb2.CommonReply(response_code=message_code.Response.success, message="success")
 
     def ComplainLeader(self, request, context):
+        channel_name = conf.LOOPCHAIN_DEFAULT_CHANNEL if request.channel == '' else request.channel
         logging.debug("ComplainLeader: " + request.message)
 
         # TODO AnnounceComplained 메시지를 브로드 캐스트 하여 ComplainLeader 에 대한 투표를 받는다.
         # 수집후 AnnounceNewLeader 메시지에 ComplainLeader 투표 결과를 담아서 발송한다.
         # 현재 우선 AnnounceNewLeader 를 즉시 전송하게 구현한다. Leader Change 를 우선 확인하기 위한 임시 구현
-        self.peer_service.peer_list.announce_new_leader(request.complained_leader_id, request.new_leader_id)
+        self.peer_service.channel_manager.get_peer_manager(channel_name).announce_new_leader(
+            request.complained_leader_id, request.new_leader_id)
 
         return loopchain_pb2.CommonReply(response_code=message_code.Response.success, message="success")
 
     def AnnounceNewLeader(self, request, context):
+        channel_name = conf.LOOPCHAIN_DEFAULT_CHANNEL if request.channel == '' else request.channel
         logging.debug("AnnounceNewLeader: " + request.message)
-        self.peer_service.reset_leader(request.new_leader_id)
+        self.peer_service.reset_leader(request.new_leader_id, channel_name)
         return loopchain_pb2.CommonReply(response_code=message_code.Response.success, message="success")

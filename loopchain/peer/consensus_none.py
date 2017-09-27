@@ -39,6 +39,6 @@ class ConsensusNone(ConsensusBase):
             self._blockmanager.broadcast_announce_confirmed_block(confirmed_block.block_hash, confirmed_block)
 
             # 새로운 Block 을 생성하여 다음 tx 을 수집한다.
-            self._block = Block()
+            self._block = Block(channel_name=self._channel_name)
 
         time.sleep(conf.SLEEP_SECONDS_IN_SERVICE_LOOP)

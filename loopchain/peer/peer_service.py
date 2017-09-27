@@ -11,58 +11,20 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""loopchain main gRPC service. 
+"""loopchain main gRPC service.
 It has secure outer service for p2p consensus and status monitoring.
 And also has insecure inner service for inner process modules."""
 
-import queue
 import timeit
 
 import grpc
 
-from loopchain.baseservice import ObjectManager, CommonThread, BroadcastProcess, StubManager
+from loopchain.baseservice import ObjectManager, BroadcastProcess, StubManager, TimerService
 from loopchain.blockchain import *
-from loopchain.container import ScoreService, RestService, TxService, CommonService
-from loopchain.peer import BlockManager, InnerService, OuterService
+from loopchain.container import ScoreService, RestService, CommonService
+from loopchain.peer import SendToProcess, InnerService, OuterService, ChannelManager
 from loopchain.peer.peer_authorization import PeerAuthorization
 from loopchain.protos import loopchain_pb2, loopchain_pb2_grpc, message_code
-
-
-class SendToProcess(CommonThread):
-    def __init__(self):
-        CommonThread.__init__(self)
-        self.__job = queue.Queue()
-        self.__process = None
-
-    def set_process(self, process):
-        self.__process = process
-
-    def send_to_process(self, params):
-        """return이 불필요한 process send를 비동기로 처리하기 위하여 queue in thread 방법을 사용한다.
-
-        :param PeerProcess 에 전달하는 command 와 param 의 쌍
-        """
-        # logging.debug("send job queue add")
-        self.__job.put(params)
-
-    def run(self):
-        while self.is_run():
-            time.sleep(conf.SLEEP_SECONDS_IN_SERVICE_LOOP)
-
-            param = None
-            while not self.__job.empty():
-                # logging.debug("Send to Process by thread.... remain jobs: " + str(self.__job.qsize()))
-
-                param = self.__job.get()
-                try:
-                    self.__process.send_to_process(param)
-                    param = None
-                except Exception as e:
-                    logging.warning(f"process not init yet... ({e})")
-                    break
-
-            if param is not None:
-                self.__job.put(param)
 
 
 class PeerService:
@@ -72,7 +34,7 @@ class PeerService:
 
     def __init__(self, group_id=None, radio_station_ip=conf.IP_RADIOSTATION,
                  radio_station_port=conf.PORT_RADIOSTATION,
-                 cert_path=None, cert_pass=None):
+                 cert_path=conf.CERT_PATH, private_path=conf.PRIVATE_PATH, cert_pass=conf.DEFAULT_PW):
         """Peer는 Radio Station 에 접속하여 leader 및 다른 Peer에 대한 접속 정보를 전달 받는다.
 
         :param group_id: Peer Group 을 구분하기 위한 ID, None 이면 Single Peer Group 이 된다. (peer_id is group_id)
@@ -80,9 +42,13 @@ class PeerService:
         :param radio_station_ip: RS IP
         :param radio_station_port: RS Port
         :param cert_path: Peer 인증서 디렉토리 경로
+        :param private_path: Cert Private key
         :param cert_pass: Peer private key password
         :return:
         """
+        util.logger.spam(f"Your Peer Service runs on debugging MODE!")
+        util.logger.spam(f"You can see many terrible garbage logs just for debugging, R U Really want it?")
+
         self.__handler_map = {
             message_code.Request.status: self.__handler_status,
             message_code.Request.peer_peer_list: self.__handler_peer_list
@@ -100,11 +66,10 @@ class PeerService:
             self.__group_id = conf.PEER_GROUP_ID
 
         self.__common_service = None
-        self.__peer_manager = None
-        self.__block_manager = None
+        self.__channel_manager: ChannelManager = None
         self.__score_service = None
         self.__rest_service = None
-        self.__tx_service = None
+        self.__timer_service = TimerService()
 
         # Channel and  Stubs for Servers, It can be set after serve()
         self.__stub_to_blockgenerator = None
@@ -123,15 +88,11 @@ class PeerService:
         # For Send tx to leader
         self.__tx_process = None
 
-        self.__auth = PeerAuthorization()
+        self.__auth = PeerAuthorization(cert_path, private_path, cert_pass)
 
         # gRPC service for Peer
         self.__inner_service = InnerService()
         self.__outer_service = OuterService()
-
-        # 인증서 저장
-        if cert_path is not None:
-            self.__auth.load_pki(cert_path, cert_pass)
 
         self.__reset_voter_in_progress = False
 
@@ -140,22 +101,12 @@ class PeerService:
         return self.__common_service
 
     @property
-    def tx_service(self):
-        return self.__tx_service
+    def timer_service(self):
+        return self.__timer_service
 
     @property
-    def block_manager(self):
-        return self.__block_manager
-
-    # TODO peer_manager 로 이름을 변경하였으나 수정 범위가 광범위 하여 기존 이름 임시로 유지함
-    # 점차적으로 적용하여 리팩토링 범위를 축소한 후 모두 처리한 다음 제거할 것
-    @property
-    def peer_list(self):
-        return self.__peer_manager
-
-    @property
-    def peer_manager(self):
-        return self.__peer_manager
+    def channel_manager(self):
+        return self.__channel_manager
 
     @property
     def stub_to_score_service(self):
@@ -174,10 +125,6 @@ class PeerService:
         return self.__tx_process
 
     @property
-    def peer_type(self):
-        return self.__peer_type
-
-    @property
     def peer_object(self):
         return self.__peer_object
 
@@ -191,31 +138,38 @@ class PeerService:
 
     @property
     def stub_to_radiostation(self):
+        if self.__stub_to_radio_station is None:
+            self.__stub_to_radio_station = StubManager.get_stub_manager_to_server(
+                self.__radio_station_target,
+                loopchain_pb2_grpc.RadioStationStub,
+                conf.CONNECTION_RETRY_TIMEOUT_TO_RS)
+
         return self.__stub_to_radio_station
 
     def __handler_status(self, request, context):
         return loopchain_pb2.Message(code=message_code.Response.success)
 
     def __handler_peer_list(self, request, context):
-        message = "All Group Peers count: " + str(len(self.__peer_manager.peer_list[conf.ALL_GROUP_ID]))
+        message = "All Group Peers count: " + str(
+            len(self.__channel_manager.get_peer_manager().peer_list[conf.ALL_GROUP_ID]))
         return loopchain_pb2.Message(
             code=message_code.Response.success,
             message=message,
-            meta=str(self.__peer_manager.peer_list))
+            meta=str(self.__channel_manager.get_peer_manager().peer_list))
 
-    def rotate_next_leader(self):
+    def rotate_next_leader(self, channel_name):
         """Find Next Leader Id from peer_list and reset leader to that peer
 
         :return:
         """
-
         # logging.debug("rotate next leader...")
-        next_leader = self.__peer_manager.get_next_leader_peer(is_only_alive=True)
+        peer_manager = self.__channel_manager.get_peer_manager(channel_name)
+        next_leader = peer_manager.get_next_leader_peer(is_only_alive=True)
 
         # Check Next Leader is available...
         if next_leader is not None and next_leader.peer_id != self.peer_id:
             try:
-                stub_manager = self.__peer_manager.get_peer_stub_manager(next_leader)
+                stub_manager = peer_manager.get_peer_stub_manager(next_leader)
                 response = stub_manager.call(
                     "GetStatus",
                     loopchain_pb2.StatusRequest(request="get_leader_peer"),
@@ -230,34 +184,37 @@ class PeerService:
 
             except Exception as e:
                 logging.warning(f"rotate next leader exceptions({e})")
-                next_leader = self.__peer_manager.leader_complain_to_rs(conf.ALL_GROUP_ID)
+                next_leader = peer_manager.leader_complain_to_rs(conf.ALL_GROUP_ID)
 
         if next_leader is not None:
-            self.reset_leader(next_leader.peer_id)
+            self.reset_leader(next_leader.peer_id, channel_name)
 
-    def reset_leader(self, new_leader_id):
+    def reset_leader(self, new_leader_id, channel_name: str):
         logging.warning("RESET LEADER: " + str(new_leader_id))
 
-        complained_leader = self.__peer_manager.get_leader_peer()
+        block_manager = self.__channel_manager.get_block_manager(channel_name)
+        peer_manager = self.__channel_manager.get_peer_manager(channel_name)
+        complained_leader = peer_manager.get_leader_peer()
+        leader_peer = peer_manager.get_peer(new_leader_id, None)
 
-        leader_peer = self.__peer_manager.get_peer(new_leader_id, None)
         if leader_peer is None:
             logging.warning(f"in peer_service::reset_leader There is no peer by peer_id({new_leader_id})")
             return
 
-        self.__peer_manager.set_leader_peer(leader_peer, None)
+        peer_manager.set_leader_peer(leader_peer, None)
 
-        self.__peer_object = self.__peer_manager.get_peer(self.peer_id)
-        peer_leader = self.__peer_manager.get_leader_peer()
+        self.__peer_object = peer_manager.get_peer(self.peer_id)
+        peer_leader = peer_manager.get_leader_peer()
 
         if self.__peer_object.target == peer_leader.target:
-            logging.debug("Set Peer Type Block Generator!")
+            util.change_log_color_set(True)
+            logging.debug("Set Peer Type Leader!")
             self.__peer_type = loopchain_pb2.BLOCK_GENERATOR
-            self.__block_manager.get_blockchain().reset_made_block_count()
+            block_manager.get_blockchain().reset_made_block_count()
 
             # TODO 아래 코드는 중복된 의미이다. 하지만, leader 가 변경되길 기다리는 코드로 의미를 명확히 할 경우
             # 블록체인 동작 지연으로 인한 오류가 발생한다. 우선 더 안정적인 테스트 결과를 보이는 상태로 유지한다.
-            response = self.peer_list.get_peer_stub_manager(self.__peer_object).call(
+            response = peer_manager.get_peer_stub_manager(self.__peer_object).call(
                 "GetStatus",
                 loopchain_pb2.StatusRequest(request="reset_leader"),
                 is_stub_reuse=True
@@ -269,27 +226,27 @@ class PeerService:
             else:
                 is_broadcast = False
 
-            self.__peer_manager.announce_new_leader(complained_leader.peer_id, new_leader_id, is_broadcast=is_broadcast)
+            peer_manager.announce_new_leader(complained_leader.peer_id, new_leader_id, is_broadcast=is_broadcast)
         else:
+            util.change_log_color_set()
             logging.debug("Set Peer Type Peer!")
             self.__peer_type = loopchain_pb2.PEER
-            self.__stub_to_blockgenerator = self.__peer_manager.get_peer_stub_manager(peer_leader)
+            self.__stub_to_blockgenerator = peer_manager.get_peer_stub_manager(peer_leader)
             # 새 leader 에게 subscribe 하기
             self.__common_service.subscribe(self.__stub_to_blockgenerator, loopchain_pb2.BLOCK_GENERATOR)
 
-        self.__common_service.set_peer_type(self.__peer_type)
         # update candidate blocks
-        self.__block_manager.get_candidate_blocks().set_last_block(self.__block_manager.get_blockchain().last_block)
-        self.__block_manager.set_peer_type(self.__peer_type)
+        block_manager.get_candidate_blocks().set_last_block(block_manager.get_blockchain().last_block)
+        block_manager.set_peer_type(self.__peer_type)
 
         if self.__tx_process is not None:
             # peer_process 의 남은 job 을 처리한다. (peer->leader 인 경우),
             # peer_process 를 리더 정보를 변경한다. (peer->peer 인 경우)
             self.__tx_process_connect_to_leader(self.__tx_process, peer_leader.target)
 
-    def show_peers(self):
+    def show_peers(self, channel_name=conf.LOOPCHAIN_DEFAULT_CHANNEL):
         logging.debug("Peers: ")
-        for peer in self.__peer_manager.get_IP_of_peers_in_group():
+        for peer in self.__channel_manager.get_peer_manager(channel_name).get_IP_of_peers_in_group():
             logging.debug("peer_target: " + peer)
 
     def __load_score(self, score):
@@ -346,7 +303,7 @@ class PeerService:
         return True
 
     def service_stop(self):
-        self.__block_manager.stop()
+        self.__channel_manager.stop_block_managers()
         self.__common_service.stop()
 
     def score_invoke(self, block):
@@ -361,145 +318,63 @@ class PeerService:
         if response.code == message_code.Response.success:
             return json.loads(response.meta)
 
-    def __load_block_manager(self):
-        try:
-            block_manager = BlockManager(self.__common_service)
-            return block_manager
-        except leveldb.LevelDBError as e:
-            util.exit_and_msg("LevelDBError(" + str(e) + ")")
+    def __connect_to_all_channel(self) -> bool:
+        """connect to radiostation with all channel
 
-    def __connect_to_radiostation(self):
+        :return: is radiostation connected
+        """
+        response = self.__connect_to_radiostation()
+        is_radiostation_connected = response is not None
+
+        if is_radiostation_connected:
+            logging.debug(f"Connect to channels({response.channels})")
+
+            for channel in response.channels:
+                if channel != conf.LOOPCHAIN_DEFAULT_CHANNEL:  # default channel is already connected
+                    logging.debug(f"Try join channel({channel})")
+                    self.__connect_to_radiostation(channel_name=channel)
+
+            # load block managers for channels after connet channel
+            self.__channel_manager.load_block_managers(peer_id=self.peer_id)
+
+        return is_radiostation_connected
+
+    def __connect_to_radiostation(
+            self, channel_name: str=conf.LOOPCHAIN_DEFAULT_CHANNEL) -> loopchain_pb2.ConnectPeerReply:
         """RadioStation 접속
 
         :return: 접속정보, 실패시 None
         """
         logging.debug("try to connect to radiostation")
 
-        self.__stub_to_radio_station = StubManager.get_stub_manager_to_server(
-            self.__radio_station_target,
-            loopchain_pb2_grpc.RadioStationStub,
-            conf.CONNECTION_RETRY_TIMEOUT_TO_RS)
-
-        if self.__stub_to_radio_station is None:
+        if self.stub_to_radiostation is None:
             logging.warning("fail make stub to Radio Station!!")
             return None
 
-        token = None
-        if self.__auth.is_secure:
-            self.__peer_object = self.__peer_manager.get_peer(self.peer_id)
-            token = None
-            if self.__peer_object is not None:
-                token = self.__peer_object.token
-            logging.debug("Self Peer Token : %s", token)
-
-            # 토큰 유효시간이 지나면 다시 생성 요청
-            if token is not None and self.__auth.get_token_time(token) is None:
-                token = None
-
-            self.__auth.set_peer_info(self.peer_id, self.__peer_target, self.group_id, self.__peer_type)
-            cert_bytes = self.__auth.get_cert_bytes()
-            if token is None:
-                # 서버로부터 난수 수신
-                # response = util.request_server_in_time(self.__stub_to_radio_station.ConnectPeer,
-                #                                        loopchain_pb2.PeerRequest(
-                #                                            peer_object=b'',
-                #                                            peer_id=self.peer_id,
-                #                                            peer_target=self.__peer_target,
-                #                                            group_id=self.group_id,
-                #                                            peer_type=self.__peer_type,
-                #                                            token=conf.TOKEN_TYPE_CERT + cert_bytes.hex())
-                #                                        )
-                response = self.__stub_to_radio_station.call("ConnectPeer", loopchain_pb2.PeerRequest(
-                    peer_object=b'',
-                    peer_id=self.peer_id,
-                    peer_target=self.__peer_target,
-                    group_id=self.group_id,
-                    peer_type=self.__peer_type,
-                    token=conf.TOKEN_TYPE_CERT + cert_bytes.hex()), conf.GRPC_TIMEOUT
-                )
-
-                rand_key = None
-                if response is not None and response.status == message_code.Response.success:
-                    logging.debug("Received Random : %s", response.more_info)
-                    if len(response.more_info) is not 32:
-                        # 토큰 크기가 16바이트가 아니면 접속을 할 수 없습니다.
-                        logging.debug('서버로부터 수신한 토큰 길이는 16바이트가 되어야 합니다.')
-                    else:
-                        rand_key = response.more_info
-                else:
-                    return response
-
-                # 난수와 Peer 정보에 서명
-                if rand_key is None:
-                    return None
-                else:
-                    sign = self.__auth.generate_request_sign(rand_key=rand_key)
-                    token = conf.TOKEN_TYPE_SIGN + sign.hex()
-            else:
-                self.__auth.add_token(token)
-
         # 공통 부분
-        # response = util.request_server_in_time(self.__stub_to_radio_station.ConnectPeer,
-        #                                        loopchain_pb2.PeerRequest(
-        #                                            peer_object=b'',
-        #                                            peer_id=self.peer_id,
-        #                                            peer_target=self.__peer_target,
-        #                                            group_id=self.group_id,
-        #                                            peer_type=self.__peer_type,
-        #                                            token=token
-        #                                        ))
-        response = self.__stub_to_radio_station.call("ConnectPeer", loopchain_pb2.PeerRequest(
+        response = self.stub_to_radiostation.call("ConnectPeer", loopchain_pb2.PeerRequest(
+            channel=channel_name,
             peer_object=b'',
             peer_id=self.peer_id,
             peer_target=self.__peer_target,
             group_id=self.group_id,
             peer_type=self.__peer_type,
-            token=token), conf.GRPC_CONNECTION_TIMEOUT
+            cert=self.__auth.serialized_cert), conf.GRPC_CONNECTION_TIMEOUT
         )
 
         if response is not None and response.status == message_code.Response.success:
-            if self.__auth.is_secure:
-                logging.debug("Received Token : %s", response.more_info)
-                # Radiostation으로부터 수신한 토큰 검증
-                if len(response.more_info) < 9:
-                    # 토큰 크기가 8 + 1바이트 보다 크지 아니면 접속을 할 수 없습니다.
-                    logging.debug('서버로부터 수신한 토큰 길이는 9바이트 이상이 되어야 합니다.')
-                    response.status = message_code.Response.fail_validate_params
-                    response.more_info = "Invalid Token Data"
-                else:
-                    token = response.more_info
-                    tag = token[:2]
-                    if tag == conf.TOKEN_TYPE_TOKEN:
-                        if self.__auth.verify_token(token):
-                            logging.debug("토큰 검증에 성공하였습니다.")
-                            self.__auth.add_token(token)
-                        else:
-                            logging.debug("토큰 검증에 실패하였습니다.")
-                            response.status = message_code.Response.fail_validate_params
-                            response.more_info = "Invalid Token Signature"
-
-        logging.debug("Connect to radiostation: " + str(response))
-
-        is_peer_list_from_rs = False
-
-        if response is not None and response.status == message_code.Response.success:
-            # RS 의 응답이 있으면 peer_list 는 RS 가 전달한 결과로 업데이트 된다.
-            # 없는 경우 local 의 level DB 로 부터 읽어드린 값을 default 로 사용하게 된다.
-            # TODO RS 는 어떻게 신뢰하지? RS 가 새로운 피어의 참여를 승인하더라도 참여한 피어 목록은 더 신뢰할만한 방식으로 보호가 필요하지 않나?
-            # 누군가 RS 를 죽인다면 RS 인척 가짜로 이루어진 피어 리스트를 전송하면 네트워크를 파괴할 수 있지 않나?
-            # 피어의 참여는 RS 가 승인한 다음 블록에 담아서 블록체인에 추가하면 어떨까?
-
             peer_list_data = pickle.loads(response.peer_list)
-            self.__peer_manager.load(peer_list_data, False)
-            self.__common_service.save_peer_list(self.__peer_manager)
-            logging.debug("peer list update: " + self.__peer_manager.get_peers_for_debug())
-            is_peer_list_from_rs = True
+            self.__channel_manager.get_peer_manager(channel_name).load(peer_list_data, False)
+            self.__channel_manager.save_peer_manager(self.__channel_manager.get_peer_manager(channel_name))
+            logging.debug("peer list update: " +
+                          self.__channel_manager.get_peer_manager(channel_name).get_peers_for_debug())
         else:
-            logging.debug("using local peer list: " + self.__peer_manager.get_peers_for_debug())
+            logging.debug("using local peer list: " +
+                          self.__channel_manager.get_peer_manager(channel_name).get_peers_for_debug())
 
-        return is_peer_list_from_rs
+        return response
 
-    def add_unconfirm_block(self, block_unloaded):
+    def add_unconfirm_block(self, block_unloaded, channel_name=conf.LOOPCHAIN_DEFAULT_CHANNEL):
         block = pickle.loads(block_unloaded)
         block_hash = block.block_hash
 
@@ -508,13 +383,15 @@ class PeerService:
         # block 검증
         block_is_validated = False
         try:
-            block_is_validated = block.validate()
-        except (BlockInValidError, BlockError, TransactionInValidError) as e:
+            block_is_validated = Block.validate(block)
+        except Exception as e:
             logging.error(e)
 
         if block_is_validated:
             # broadcast 를 받으면 받은 블럭을 검증한 후 검증되면 자신의 blockchain 의 unconfirmed block 으로 등록해 둔다.
-            confirmed, reason = self.__block_manager.get_blockchain().add_unconfirm_block(block)
+            confirmed, reason = \
+                self.__channel_manager.get_block_manager(channel_name).get_blockchain().add_unconfirm_block(block)
+
             if confirmed:
                 response_code, response_msg = message_code.get_response(message_code.Response.success_validate_block)
             elif reason == "block_height":
@@ -529,27 +406,26 @@ class PeerService:
         peer_process.send_to_process((BroadcastProcess.CONNECT_TO_LEADER_COMMAND, leader_target))
         peer_process.send_to_process((BroadcastProcess.SUBSCRIBE_COMMAND, leader_target))
 
-    def __run_tx_process(self, blockgenerator_info, inner_channel_info):
-        tx_process = BroadcastProcess()
+    def __run_tx_process(self, inner_channel_info):
+        tx_process = BroadcastProcess("Tx Process")
         tx_process.start()
         tx_process.send_to_process(("status", ""))
 
         wait_times = 0
         wait_for_process_start = None
 
-        time.sleep(conf.WAIT_SECONDS_FOR_SUB_PROCESS_START)
+        # TODO process wait loop 를 살리고 시간을 조정하였음, 이 상태에서 tx process 가 AWS infra 에서 시작되는지 확인 필요.
+        # time.sleep(conf.WAIT_SECONDS_FOR_SUB_PROCESS_START)
 
-        # while wait_for_process_start is None:
-        #     time.sleep(conf.SLEEP_SECONDS_FOR_SUB_PROCESS_START)
-        #     logging.debug(f"wait start tx process....")
-        #     wait_for_process_start = tx_process.get_receive("status")
-        #
-        #     if wait_for_process_start is None and wait_times > conf.WAIT_SUB_PROCESS_RETRY_TIMES:
-        #         util.exit_and_msg("Tx Process start Fail!")
+        while wait_for_process_start is None:
+            time.sleep(conf.SLEEP_SECONDS_FOR_SUB_PROCESS_START)
+            logging.debug(f"wait start tx process....")
+            wait_for_process_start = tx_process.get_receive("status")
 
-        # logging.debug(f"Tx Process start({wait_for_process_start})")
+            if wait_for_process_start is None and wait_times > conf.WAIT_SUB_PROCESS_RETRY_TIMES:
+                util.exit_and_msg("Tx Process start Fail!")
 
-        self.__tx_process_connect_to_leader(tx_process, blockgenerator_info)
+        logging.debug(f"Tx Process start({wait_for_process_start})")
         tx_process.send_to_process((BroadcastProcess.MAKE_SELF_PEER_CONNECTION_COMMAND, inner_channel_info))
 
         return tx_process
@@ -574,13 +450,10 @@ class PeerService:
         return self.__group_id
 
     @property
-    def peer_list(self):
-        return self.__peer_manager
-
-    @property
     def peer_target(self):
         return self.__peer_target
 
+    # TODO it have to support multi channel
     def block_height_sync(self, target_peer_stub=None):
         """Peer간의 데이타 동기화
         """
@@ -601,7 +474,8 @@ class PeerService:
         # Make Peer Stub List [peer_stub, ...] and get max_height of network
         max_height = 0
         peer_stubs = []
-        for peer_target in self.__peer_manager.get_IP_of_peers_in_group():
+        for peer_target in self.__channel_manager.get_peer_manager(
+                conf.LOOPCHAIN_DEFAULT_CHANNEL).get_IP_of_peers_in_group():
             target = ":".join(peer_target.split(":")[1:])
             if target != self.__peer_target:
                 logging.debug(f"try to target({target})")
@@ -616,7 +490,7 @@ class PeerService:
                 except Exception as e:
                     logging.warning("Already bad.... I don't love you" + str(e))
 
-        my_height = self.__block_manager.get_blockchain().block_height
+        my_height = self.__channel_manager.get_block_manager().get_blockchain().block_height
 
         if max_height > my_height:  # 자기가 가장 높은 블럭일때 처리 필요 TODO
             logging.info(f"You need block height sync to: {max_height} yours: {my_height}")
@@ -634,7 +508,8 @@ class PeerService:
             request_hash = response.block_hash
 
             max_try = max_height - my_height
-            while self.__block_manager.get_blockchain().last_block.block_hash != request_hash and max_try > 0:
+            while self.__channel_manager.get_block_manager().get_blockchain().last_block.block_hash \
+                    != request_hash and max_try > 0:
 
                 for peer_stub in peer_stubs:
                     response = None
@@ -677,14 +552,14 @@ class PeerService:
                     add_height = my_height + 1
                     logging.debug("try add block height: " + str(add_height))
                     try:
-                        self.__block_manager.add_block(preload_blocks[add_height])
+                        self.__channel_manager.get_block_manager().add_block(preload_blocks[add_height])
                         my_height = add_height
                     except KeyError as e:
                         logging.error("fail block height sync: " + str(e))
                         break
                     except exception.BlockError as e:
                         logging.error("Block Error Clear all block and restart peer.")
-                        self.__block_manager.clear_all_blocks()
+                        self.__channel_manager.get_block_manager().clear_all_blocks()
                         util.exit_and_msg("Block Error Clear all block and restart peer.")
 
             if my_height < max_height:
@@ -700,16 +575,18 @@ class PeerService:
 
         :return:
         """
-        if self.__reset_voter_in_progress is not True:
-            self.__reset_voter_in_progress = True
-            logging.debug("reset voter count before: " +
-                          str(ObjectManager().peer_service.peer_manager.get_peer_count()))
-
-            # TODO peer_list 를 순회하면서 gRPC 오류인 사용자를 remove_audience 한다.
-            self.__peer_manager.reset_peers(None, self.__common_service.remove_audience)
-            logging.debug("reset voter count after: " +
-                          str(ObjectManager().peer_service.peer_manager.get_peer_count()))
-            self.__reset_voter_in_progress = False
+        # if self.__reset_voter_in_progress is not True:
+        #     self.__reset_voter_in_progress = True
+        #     logging.debug("reset voter count before: " +
+        #                   str(ObjectManager().peer_service.peer_manager.get_peer_count()))
+        #
+        #     # TODO peer_list 를 순회하면서 gRPC 오류인 사용자를 remove_audience 한다.
+        #     self.__channel_manager.get_peer_manager(
+        #         conf.LOOPCHAIN_DEFAULT_CHANNEL).reset_peers(None, self.__common_service.remove_audience)
+        #     logging.debug("reset voter count after: " +
+        #                   str(ObjectManager().peer_service.peer_manager.get_peer_count()))
+        #     self.__reset_voter_in_progress = False
+        pass
 
     def set_chain_code(self, score):
         """Score를 패스로 전달하지 않고 (serve(...)의 score 는 score 의 파일 Path 이다.)
@@ -740,10 +617,6 @@ class PeerService:
 
         self.__score_service = ScoreService(int(port) + conf.PORT_DIFF_SCORE_CONTAINER)
 
-        # TODO tx service 는 더이상 사용하지 않는다. 하지만 이 로직을 제거하면 블록체인 네트워크가 정상적으로 형성되지 않는
-        # 버그가 발생한다. 원인 파악 필요함
-        self.__tx_service = TxService(int(port) + conf.PORT_DIFF_TX_CONTAINER)
-
         # TODO stub to score service Connect 확인을 util 로 할 수 있게 수정하기
         # self.__stub_to_score_service = util.get_stub_to_server('localhost:' +
         #                                                        str(int(port) + conf.PORT_DIFF_SCORE_CONTAINER),
@@ -753,6 +626,9 @@ class PeerService:
             loopchain_pb2_grpc.ContainerStub,
             is_allow_null_stub=True
         )
+
+    def timer_test_callback_function(self, message):
+        logging.debug(f'timer test callback function :: ({message})')
 
     def serve(self, port, score=conf.DEFAULT_SCORE_PACKAGE):
         """피어 실행
@@ -769,20 +645,37 @@ class PeerService:
         self.__run_inner_services(port)
 
         inner_service_port = conf.PORT_INNER_SERVICE or (int(port) + conf.PORT_DIFF_INNER_SERVICE)
-        self.__common_service = CommonService(loopchain_pb2, self.__peer_target, inner_service_port)
-        self.peer_id = str(self.__common_service.get_peer_id())
-        self.__peer_manager = self.__common_service.load_peer_manager()
-        self.__block_manager = self.__load_block_manager()
+        self.__common_service = CommonService(loopchain_pb2, inner_service_port)
 
-        is_peer_list_from_rs = self.__connect_to_radiostation()
+        self.__channel_manager = ChannelManager(
+            common_service=self.__common_service,
+            level_db_identity=self.__peer_target
+        )
+
+        self.__common_service.set_peer_id(
+            self.__channel_manager.get_block_manager().get_peer_id()
+        )
+        self.peer_id = str(self.__common_service.get_peer_id())
         logging.info("peer_service peer_id: " + str(self.peer_id))
 
-        if self.__peer_manager.get_peer_count() == 0:
+        self.__tx_process = self.__run_tx_process(
+            inner_channel_info=conf.IP_LOCAL + ":" + str(inner_service_port)
+        )
+
+        is_radiostation_connected = self.__connect_to_all_channel()
+
+        if self.__channel_manager.get_peer_manager().get_peer_count() == 0:
             util.exit_and_msg("There is no peer_list, initial network is not allowed without RS!")
-        self.__peer_object = self.__peer_manager.get_peer(self.peer_id, self.group_id)
+        self.__peer_object = self.__channel_manager.get_peer_manager(
+            conf.LOOPCHAIN_DEFAULT_CHANNEL).get_peer(self.peer_id, self.group_id)
         logging.debug("peer_self: " + str(self.__peer_object))
-        peer_leader = self.__peer_manager.get_leader_peer(is_complain_to_rs=True)
+        peer_leader = self.__channel_manager.get_peer_manager(
+            conf.LOOPCHAIN_DEFAULT_CHANNEL).get_leader_peer(is_complain_to_rs=True)
         logging.debug("peer_leader: " + str(peer_leader))
+
+        # start timer service.
+        if conf.CONSENSUS_ALGORITHM == conf.ConsensusAlgorithm.lft:
+            self.__timer_service.start()
 
         # TODO LOOPCHAIN-61 인증서 로드
         _cert = None
@@ -791,10 +684,12 @@ class PeerService:
         # TODO 인증정보 요청
 
         # TODO 이 부분을 조건 검사가 아니라 leader complain 을 이용해서 리더가 되도록 하는 방법 검토하기
+        # 자기가 peer_list 의 유일한 connected PEER 이거나 rs 의 leader 정보와 같을 때 block generator 가 된다.
         if self.__peer_object.peer_id == peer_leader.peer_id:
-            # 자기가 peer_list 의 유일한 connected PEER 이거나 rs 의 leader 정보와 같을 때 block generator 가 된다.
-            if is_peer_list_from_rs is True or self.__peer_manager.get_connected_peer_count(None) == 1:
-                logging.debug("Set Peer Type Block Generator!")
+            if is_radiostation_connected is True or self.__channel_manager.get_peer_manager(
+                    conf.LOOPCHAIN_DEFAULT_CHANNEL).get_connected_peer_count(None) == 1:
+                util.change_log_color_set(True)
+                logging.debug("Set Peer Type Leader!")
                 self.__peer_type = loopchain_pb2.BLOCK_GENERATOR
 
         # load score 는 score 서비스가 시작된 이후 block height sync 가 시작되기전에 이루어져야 한다.
@@ -818,7 +713,8 @@ class PeerService:
                 # TODO 이 상황에서 rs 에 leader complain 을 진행한다
                 is_delay_announce_new_leader = True
                 peer_old_leader = peer_leader
-                peer_leader = self.__peer_manager.leader_complain_to_rs(conf.ALL_GROUP_ID, is_announce_new_peer=False)
+                peer_leader = self.__channel_manager.get_peer_manager(
+                    conf.LOOPCHAIN_DEFAULT_CHANNEL).leader_complain_to_rs(conf.ALL_GROUP_ID, is_announce_new_peer=False)
 
                 if peer_leader is not None:
                     block_sync_target_stub = StubManager.get_stub_manager_to_server(
@@ -833,7 +729,7 @@ class PeerService:
             else:
                 self.block_height_sync(block_sync_target_stub)
                 # # TODO 마지막 블럭으로 leader 정보를 판단하는 로직은 리더 컴플레인 알고리즘 수정 후 유효성을 다시 판단할 것
-                # last_block_peer_id = self.__block_manager.get_blockchain().last_block.peer_id
+                # last_block_peer_id = self.__channel_manager.get_block_manager().get_blockchain().last_block.peer_id
                 #
                 # if last_block_peer_id != "" and last_block_peer_id != self.__peer_list.get_leader_peer().peer_id:
                 #     logging.debug("make leader stub after block height sync...")
@@ -856,34 +752,35 @@ class PeerService:
 
                 self.show_peers()
 
-        self.__common_service.set_peer_type(self.__peer_type)
-
         if self.__peer_type == loopchain_pb2.BLOCK_GENERATOR:
-            self.__block_manager.set_peer_type(self.__peer_type)
+            self.__channel_manager.set_peer_type(self.__peer_type)
+        elif conf.CONSENSUS_ALGORITHM == conf.ConsensusAlgorithm.lft:
+            self.__common_service.update_audience(self.channel_manager.get_peer_manager().dump())
 
         loopchain_pb2_grpc.add_PeerServiceServicer_to_server(self.__outer_service, self.__common_service.outer_server)
         loopchain_pb2_grpc.add_InnerServiceServicer_to_server(self.__inner_service, self.__common_service.inner_server)
         logging.info("Start peer service at port: " + str(port))
 
-        self.__block_manager.start()
+        self.__channel_manager.start_block_managers()
         self.__common_service.start(port, self.peer_id, self.group_id)
 
-        if self.__stub_to_radio_station is not None:
-            self.__common_service.subscribe(self.__stub_to_radio_station)
+        if self.stub_to_radiostation is not None:
+            for channel in self.__channel_manager.get_channel_list():
+                self.__common_service.subscribe(
+                    subscribe_stub=self.stub_to_radiostation,
+                    channel_name=channel
+                )
         # Start Peer Process for gRPC send to Block Generator
         # But It use only when create tx (yet)
         logging.debug("peer_leader target is: " + str(peer_leader.target))
-
-        self.__tx_process = self.__run_tx_process(
-            blockgenerator_info=peer_leader.target,
-            inner_channel_info=conf.IP_LOCAL + ":" + str(inner_service_port)
-        )
+        self.__tx_process_connect_to_leader(self.__tx_process, peer_leader.target)
 
         if self.__stub_to_blockgenerator is not None:
             self.__common_service.subscribe(self.__stub_to_blockgenerator, loopchain_pb2.BLOCK_GENERATOR)
 
         if is_delay_announce_new_leader:
-            self.__peer_manager.announce_new_leader(peer_old_leader.peer_id, peer_leader.peer_id)
+            self.__channel_manager.get_peer_manager(
+                conf.LOOPCHAIN_DEFAULT_CHANNEL).announce_new_leader(peer_old_leader.peer_id, peer_leader.peer_id)
 
         self.__send_to_process_thread.set_process(self.__tx_process)
         self.__send_to_process_thread.start()
@@ -900,9 +797,12 @@ class PeerService:
         self.__send_to_process_thread.stop()
         self.__send_to_process_thread.wait()
 
+        if self.__timer_service.is_run():
+            self.__timer_service.stop()
+            self.__timer_service.wait()
+
         logging.info("Peer Service Ended.")
         self.__score_service.stop()
         if self.__rest_service is not None:
             self.__rest_service.stop()
-        self.__tx_service.stop()
         self.__stop_tx_process()

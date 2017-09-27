@@ -50,3 +50,7 @@ class TestBroadcastProcess(unittest.TestCase):
 
         ## THEN
         # self.assertEqual(result, message_code.get_response_msg(message_code.Response.success))
+
+
+if __name__ == '__main__':
+    unittest.main()

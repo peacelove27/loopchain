@@ -29,6 +29,8 @@ from cryptography.hazmat.primitives.asymmetric import rsa, padding, ec
 import loopchain.utils as util
 import testcase.unittest.test_util as test_util
 from loopchain.radiostation import CertificateAuthorization
+from loopchain import configure as conf
+
 
 sys.path.append('../')
 
@@ -145,3 +147,7 @@ class TestCertificateAuthorization(unittest.TestCase):
 
         private_key = serialization.load_pem_private_key(cert_key, pw, default_backend())
         return {'cert': cert, 'private_key': private_key}
+
+
+if __name__ == '__main__':
+    unittest.main()

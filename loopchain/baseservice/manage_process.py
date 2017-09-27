@@ -30,7 +30,7 @@ class ManageProcess(CommonThread):
     QUIT_COMMAND = "quit"
 
     def __init__(self):
-        # logging.debug("ManageProcess Init")
+        # logging.warning("ManageProcess Init")
         manager = multiprocessing.Manager()
         self.__manager_dic = manager.dict()
         self.__manager_list = manager.list()

@@ -35,10 +35,10 @@ class InnerServiceStub(object):
         request_serializer=loopchain__pb2.StopRequest.SerializeToString,
         response_deserializer=loopchain__pb2.StopReply.FromString,
         )
-    self.GetTx = channel.unary_unary(
-        '/InnerService/GetTx',
-        request_serializer=loopchain__pb2.GetTxRequest.SerializeToString,
-        response_deserializer=loopchain__pb2.GetTxReply.FromString,
+    self.Echo = channel.unary_unary(
+        '/InnerService/Echo',
+        request_serializer=loopchain__pb2.CommonRequest.SerializeToString,
+        response_deserializer=loopchain__pb2.CommonReply.FromString,
         )
     self.GetBlock = channel.unary_unary(
         '/InnerService/GetBlock',
@@ -50,46 +50,6 @@ class InnerServiceStub(object):
         request_serializer=loopchain__pb2.QueryRequest.SerializeToString,
         response_deserializer=loopchain__pb2.QueryReply.FromString,
         )
-    self.BlockSync = channel.unary_unary(
-        '/InnerService/BlockSync',
-        request_serializer=loopchain__pb2.BlockSyncRequest.SerializeToString,
-        response_deserializer=loopchain__pb2.BlockSyncReply.FromString,
-        )
-    self.AnnounceUnconfirmedBlock = channel.unary_unary(
-        '/InnerService/AnnounceUnconfirmedBlock',
-        request_serializer=loopchain__pb2.BlockSend.SerializeToString,
-        response_deserializer=loopchain__pb2.CommonReply.FromString,
-        )
-    self.AnnounceConfirmedBlock = channel.unary_unary(
-        '/InnerService/AnnounceConfirmedBlock',
-        request_serializer=loopchain__pb2.BlockAnnounce.SerializeToString,
-        response_deserializer=loopchain__pb2.CommonReply.FromString,
-        )
-    self.AnnounceNewPeer = channel.unary_unary(
-        '/InnerService/AnnounceNewPeer',
-        request_serializer=loopchain__pb2.PeerRequest.SerializeToString,
-        response_deserializer=loopchain__pb2.CommonReply.FromString,
-        )
-    self.Echo = channel.unary_unary(
-        '/InnerService/Echo',
-        request_serializer=loopchain__pb2.CommonRequest.SerializeToString,
-        response_deserializer=loopchain__pb2.CommonReply.FromString,
-        )
-    self.ComplainLeader = channel.unary_unary(
-        '/InnerService/ComplainLeader',
-        request_serializer=loopchain__pb2.ComplainLeaderRequest.SerializeToString,
-        response_deserializer=loopchain__pb2.CommonReply.FromString,
-        )
-    self.AnnounceNewLeader = channel.unary_unary(
-        '/InnerService/AnnounceNewLeader',
-        request_serializer=loopchain__pb2.ComplainLeaderRequest.SerializeToString,
-        response_deserializer=loopchain__pb2.CommonReply.FromString,
-        )
-    self.GetLastBlockHash = channel.unary_unary(
-        '/InnerService/GetLastBlockHash',
-        request_serializer=loopchain__pb2.CommonRequest.SerializeToString,
-        response_deserializer=loopchain__pb2.BlockReply.FromString,
-        )
     self.Subscribe = channel.unary_unary(
         '/InnerService/Subscribe',
         request_serializer=loopchain__pb2.PeerRequest.SerializeToString,
@@ -98,16 +58,6 @@ class InnerServiceStub(object):
     self.UnSubscribe = channel.unary_unary(
         '/InnerService/UnSubscribe',
         request_serializer=loopchain__pb2.PeerRequest.SerializeToString,
-        response_deserializer=loopchain__pb2.CommonReply.FromString,
-        )
-    self.AddTx = channel.unary_unary(
-        '/InnerService/AddTx',
-        request_serializer=loopchain__pb2.TxSend.SerializeToString,
-        response_deserializer=loopchain__pb2.CommonReply.FromString,
-        )
-    self.VoteUnconfirmedBlock = channel.unary_unary(
-        '/InnerService/VoteUnconfirmedBlock',
-        request_serializer=loopchain__pb2.BlockVote.SerializeToString,
         response_deserializer=loopchain__pb2.CommonReply.FromString,
         )
     self.NotifyLeaderBroken = channel.unary_unary(
@@ -149,7 +99,7 @@ class InnerServiceServicer(object):
     context.set_details('Method not implemented!')
     raise NotImplementedError('Method not implemented!')
 
-  def GetTx(self, request, context):
+  def Echo(self, request, context):
     context.set_code(grpc.StatusCode.UNIMPLEMENTED)
     context.set_details('Method not implemented!')
     raise NotImplementedError('Method not implemented!')
@@ -164,62 +114,7 @@ class InnerServiceServicer(object):
     context.set_details('Method not implemented!')
     raise NotImplementedError('Method not implemented!')
 
-  def BlockSync(self, request, context):
-    """Peer 의 Block Height 보정용 interface
-    """
-    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-    context.set_details('Method not implemented!')
-    raise NotImplementedError('Method not implemented!')
-
-  def AnnounceUnconfirmedBlock(self, request, context):
-    """Subscribe 후 broadcast 받는 인터페이스는 Announce- 로 시작한다.
-    """
-    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-    context.set_details('Method not implemented!')
-    raise NotImplementedError('Method not implemented!')
-
-  def AnnounceConfirmedBlock(self, request, context):
-    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-    context.set_details('Method not implemented!')
-    raise NotImplementedError('Method not implemented!')
-
-  def AnnounceNewPeer(self, request, context):
-    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-    context.set_details('Method not implemented!')
-    raise NotImplementedError('Method not implemented!')
-
-  def Echo(self, request, context):
-    """Test 검증을 위한 인터페이스
-    """
-    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-    context.set_details('Method not implemented!')
-    raise NotImplementedError('Method not implemented!')
-
-  def ComplainLeader(self, request, context):
-    """Leader 선정을 위한 인터페이스
-    """
-    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-    context.set_details('Method not implemented!')
-    raise NotImplementedError('Method not implemented!')
-
-  def AnnounceNewLeader(self, request, context):
-    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-    context.set_details('Method not implemented!')
-    raise NotImplementedError('Method not implemented!')
-
-  def GetLastBlockHash(self, request, context):
-    """/////////////////////////////////////////////////////////////////////
-    BlockGenerator (leader) 에게만 허용되어야 하는 interface
-    /////////////////////////////////////////////////////////////////////
-    RadioStation 에서 GetLastBlockHash 는 Block Height Sync 를 위해서 사용된다.
-    """
-    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-    context.set_details('Method not implemented!')
-    raise NotImplementedError('Method not implemented!')
-
   def Subscribe(self, request, context):
-    """Subscribe 와 UnSubscribe 는 Broadcast 관련 메소드로 radiostation.proto 와 동일하게 구성되어야 한다.
-    """
     context.set_code(grpc.StatusCode.UNIMPLEMENTED)
     context.set_details('Method not implemented!')
     raise NotImplementedError('Method not implemented!')
@@ -229,22 +124,7 @@ class InnerServiceServicer(object):
     context.set_details('Method not implemented!')
     raise NotImplementedError('Method not implemented!')
 
-  def AddTx(self, request, context):
-    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-    context.set_details('Method not implemented!')
-    raise NotImplementedError('Method not implemented!')
-
-  def VoteUnconfirmedBlock(self, request, context):
-    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-    context.set_details('Method not implemented!')
-    raise NotImplementedError('Method not implemented!')
-
   def NotifyLeaderBroken(self, request, context):
-    """/////////////////////////////////////////////////////////////////////
-    Inner channel 전용 메시지, 내부의 Process 가 요청하는 interface
-    Notify- 로 시작한다.
-    /////////////////////////////////////////////////////////////////////
-    """
     context.set_code(grpc.StatusCode.UNIMPLEMENTED)
     context.set_details('Method not implemented!')
     raise NotImplementedError('Method not implemented!')
@@ -277,10 +157,10 @@ def add_InnerServiceServicer_to_server(servicer, server):
           request_deserializer=loopchain__pb2.StopRequest.FromString,
           response_serializer=loopchain__pb2.StopReply.SerializeToString,
       ),
-      'GetTx': grpc.unary_unary_rpc_method_handler(
-          servicer.GetTx,
-          request_deserializer=loopchain__pb2.GetTxRequest.FromString,
-          response_serializer=loopchain__pb2.GetTxReply.SerializeToString,
+      'Echo': grpc.unary_unary_rpc_method_handler(
+          servicer.Echo,
+          request_deserializer=loopchain__pb2.CommonRequest.FromString,
+          response_serializer=loopchain__pb2.CommonReply.SerializeToString,
       ),
       'GetBlock': grpc.unary_unary_rpc_method_handler(
           servicer.GetBlock,
@@ -292,46 +172,6 @@ def add_InnerServiceServicer_to_server(servicer, server):
           request_deserializer=loopchain__pb2.QueryRequest.FromString,
           response_serializer=loopchain__pb2.QueryReply.SerializeToString,
       ),
-      'BlockSync': grpc.unary_unary_rpc_method_handler(
-          servicer.BlockSync,
-          request_deserializer=loopchain__pb2.BlockSyncRequest.FromString,
-          response_serializer=loopchain__pb2.BlockSyncReply.SerializeToString,
-      ),
-      'AnnounceUnconfirmedBlock': grpc.unary_unary_rpc_method_handler(
-          servicer.AnnounceUnconfirmedBlock,
-          request_deserializer=loopchain__pb2.BlockSend.FromString,
-          response_serializer=loopchain__pb2.CommonReply.SerializeToString,
-      ),
-      'AnnounceConfirmedBlock': grpc.unary_unary_rpc_method_handler(
-          servicer.AnnounceConfirmedBlock,
-          request_deserializer=loopchain__pb2.BlockAnnounce.FromString,
-          response_serializer=loopchain__pb2.CommonReply.SerializeToString,
-      ),
-      'AnnounceNewPeer': grpc.unary_unary_rpc_method_handler(
-          servicer.AnnounceNewPeer,
-          request_deserializer=loopchain__pb2.PeerRequest.FromString,
-          response_serializer=loopchain__pb2.CommonReply.SerializeToString,
-      ),
-      'Echo': grpc.unary_unary_rpc_method_handler(
-          servicer.Echo,
-          request_deserializer=loopchain__pb2.CommonRequest.FromString,
-          response_serializer=loopchain__pb2.CommonReply.SerializeToString,
-      ),
-      'ComplainLeader': grpc.unary_unary_rpc_method_handler(
-          servicer.ComplainLeader,
-          request_deserializer=loopchain__pb2.ComplainLeaderRequest.FromString,
-          response_serializer=loopchain__pb2.CommonReply.SerializeToString,
-      ),
-      'AnnounceNewLeader': grpc.unary_unary_rpc_method_handler(
-          servicer.AnnounceNewLeader,
-          request_deserializer=loopchain__pb2.ComplainLeaderRequest.FromString,
-          response_serializer=loopchain__pb2.CommonReply.SerializeToString,
-      ),
-      'GetLastBlockHash': grpc.unary_unary_rpc_method_handler(
-          servicer.GetLastBlockHash,
-          request_deserializer=loopchain__pb2.CommonRequest.FromString,
-          response_serializer=loopchain__pb2.BlockReply.SerializeToString,
-      ),
       'Subscribe': grpc.unary_unary_rpc_method_handler(
           servicer.Subscribe,
           request_deserializer=loopchain__pb2.PeerRequest.FromString,
@@ -340,16 +180,6 @@ def add_InnerServiceServicer_to_server(servicer, server):
       'UnSubscribe': grpc.unary_unary_rpc_method_handler(
           servicer.UnSubscribe,
           request_deserializer=loopchain__pb2.PeerRequest.FromString,
-          response_serializer=loopchain__pb2.CommonReply.SerializeToString,
-      ),
-      'AddTx': grpc.unary_unary_rpc_method_handler(
-          servicer.AddTx,
-          request_deserializer=loopchain__pb2.TxSend.FromString,
-          response_serializer=loopchain__pb2.CommonReply.SerializeToString,
-      ),
-      'VoteUnconfirmedBlock': grpc.unary_unary_rpc_method_handler(
-          servicer.VoteUnconfirmedBlock,
-          request_deserializer=loopchain__pb2.BlockVote.FromString,
           response_serializer=loopchain__pb2.CommonReply.SerializeToString,
       ),
       'NotifyLeaderBroken': grpc.unary_unary_rpc_method_handler(
@@ -769,7 +599,7 @@ class RadioStationStub(object):
     self.ConnectPeer = channel.unary_unary(
         '/RadioStation/ConnectPeer',
         request_serializer=loopchain__pb2.PeerRequest.SerializeToString,
-        response_deserializer=loopchain__pb2.PeerReply.FromString,
+        response_deserializer=loopchain__pb2.ConnectPeerReply.FromString,
         )
     self.GetPeerList = channel.unary_unary(
         '/RadioStation/GetPeerList',
@@ -873,7 +703,7 @@ def add_RadioStationServicer_to_server(servicer, server):
       'ConnectPeer': grpc.unary_unary_rpc_method_handler(
           servicer.ConnectPeer,
           request_deserializer=loopchain__pb2.PeerRequest.FromString,
-          response_serializer=loopchain__pb2.PeerReply.SerializeToString,
+          response_serializer=loopchain__pb2.ConnectPeerReply.SerializeToString,
       ),
       'GetPeerList': grpc.unary_unary_rpc_method_handler(
           servicer.GetPeerList,

@@ -156,3 +156,5 @@ class TestScoreDeploy(unittest.TestCase):
         self.test_score_manager()
 
 
+if __name__ == '__main__':
+    unittest.main()

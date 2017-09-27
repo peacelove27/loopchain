@@ -11,10 +11,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Peer Objects"""
+"""PeerInfo for shared peer info and PeerLiveData for instance data can't serialized"""
 
 import datetime
+import logging
 from enum import IntEnum
+
+from loopchain import configure as conf
+from loopchain.baseservice import StubManager
+from loopchain.protos import loopchain_pb2_grpc
+from loopchain.tools import CertVerifier
 
 
 class PeerStatus(IntEnum):
@@ -23,25 +29,63 @@ class PeerStatus(IntEnum):
     disconnected = 2
 
 
-class Peer:
+class PeerInfo:
     # TODO Peer 관련 메소드 중복된 코드를 이 오브젝트로 옮겨서 중복 제거 검토
-    """Peer Object
+    """Peer Object"""
 
-    """
-    def __init__(self):
-        # TODO self.var -> self.__var and use @property 바꾸기~~ ^^
-        self.order = 0
-        self.peer_id = ""
-        self.group_id = ""
-        self.target = ""
-        self.auth = ""
-        self.token = ""
-        self.status_update_time = datetime.datetime.now()
+    def __init__(self, peer_id: str, group_id: str, target: str = "", status: PeerStatus = PeerStatus.unknown,
+                 cert: bytes = b"", order: int = 0):
+        """ create PeerInfo
+        if connected peer status PeerStatus.connected
 
-        self.__status = PeerStatus.unknown
+        :param peer_id: peer_id
+        :param group_id: peer's group_id
+        :param target: grpc target info default ""
+        :param status: connect status if db loaded peer to PeerStatus.unknown default ""
+        :param cert: peer's signature cert default b""
+        :return:
+        """
+        self.__peer_id = peer_id
+        self.__group_id = group_id
+        self.__order: int = order
+        self.__target: str = target
 
-        # TODO Peer 가 Stub manager 를 가지고 pickle dump 가 되는지 확인 필요
-        # self.__stub_manager = None
+        self.__status_update_time = datetime.datetime.now()
+        self.__status = status
+
+        self.__cert: str = cert
+
+    @property
+    def peer_id(self) -> str:
+        return self.__peer_id
+
+    @property
+    def group_id(self) -> str:
+        return self.__group_id
+
+    @property
+    def order(self):
+        return self.__order
+
+    @order.setter
+    def order(self, order: int):
+        self.__order = order
+
+    @property
+    def target(self):
+        return self.__target
+
+    @target.setter
+    def target(self, target):
+        self.__target = target
+
+    @property
+    def cert(self):
+        return self.__cert
+
+    @cert.setter
+    def cert(self, cert):
+        self.__cert = cert
 
     @property
     def status(self):
@@ -50,18 +94,58 @@ class Peer:
     @status.setter
     def status(self, status):
         if self.__status != status:
-            self.status_update_time = datetime.datetime.now()
+            self.__status_update_time = datetime.datetime.now()
             self.__status = status
 
-    def get_token(self):
-        return self.token
+    @property
+    def status_update_time(self):
+        return self.__status_update_time
 
-        # TODO is alive 를 Peer 에 구현하는 것으로 PeerManager 의 코드 중복을 줄일 수 있는지 검토후 작성할 것
-        # def is_alive(self, peer_stub=None):
-        #     pass
 
-        # def dump(self):  # for debug
-        #     """디버깅을 위한 함수로 평소에는 peer_list 덤프에 포함되지 않도록 주석처리 한다.
-        #     """
-        #     for attr in dir(self):
-        #         logging.debug("Peer.%s = %s" % (attr, getattr(self, attr)))
+class PeerObject:
+    """Peer object has PeerInfo and live data"""
+
+    def __init__(self, peer_info: PeerInfo):
+        """set peer info and create live data"""
+        self.__peer_info: PeerInfo = peer_info
+        self.__stub_manager: StubManager = None
+        self.__cert_verifier: CertVerifier = None
+        self.__no_response_count = 0
+
+        self.__create_live_data()
+
+    def __create_live_data(self):
+        """create live data that can't serialized"""
+        # TODO live data 생성 실패 때 정책 설정 필요
+        try:
+            self.__stub_manager = StubManager(self.__peer_info.target, loopchain_pb2_grpc.PeerServiceStub)
+        except Exception as e:
+            logging.exception(f"Create Peer create stub_manager fail target : {self.__peer_info.target} \n"
+                              f"exception : {e}")
+        try:
+            self.__cert_verifier = CertVerifier(self.peer_info.cert)
+        except Exception as e:
+            logging.exception(f"create cert verifier error : {self.__peer_info.cert} \n"
+                              f"exception {e}")
+
+    @property
+    def peer_info(self)-> PeerInfo:
+        return self.__peer_info
+
+    @property
+    def stub_manager(self) -> StubManager:
+        return self.__stub_manager
+
+    @property
+    def cert_verifier(self) -> CertVerifier:
+        return self.__cert_verifier
+
+    @property
+    def no_response_count(self):
+        return self.__no_response_count
+
+    def no_response_count_up(self):
+        self.__no_response_count += 1
+
+    def no_response_count_reset(self):
+        self.__no_response_count = 0

@@ -27,15 +27,18 @@ from loopchain.blockchain import Block
 from loopchain.blockchain import BlockChain, BlockStatus
 from loopchain.blockchain import Transaction
 
+
 util.set_log_level_debug()
 
 
 class TestGeneratorBlock(unittest.TestCase):
     last_block = None
+    __peer_id = 'aaa'
 
     def setUp(self):
         test_util.print_testname(self._testMethodName)
-        SingletonMetaClass.clear(BlockChain)
+
+        self.__peer_auth = test_util.create_peer_auth()
 
     def tearDown(self):
         pass
@@ -50,9 +53,8 @@ class TestGeneratorBlock(unittest.TestCase):
             self.last_block.generate_block()
         block = Block()
         for x in range(0, 10):
-            tx = Transaction()
-            hashed_value = tx.put_data("{args:[]}")
-            self.assertNotEqual(hashed_value, "", "트랜잭션 생성 실패")
+            tx = test_util.create_basic_tx(self.__peer_id, self.__peer_auth)
+            self.assertNotEqual(tx.get_tx_hash(), "", "트랜잭션 생성 실패")
             self.assertTrue(block.put_transaction(tx), "Block에 트랜잭션 추가 실패")
         block.generate_block(self.last_block)
         self.last_block = block

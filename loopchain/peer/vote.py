@@ -14,23 +14,44 @@
 """data object for peer votes to one block"""
 
 import logging
+import hashlib
+import json
+
+from enum import Enum
+
+
 from loopchain.baseservice import PeerManager
 from loopchain import configure as conf
 
 
+class VoteType(Enum):
+    block = 1
+    leader_complain = 2
+
+
 class Vote:
 
-    def __init__(self, block_hash, audience):
+    def __init__(self, target_hash, audience, sign=None, vote_type=VoteType.block, data=None):
         """
 
-        :param block_hash:
+        :param target_hash:
         :param audience: { peer_id : peer_info(SubscribeRequest of gRPC) }
+        :param sign:
+        :param vote_type:
         :return
         """
 
-        self.__block_hash = block_hash
+        # VoteType class
+        self.__type = vote_type
+        self.__target_hash = target_hash
+        self.__sign = sign
+        self.__data = data
         # self.__votes is { group_id : { peer_id : [vote_result, vote_sign] }, }:
         self.__votes = self.__make_vote_init(audience)
+
+    @property
+    def type(self):
+        return self.__type
 
     @property
     def votes(self):
@@ -84,7 +105,7 @@ class Vote:
         agree_vote_peer_count, total_peer_count, voting_ratio
         """
 
-        if self.__block_hash != block_hash:
+        if self.__target_hash != block_hash:
             return False, 0, 0, 0, 0, 0, 0
 
         total_group_count = len(self.__votes)
@@ -127,8 +148,8 @@ class Vote:
         logging.debug("=agree_vote_peer_count: " + str(agree_vote_peer_count))
         logging.debug("=total_peer_count: " + str(total_peer_count))
 
-        return result, agree_vote_group_count, total_vote_group_count, total_group_count, \
-               agree_vote_peer_count, total_peer_count, voting_ratio
+        return result, agree_vote_group_count, total_vote_group_count, \
+               total_group_count, agree_vote_peer_count, total_peer_count, voting_ratio
 
     def is_failed_vote(self, block_hash, voting_ratio):
         result, agree_vote_group_count, total_vote_group_count, total_group_count, \

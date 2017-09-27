@@ -388,3 +388,6 @@ class TestCrypto(unittest.TestCase):
 
         return validation_result
 
+
+if __name__ == '__main__':
+    unittest.main()

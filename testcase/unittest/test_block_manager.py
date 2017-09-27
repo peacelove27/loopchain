@@ -58,3 +58,7 @@ class TestBlockManager(unittest.TestCase):
     #     self.assertEqual(10, block_manager.get_count_of_unconfirmed_tx(), "Block Manager Not Running for unconfirmed tx")
     #
     #     block_manager.stop()
+
+
+if __name__ == '__main__':
+    unittest.main()

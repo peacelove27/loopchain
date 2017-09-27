@@ -21,7 +21,7 @@ import unittest
 import loopchain.utils as util
 import testcase.unittest.test_util as test_util
 from loopchain.peer import Vote
-from loopchain.baseservice import PeerManager
+from loopchain.baseservice import PeerManager, PeerInfo
 from loopchain.protos import loopchain_pb2
 from loopchain import configure as conf
 
@@ -30,19 +30,25 @@ util.set_log_level_debug()
 
 class TestVote(unittest.TestCase):
 
+    __cert = None
+
     def setUp(self):
         test_util.print_testname(self._testMethodName)
+        if self.__cert is None:
+            with open(conf.CERT_PATH, "rb") as der:
+                cert_byte = der.read()
+                self.__cert = cert_byte
 
     def tearDown(self):
         pass
 
-    @staticmethod
-    def __make_peer_info(peer_id, group_id):
+    def __make_peer_info(self, peer_id, group_id):
         peer_info = loopchain_pb2.PeerRequest()
         peer_info.peer_target = peer_id + "_target"
         peer_info.peer_type = loopchain_pb2.PEER
         peer_info.peer_id = peer_id
         peer_info.group_id = group_id
+        peer_info.cert = self.__cert
         return peer_info
 
     def test_vote_init_from_audience(self):
@@ -61,8 +67,7 @@ class TestVote(unittest.TestCase):
     def test_vote_init_from_peer_list(self):
         # GIVEN
         peer_manager = PeerManager()
-        peer_manager.add_peer("peerid-1", "groupid-1", "peerid-1_target")
-        peer_manager.add_peer("peerid-2", "groupid-2", "peerid-2_target")
+        self.__add_peer_to_peer_manager(peer_manager, 2)
 
         # WHEN
         vote = Vote("block_hash", peer_manager)
@@ -71,14 +76,20 @@ class TestVote(unittest.TestCase):
         # THEN
         self.assertTrue(vote.check_vote_init(peer_manager))
 
+    def __add_peer_to_peer_manager(self, peer_manager: PeerManager, number_of_peer):
+        for i in range(1, number_of_peer + 1):
+            number = str(i)
+            peer_data = PeerInfo("peerid-" + number, "groupid-" + number, "peerid-" + number + "_target",
+                                 cert=self.__cert)
+            peer_manager.add_peer(peer_data)
+
     def test_vote_init_from_different_source(self):
         # GIVEN
         peer_info1 = self.__make_peer_info("peerid-1", "groupid-1")
         peer_info2 = self.__make_peer_info("peerid-2", "groupid-2")
         audience = {peer_info1.peer_id: peer_info1, peer_info2.peer_id: peer_info2}
         peer_manager = PeerManager()
-        peer_manager.add_peer("peerid-1", "groupid-1", "peerid-1_target")
-        peer_manager.add_peer("peerid-2", "groupid-2", "peerid-2_target")
+        self.__add_peer_to_peer_manager(peer_manager, 2)
 
         # WHEN
         vote = Vote("block_hash", audience)
@@ -90,11 +101,10 @@ class TestVote(unittest.TestCase):
     def test_add_vote(self):
         # GIVEN
         peer_manager = PeerManager()
-        peer_manager.add_peer("peerid-1", "groupid-1", "peerid-1_target")
-        peer_manager.add_peer("peerid-2", "groupid-2", "peerid-2_target")
-        peer_manager.add_peer("peerid-3", "groupid-3", "peerid-3_target")
-        peer_manager.add_peer("peerid-4", "groupid-3", "peerid-4_target")
-        peer_manager.add_peer("peerid-5", "groupid-3", "peerid-5_target")
+        self.__add_peer_to_peer_manager(peer_manager, 3)
+        peer_manager.add_peer(PeerInfo("peerid-4", "groupid-3", "peerid-4_target", cert=self.__cert))
+        peer_manager.add_peer(PeerInfo("peerid-5", "groupid-3", "peerid-5_target", cert=self.__cert))
+
         vote = Vote("block_hash", peer_manager)
         logging.debug("votes: " + str(vote.votes))
 
@@ -109,11 +119,10 @@ class TestVote(unittest.TestCase):
     def test_add_vote_fail_before_add_peer(self):
         # GIVEN
         peer_manager = PeerManager()
-        peer_manager.add_peer("peerid-1", "groupid-1", "peerid-1_target")
-        peer_manager.add_peer("peerid-2", "groupid-2", "peerid-2_target")
-        peer_manager.add_peer("peerid-3", "groupid-3", "peerid-3_target")
-        peer_manager.add_peer("peerid-4", "groupid-3", "peerid-4_target")
-        peer_manager.add_peer("peerid-5", "groupid-3", "peerid-5_target")
+        self.__add_peer_to_peer_manager(peer_manager, 3)
+        peer_manager.add_peer(PeerInfo("peerid-4", "groupid-3", "peerid-4_target", cert=self.__cert))
+        peer_manager.add_peer(PeerInfo("peerid-5", "groupid-3", "peerid-5_target", cert=self.__cert))
+
         vote = Vote("block_hash", peer_manager)
         logging.debug("votes: " + str(vote.votes))
 
@@ -132,11 +141,10 @@ class TestVote(unittest.TestCase):
     def test_fail_vote(self):
         # GIVEN
         peer_manager = PeerManager()
-        peer_manager.add_peer("peerid-1", "groupid-1", "peerid-1_target")
-        peer_manager.add_peer("peerid-2", "groupid-2", "peerid-2_target")
-        peer_manager.add_peer("peerid-3", "groupid-3", "peerid-3_target")
-        peer_manager.add_peer("peerid-4", "groupid-3", "peerid-4_target")
-        peer_manager.add_peer("peerid-5", "groupid-3", "peerid-5_target")
+        self.__add_peer_to_peer_manager(peer_manager, 3)
+        peer_manager.add_peer(PeerInfo("peerid-4", "groupid-3", "peerid-4_target", cert=self.__cert))
+        peer_manager.add_peer(PeerInfo("peerid-5", "groupid-3", "peerid-5_target", cert=self.__cert))
+
         vote = Vote("block_hash", peer_manager)
         logging.debug("votes: " + str(vote.votes))
 
@@ -148,3 +156,7 @@ class TestVote(unittest.TestCase):
 
         # THEN
         self.assertTrue(vote.is_failed_vote("block_hash", 0.51))
+
+
+if __name__ == '__main__':
+    unittest.main()

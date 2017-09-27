@@ -15,17 +15,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Import the modules needed to run the script.
-import sys
-import os
-import grpc
-import json
-import random
-import requests
 import datetime
+import random
+import sys
 import timeit
-import coloredlogs
 from sys import platform
+
+import coloredlogs
+import grpc
+import os
+import requests
+
 from testcase.unittest.test_util import clean_up_temp_db_files
 from loopchain.blockchain import *
 from loopchain.protos import message_code
@@ -36,6 +36,7 @@ from loopchain.protos import loopchain_pb2, loopchain_pb2_grpc
 
 # Main definition - constants
 menu_actions = {}
+test_globals = {}
 
 
 def set_log_level(level):
@@ -186,6 +187,7 @@ def menu6():
 def menu7():
     if platform == "darwin":
         os.system("pkill -f python")
+        os.system("pkill -f Python")
     else:
         os.system("pgrep -f python | tail -$((`pgrep -f python | wc -l` - 1)) | xargs kill -9")
     main_menu()
@@ -335,7 +337,11 @@ def menu4_13(params):
 
     while repeat_times > 0:
         response = peer_stub.CreateTx(
-            loopchain_pb2.CreateTxRequest(data="TEST transaction data by demotool"))
+            loopchain_pb2.CreateTxRequest(
+                data=f"TEST transaction data by demotool",
+                channel=test_globals["channel_name"]
+            )
+        )
         tx_hash = response.tx_hash
         print(f"Create Tx({tx_hash}) remain times({repeat_times})")
         time.sleep(test_interval)
@@ -381,7 +387,12 @@ def menu4_8(params):
               f"total test mins({util.datetime_diff_in_mins(test_start_time)})")
         try:
             for i in range(random_times):
-                peer_stub.CreateTx(loopchain_pb2.CreateTxRequest(data=f"TEST transaction data by demotool {i}"))
+                peer_stub.CreateTx(
+                    loopchain_pb2.CreateTxRequest(
+                        data=f"TEST transaction data by demotool {i}",
+                        channel=test_globals["channel_name"]
+                    )
+                )
             time.sleep(random_sleep)
         except KeyboardInterrupt:
             break
@@ -500,6 +511,12 @@ def menu4_1(params=None):
     elif choice.find(':') == -1:
         choice = "127.0.0.1:" + choice
 
+    print(f"Select Channel (0: {conf.LOOPCHAIN_DEFAULT_CHANNEL}, 1: {conf.LOOPCHAIN_TEST_CHANNEL})")
+    channel_choice = input(" >>  ")
+    test_globals["channel_name"] = conf.LOOPCHAIN_DEFAULT_CHANNEL
+    if channel_choice == "1":
+        test_globals["channel_name"] = conf.LOOPCHAIN_TEST_CHANNEL
+
     print("your input: " + choice)
     channel = grpc.insecure_channel(choice)
     peer_stub = loopchain_pb2_grpc.PeerServiceStub(channel)
@@ -513,7 +530,10 @@ def menu4_2(params):
     print("Create Tx Performance Test")
     grpc_performance_test(peer_stub,
                           "CreateTx",
-                          loopchain_pb2.CreateTxRequest(data="TEST transaction data by demotool"))
+                          loopchain_pb2.CreateTxRequest(
+                              data="TEST transaction data by demotool",
+                              channel=test_globals["channel_name"]
+                          ))
 
 
 def menu4_3(params):
@@ -524,7 +544,12 @@ def menu4_3(params):
     if choice == "":
         choice = tx_hash
     print("your input: " + choice)
-    response = peer_stub.GetTx(loopchain_pb2.GetTxRequest(tx_hash=choice), conf.GRPC_TIMEOUT)
+    response = peer_stub.GetTx(
+        loopchain_pb2.GetTxRequest(
+            tx_hash=choice,
+            channel=test_globals["channel_name"]
+        ),
+        conf.GRPC_TIMEOUT)
     print("Find Tx: " + str(response))
     menu4(peer_stub, tx_hash)
 

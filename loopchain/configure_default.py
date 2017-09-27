@@ -46,6 +46,7 @@ LOOPCHAIN_LOG_LEVEL = os.getenv('LOOPCHAIN_LOG_LEVEL', 'DEBUG')
 LOG_LEVEL = logging.getLevelName(LOOPCHAIN_LOG_LEVEL)
 LOG_FILE_PATH = "/var/tmp/loop_service.log"
 LOG_FORMAT = "'%(asctime)s %(levelname)s %(message)s'"
+LOG_FORMAT_DEBUG = "%(asctime)s %(process)d %(levelname)s %(message)s"
 
 
 ###################
@@ -77,7 +78,6 @@ PORT_DIFF_BROADCAST_CONTAINER = 10081
 MAX_WORKERS = 100
 SLEEP_SECONDS_IN_SERVICE_LOOP = 0.1  # 0.05  # multi thread 동작을 위한 최소 대기 시간 설정
 SLEEP_SECONDS_IN_SERVICE_NONE = 2  # _아무일도 하지 않는 대기 thread 의 대기 시간 설정
-SLEEP_SECONDS_IN_RADIOSTATION_HEARTBEAT = 60 * 60  # seconds, RS 의 peer status heartbeat 주기
 GRPC_TIMEOUT = 30  # seconds
 GRPC_TIMEOUT_TEST = 30  # seconds
 GRPC_CONNECTION_TIMEOUT = GRPC_TIMEOUT * 2  # seconds, Connect Peer 메시지는 처리시간이 좀 더 필요함
@@ -97,6 +97,7 @@ class ConsensusAlgorithm(IntEnum):
     none = 0
     default = 1
     siever = 2
+    lft = 3
 
 
 # 블록 생성 간격, tx 가 없을 경우 다음 간격까지 건너 뛴다.
@@ -128,7 +129,7 @@ BLOCK_HEIGHT_BYTES_LEN = 12
 # Leader 의 block 생성 갯수
 LEADER_BLOCK_CREATION_LIMIT = 20000000
 # Block vote timeout
-BLOCK_VOTE_TIMEOUT = 12  # seconds
+BLOCK_VOTE_TIMEOUT = 60 * 10  # seconds
 # default storage path
 DEFAULT_STORAGE_PATH = os.getenv('DEFAULT_STORAGE_PATH', os.path.join(LOOPCHAIN_ROOT_PATH, '.storage'))
 
@@ -181,18 +182,19 @@ if not os.path.exists(DEFAULT_STORAGE_PATH):
 ##########
 # Peer ###
 ##########
-CONNECTION_RETRY_INTERVAL = 1  # seconds
+CONNECTION_RETRY_INTERVAL = 2  # seconds
 CONNECTION_RETRY_INTERVAL_TEST = 2  # seconds for testcase
+CONNECTION_RETRY_TIMEOUT_WHEN_INITIAL = 5  # seconds
 CONNECTION_RETRY_TIMEOUT = 60  # seconds
 CONNECTION_RETRY_TIMEOUT_TO_RS = 60 * 5  # seconds
 CONNECTION_RETRY_TIMEOUT_TO_RS_TEST = 30  # seconds for testcase
 CONNECTION_RETRY_TIMES = 2  # times
 REQUEST_BLOCK_GENERATOR_TIMEOUT = 10  # seconds
 BLOCK_GENERATOR_BROADCAST_TIMEOUT = 5  # seconds
-WAIT_GRPC_SERVICE_START = 2  # seconds
+WAIT_GRPC_SERVICE_START = 5  # seconds
 WAIT_SECONDS_FOR_SUB_PROCESS_START = 5  # seconds
-SLEEP_SECONDS_FOR_SUB_PROCESS_START = 0.05  # seconds
-WAIT_SUB_PROCESS_RETRY_TIMES = 30
+SLEEP_SECONDS_FOR_SUB_PROCESS_START = 1  # seconds
+WAIT_SUB_PROCESS_RETRY_TIMES = 5
 PEER_GROUP_ID = ""  # "8d4e8d08-0d2c-11e7-a589-acbc32b0aaa1"  # vote group id
 
 
@@ -201,14 +203,21 @@ PEER_GROUP_ID = ""  # "8d4e8d08-0d2c-11e7-a589-acbc32b0aaa1"  # vote group id
 ##################
 ALL_GROUP_ID = "all_group_id"  # "98fad20a-0df1-11e7-bc4b-acbc32b0aaa1"
 TEST_GROUP_ID = "test_group_id"  # "ea8f365c-7fb8-11e6-af03-38c98627c586"
-LEVEL_DB_KEY_FOR_PEER_LIST = str.encode("peer_list_key")
+LEVEL_DB_KEY_FOR_PEER_LIST = "peer_manager_key"
+# RS heartbeat 으로 리더선정 및 무응답피어 제거를 할지 여부를 정한다. False 일때 네트워크는 더 안정적이 된다.
+# LFT 에 의한 장애 처리 전까지 임시적으로만 True 로 사용한다. by winDy
+ENABLE_RADIOSTATION_HEARTBEAT = True
+SLEEP_SECONDS_IN_RADIOSTATION_HEARTBEAT = 30   # 60 * 60  # seconds, RS 의 peer status heartbeat 주기
+NO_RESPONSE_COUNT_ALLOW_BY_HEARTBEAT = 5  # 몇번의 RS Heartbeat 무응답까지 감수할 것인지
 # Peer 의 중복 재접속을 허용한다.
 ALLOW_PEER_RECONNECT = True
 # 토큰 유효시간(분)
 TOKEN_INTERVAL = 10
 # If disconnected state of the peer is maintained, That peer will removed from peer list after this minutes.
-TIMEOUT_PEER_REMOVE_IN_LIST = 5  # minutes
+TIMEOUT_PEER_REMOVE_IN_LIST = 5  # minutes, replace by NO_RESPONSE_COUNT_ALLOW_BY_HEARTBEAT
 IS_LOAD_PEER_MANAGER_FROM_DB = False
+LOOPCHAIN_DEFAULT_CHANNEL = "channel_loopchain_default"
+LOOPCHAIN_TEST_CHANNEL = "channel_loopchain_test"
 
 
 ####################
@@ -217,3 +226,17 @@ IS_LOAD_PEER_MANAGER_FROM_DB = False
 TOKEN_TYPE_TOKEN = "00"
 TOKEN_TYPE_CERT = "01"
 TOKEN_TYPE_SIGN = "02"
+
+###############
+# Signature ###
+###############
+IS_KEY_FILE_LOAD = True
+PRIVATE_PATH = os.path.join(LOOPCHAIN_ROOT_PATH, 'resources/default_certs/key.pem')
+CERT_PATH = os.path.join(LOOPCHAIN_ROOT_PATH, 'resources/default_certs/cert.pem')
+DEFAULT_PW = None
+
+####################
+# TimerService ###
+####################
+TIMEOUT_FOR_PEER_VOTE = 20
+TIMEOUT_FOR_PEER_BLOCK_GENERATION = TIMEOUT_FOR_PEER_VOTE + 10

@@ -144,8 +144,8 @@ class Peer(Resource):
             if leader_peer is not None:
                 leader_peer_id = leader_peer.peer_id
             
-            for peer_id in peer_manager.peers[conf.ALL_GROUP_ID]:
-                peer_each = peer_manager.peers[conf.ALL_GROUP_ID][peer_id]
+            for peer_id in peer_manager.peer_list[conf.ALL_GROUP_ID]:
+                peer_each = peer_manager.peer_list[conf.ALL_GROUP_ID][peer_id]
                 peer_data = self.__change_format_to_json(peer_each)
 
                 if peer_each.peer_id == leader_peer_id:
@@ -177,10 +177,10 @@ class Peer(Resource):
 
             all_peer_list = []
 
-            for peer_id in peer_manager.peers[conf.ALL_GROUP_ID]:
+            for peer_id in peer_manager. peer_list[conf.ALL_GROUP_ID]:
                 response = ServerComponents().get_peer_status(peer_id, conf.ALL_GROUP_ID)
                 if response is not None and response.status != "":
-                    peer_each = peer_manager.peers[conf.ALL_GROUP_ID][peer_id]
+                    peer_each = peer_manager.peer_list[conf.ALL_GROUP_ID][peer_id]
                     status_json = json.loads(response.status)
                     status_json["order"] = peer_each.order
                     all_peer_list.append(status_json)
@@ -227,8 +227,7 @@ class Peer(Resource):
         json_data['peer_id'] = peer.peer_id
         json_data['group_id'] = peer.group_id
         json_data['target'] = peer.target
-        json_data['auth'] = peer.auth
-        json_data['token'] = peer.token
+        json_data['cert'] = peer.cert.decode("utf-8")
         json_data['status_update_time'] = str(peer.status_update_time)
         json_data['status'] = peer.status
 

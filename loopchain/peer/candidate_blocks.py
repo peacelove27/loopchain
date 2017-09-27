@@ -48,11 +48,12 @@ class CandidateBlocks:
     unconfirmed block 을 저장하고, 각 peer 로 부터 vote 된 결과를 반영한다.
     """
 
-    def __init__(self, peer_id):
+    def __init__(self, peer_id, channel_name):
         """
         :param voter_count: 전체 투표 가능 Peer 수의 초기값 설정, 변경시 set_voter_count 로 동기화 되어야 한다.
         """
         self.__peer_id = peer_id
+        self.__channel_name = channel_name
         self.__unconfirmed_blocks = collections.OrderedDict()  # $block_hash : [$vote, $block], ... 인 Ordered Dictionary
         self.__candidate_last_block = None
 
@@ -66,7 +67,8 @@ class CandidateBlocks:
         block.peer_id = self.__peer_id
 
         # leader 가 block 에 담을 때 이미 1 투표한 내용으로 생성한다.
-        vote = Vote(block.block_hash, ObjectManager().peer_service.peer_list)
+        vote = Vote(block.block_hash,
+                    ObjectManager().peer_service.channel_manager.get_peer_manager(self.__channel_name))
         vote.add_vote(ObjectManager().peer_service.group_id, ObjectManager().peer_service.peer_id, None)
 
         self.__unconfirmed_blocks[block.block_hash] = [vote, block]
@@ -75,7 +77,7 @@ class CandidateBlocks:
 
     def reset_voter_count(self, block_hash):
         logging.debug("Reset voter count in candidate blocks")
-        vote = Vote(block_hash, ObjectManager().peer_service.peer_list)
+        vote = Vote(block_hash, ObjectManager().peer_service.channel_manager.get_peer_manager(self.__channel_name))
         prev_vote, block = self.__unconfirmed_blocks[block_hash]
         # vote.get_result_detail(block.block_hash, conf.VOTING_RATIO)
         # prev_vote.get_result_detail(block.block_hash, conf.VOTING_RATIO)

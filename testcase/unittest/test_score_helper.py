@@ -66,3 +66,5 @@ class TestScoreHelper(unittest.TestCase):
         self.assertIsNotNone(sqlite_conn.cursor())
 
 
+if __name__ == '__main__':
+    unittest.main()

@@ -27,40 +27,63 @@ from loopchain.baseservice import ObjectManager
 
 
 def main(argv):
-    logging.info("Peer main got argv(list): " + str(argv))
+    # logging.debug("Peer main got argv(list): " + str(argv))
 
     try:
-        opts, args = getopt.getopt(argv, "dhr:p:c:",
+        opts, args = getopt.getopt(argv, "dhr:p:c:o:a:",
                                    ["help",
-                                    "radio_station_ip=",
-                                    "radio_station_port=",
+                                    "radio_station_target=",
                                     "port=",
                                     "score=",
-                                    "cert="
+                                    "cert=",
+                                    "private=",
+                                    "password=",
+                                    "configure_file_path="
                                     ])
     except getopt.GetoptError as e:
         logging.error(e)
         usage()
         sys.exit(1)
 
-    # default option values
+    # apply json configure values
+    for opt, arg in opts:
+        if (opt == "-o") or (opt == "--configure_file_path"):
+            conf.Configure().load_configure_json(arg)
+
+    # apply default configure values
     port = conf.PORT_PEER
     radio_station_ip = conf.IP_RADIOSTATION
     radio_station_port = conf.PORT_RADIOSTATION
     score = conf.DEFAULT_SCORE_PACKAGE
-    cert = None
-    pw = None
+    cert = conf.CERT_PATH
+    private = conf.PRIVATE_PATH
+    pw = conf.DEFAULT_PW
 
     # apply option values
     for opt, arg in opts:
-        if (opt == "-r") or (opt == "--radio_station_ip"):
-            radio_station_ip = arg
+        if (opt == "-r") or (opt == "--radio_station_target"):
+            try:
+                if ':' in arg:
+                    radio_station_ip = arg.split(":")[0].strip()
+                    radio_station_port = int(arg.split(":")[1])
+                elif len(arg.split('.')) == 4:
+                    radio_station_ip = arg
+                else:
+                    raise Exception("Invalid IP format")
+            except Exception as e:
+                util.exit_and_msg(f"'-r' or '--radio_station_target' option requires "
+                                  f"[IP Address of Radio Station]:[PORT number of Radio Station], "
+                                  f"or just [IP Address of Radio Station] format. error({e})")
         elif (opt == "-p") or (opt == "--port"):
             port = arg
         elif (opt == "-c") or (opt == "--score"):
             score = arg
+        elif (opt == "-a") or (opt == "--password"):
+            pw = arg
         elif opt == "--cert":
             cert = arg
+        elif opt == "--private":
+            private = arg
         elif opt == "-d":
             util.set_log_level_debug()
         elif (opt == "-h") or (opt == "--help"):
@@ -68,18 +91,25 @@ def main(argv):
             return
 
     # run peer service with parameters
-    logging.info("\nTry Peer Service run with: \nport(" +
-                 str(port) + ") \nRadio Station(" +
-                 radio_station_ip + ":" +
-                 str(radio_station_port) + ") \nScore(" +
-                 score + ") \n")
+    logging.info(f"loopchain peer run with: port({port}) "
+                 f"radio station({radio_station_ip}:{radio_station_port}) "
+                 f"score({score})")
+
     # check Port Using
     if util.check_port_using(conf.IP_PEER, int(port)):
-        logging.error('Peer Service Port is Using '+str(port))
-        return
+        util.exit_and_msg('Peer Service Port is Using '+str(port))
 
-    ObjectManager().peer_service = PeerService(None, radio_station_ip, radio_station_port, cert, pw)
-    logging.info("loopchain peer_service is: " + str(ObjectManager().peer_service))
+    # str password to bytes
+    if isinstance(pw, str):
+        pw = pw.encode()
+
+    ObjectManager().peer_service = PeerService(radio_station_ip=radio_station_ip,
+                                               radio_station_port=radio_station_port,
+                                               cert_path=cert,
+                                               private_path=private,
+                                               cert_pass=pw)
+
+    # logging.debug("loopchain peer_service is: " + str(ObjectManager().peer_service))
     ObjectManager().peer_service.serve(port, score)
 
 
@@ -89,11 +119,15 @@ def usage():
     print("-------------------------------")
     print("option list")
     print("-------------------------------")
+    print("-o or --configure_file_path : json configure file path")
     print("-h or --help : print this usage")
-    print("-r or --radio_station_ip : IP Address of Radio Station.")
+    print("-r or --radio_station_target : [IP Address of Radio Station]:[PORT number of Radio Station] "
+          "or just [IP Address of Radio Station]")
     print("-p or --port : port of Peer Service itself")
     print("-c or --score : user score repository Path")
-    print("--cert : certificate directory path")
+    print("-a or --password : private key password")
+    print("--cert : certificate file path")
+    print("--private : private key file path")
     print("-d : Display colored log.")
 
 
