@@ -14,7 +14,7 @@
 """base class for Singleton class"""
 
 
-# Singleton/SingletonMetaClass.py
+# Singleton/singleton.py
 class SingletonMetaClass(type):
     """특정 클래스에서 metaclass 로 지정하면 해당 클래스는 singleton이 된다.
     사용예: class ClassOne(metaclass=SingletonMetaClass):
