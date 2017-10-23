@@ -135,7 +135,7 @@ class TimerService(CommonThread):
             return None
 
     def run(self):
-        while self.is_run():
+        while self.is_run:
             time.sleep(1)
             # logging.debug(f'--- start leader complain timer service...')
             # logging.debug(f'--- list : {self.__timer_list}')

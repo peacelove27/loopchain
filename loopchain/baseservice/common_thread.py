@@ -26,18 +26,19 @@ class CommonThread:
 
     def __init__(self):
         # logging.debug("CommonThread Init")
-        self.__isRun = False
+        self.__is_run = False
         self.__run_thread = None
 
+    @property
     def is_run(self):
-        return self.__isRun
+        return self.__is_run
 
     def start(self):
         """쓰레드를 시작한다.
         상속받아서 override 하는 경우 반드시 CommonThread.start(self) 를 호출하여야 한다.
         """
         # logging.debug("CommonThread start")
-        self.__isRun = True
+        self.__is_run = True
         self.__run_thread = threading.Thread(target=self.run, args=())
         self.__run_thread.start()
 
@@ -46,7 +47,7 @@ class CommonThread:
         상속받아서 override 하는 경우 반드시 CommonThread.stop(self) 을 호출하여야 한다.
         """
         # logging.debug("try stop thread...")
-        self.__isRun = False
+        self.__is_run = False
 
     def wait(self):
         """쓰레드 종료를 기다린다.
@@ -60,6 +61,6 @@ class CommonThread:
         sample 구현을 참고 한다.
         """
         # # sample 구현
-        # while self.is_run():
+        # while self.is_run:
         #     time.sleep(conf.SLEEP_SECONDS_IN_SERVICE_LOOP)
         pass
