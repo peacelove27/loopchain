@@ -20,10 +20,10 @@ import pickle
 from flask import Flask, request
 from flask_restful import reqparse, Api, Resource
 
+from components.singleton import *
 from loopchain import configure as conf
 from loopchain.baseservice import CommonThread, StubManager
 from loopchain.baseservice import PeerManager, PeerStatus
-from loopchain.baseservice.SingletonMetaClass import *
 from loopchain.baseservice.ca_service import CAService
 from loopchain.protos import loopchain_pb2, loopchain_pb2_grpc, message_code
 

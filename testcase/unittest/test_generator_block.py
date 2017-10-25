@@ -22,11 +22,8 @@ import unittest
 
 import loopchain.utils as util
 import testcase.unittest.test_util as test_util
-from loopchain.baseservice.SingletonMetaClass import *
 from loopchain.blockchain import Block
 from loopchain.blockchain import BlockChain, BlockStatus
-from loopchain.blockchain import Transaction
-
 
 util.set_log_level_debug()
 

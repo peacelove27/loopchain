@@ -273,7 +273,7 @@ class CommonService(CommonThread):
         time.sleep(conf.WAIT_GRPC_SERVICE_START)
 
         try:
-            while self.is_run():
+            while self.is_run:
                 self.__run_loop_functions()
                 time.sleep(conf.SLEEP_SECONDS_IN_SERVICE_NONE)
         except KeyboardInterrupt:

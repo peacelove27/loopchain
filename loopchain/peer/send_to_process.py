@@ -39,7 +39,7 @@ class SendToProcess(CommonThread):
         self.__job.put(params)
 
     def run(self):
-        while self.is_run():
+        while self.is_run:
             time.sleep(conf.SLEEP_SECONDS_IN_SERVICE_LOOP)
 
             param = None

@@ -797,7 +797,7 @@ class PeerService:
         self.__send_to_process_thread.stop()
         self.__send_to_process_thread.wait()
 
-        if self.__timer_service.is_run():
+        if self.__timer_service.is_run:
             self.__timer_service.stop()
             self.__timer_service.wait()
 

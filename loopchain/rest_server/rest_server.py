@@ -13,21 +13,21 @@
 # limitations under the License.
 """A module for restful API server of Peer"""
 
-import json
-import grpc
-import logging
-import ssl
 import _ssl
 import base64
+import json
+import logging
+import ssl
 
-from grpc._channel import _Rendezvous
-
-from loopchain.baseservice.SingletonMetaClass import *
-from loopchain.baseservice import CommonThread
+import grpc
 from flask import Flask, request
 from flask_restful import reqparse, Api, Resource
-from loopchain.protos import loopchain_pb2, loopchain_pb2_grpc, message_code
+from grpc._channel import _Rendezvous
+
+from components.singleton import *
 from loopchain import configure as conf
+from loopchain.baseservice import CommonThread
+from loopchain.protos import loopchain_pb2, loopchain_pb2_grpc, message_code
 
 
 class ServerComponents(metaclass=SingletonMetaClass):

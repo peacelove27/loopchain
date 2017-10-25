@@ -28,9 +28,9 @@ import grpc
 
 import loopchain
 import loopchain.utils as util
+from components.singleton import *
 from loopchain import configure as conf
 from loopchain.baseservice import ObjectManager, StubManager
-from loopchain.baseservice.SingletonMetaClass import *
 from loopchain.blockchain import Transaction
 from loopchain.container import ScoreService
 from loopchain.peer import PeerService, PeerAuthorization

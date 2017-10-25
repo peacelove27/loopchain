@@ -13,7 +13,7 @@
 # limitations under the License.
 """Facade Class for interface of inner gRPC services"""
 
-from loopchain.baseservice.SingletonMetaClass import *
+from components.singleton import *
 
 
 class ObjectManager(metaclass=SingletonMetaClass):

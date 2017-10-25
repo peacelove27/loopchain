@@ -305,7 +305,7 @@ class BlockManager(CommonThread):
 
         logging.info(f"channel({self.__channel_name}) Block Manager thread Start.")
 
-        while self.is_run():
+        while self.is_run:
             self.__run_logic()
 
         logging.info(f"channel({self.__channel_name}) Block Manager thread Ended.")
