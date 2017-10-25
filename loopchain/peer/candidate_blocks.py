@@ -149,7 +149,7 @@ class CandidateBlocks:
         :return: block, broadcast 를 통해 피어로부터 검증 받아야 한다.
         """
         if len(self.__unconfirmed_blocks) > 0:
-            return list(self.__unconfirmed_blocks.items())[0][1][1]
+            return next(iter(self.__unconfirmed_blocks.items()))[1][1]
 
         return None
 
