@@ -31,6 +31,7 @@ def set_log_level(level):
 
 _DEFAULT_PATH = "resources/testcerts/"
 
+
 # Main menu
 def main_menu(show=True):
     if show:
@@ -171,6 +172,7 @@ def menu4():
 def tool_exit():
     sys.exit()
 
+
 # Menu definition
 menu_actions = {
     'main_menu': main_menu,
@@ -180,6 +182,7 @@ menu_actions = {
     '4': menu4,
     '0': tool_exit
 }
+
 
 # Main Program
 if __name__ == "__main__":
