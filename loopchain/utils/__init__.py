@@ -30,6 +30,7 @@ from subprocess import PIPE, Popen, TimeoutExpired
 
 import coloredlogs
 import grpc
+import os
 import verboselogs
 from fluent import event
 from fluent import sender
@@ -113,8 +114,17 @@ def set_log_color_set(is_leader=False):
             'warning': {'color': 'yellow'}}
 
 
+def create_default_pki():
+    # when first run of loopchain
+    # we made own pki key for loopchain security
+    my_file = Path("resources/default_pki/private.der")
+    if not my_file.is_file():
+        os.system("python3 create_sign_pki.py")
+
+
 def set_log_level_debug():
     global logger_reset
+    create_default_pki()
     set_log_color_set()
     set_colored_log_level()
     logger_reset = set_colored_log_level

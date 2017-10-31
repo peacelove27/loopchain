@@ -17,10 +17,9 @@
 
 import getopt
 import logging
-import os
 import sys
+
 import yappi
-from pathlib import Path
 
 import loopchain.utils as util
 from loopchain import configure as conf
@@ -94,11 +93,7 @@ def usage():
 # Run grpc server as a RadioStation
 if __name__ == "__main__":
     try:
-        # when first run of loopchain
-        # we made own pki key for loopchain security
-        my_file = Path("resources/default_pki/private.der")
-        if not my_file.is_file():
-            os.system("python3 create_sign_pki.py")
+        util.create_default_pki()
 
         if conf.ENABLE_PROFILING:
             yappi.start()
