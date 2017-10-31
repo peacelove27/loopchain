@@ -20,7 +20,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='loopchain.proto',
   package='',
   syntax='proto2',
-  serialized_pb=_b('\n\x0floopchain.proto\"W\n\x07Message\x12\x0c\n\x04\x63ode\x18\x01 \x02(\x05\x12\x0f\n\x07\x63hannel\x18\x02 \x01(\t\x12\x0f\n\x07message\x18\x03 \x01(\t\x12\x0c\n\x04meta\x18\x04 \x01(\t\x12\x0e\n\x06object\x18\x05 \x01(\x0c\"n\n\x15\x43omplainLeaderRequest\x12\x1c\n\x14\x63omplained_leader_id\x18\x01 \x02(\t\x12\x0f\n\x07\x63hannel\x18\x02 \x01(\t\x12\x15\n\rnew_leader_id\x18\x03 \x02(\t\x12\x0f\n\x07message\x18\x04 \x02(\t\"\x1d\n\x08PeerList\x12\x11\n\tpeer_list\x18\x01 \x02(\x0c\"0\n\x0f\x43reateTxRequest\x12\x0c\n\x04\x64\x61ta\x18\x01 \x02(\t\x12\x0f\n\x07\x63hannel\x18\x02 \x01(\t\"J\n\rCreateTxReply\x12\x15\n\rresponse_code\x18\x01 \x02(\x05\x12\x0f\n\x07tx_hash\x18\x02 \x02(\t\x12\x11\n\tmore_info\x18\x03 \x02(\t\"%\n\x06TxSend\x12\n\n\x02tx\x18\x01 \x02(\x0c\x12\x0f\n\x07\x63hannel\x18\x02 \x01(\t\"\x83\x01\n\x0fGetBlockRequest\x12\x12\n\nblock_hash\x18\x01 \x01(\t\x12\x0f\n\x07\x63hannel\x18\x02 \x01(\t\x12\x18\n\x0c\x62lock_height\x18\x03 \x01(\x05:\x02-1\x12\x19\n\x11\x62lock_data_filter\x18\x04 \x02(\t\x12\x16\n\x0etx_data_filter\x18\x05 \x02(\t\"i\n\rGetBlockReply\x12\x15\n\rresponse_code\x18\x01 \x02(\x05\x12\x12\n\nblock_hash\x18\x02 \x02(\t\x12\x17\n\x0f\x62lock_data_json\x18\x03 \x02(\t\x12\x14\n\x0ctx_data_json\x18\x04 \x03(\t\"/\n\x0cQueryRequest\x12\x0e\n\x06params\x18\x01 \x02(\t\x12\x0f\n\x07\x63hannel\x18\x02 \x01(\t\"5\n\nQueryReply\x12\x15\n\rresponse_code\x18\x01 \x02(\x05\x12\x10\n\x08response\x18\x02 \x02(\t\"0\n\x0cGetTxRequest\x12\x0f\n\x07tx_hash\x18\x01 \x02(\t\x12\x0f\n\x07\x63hannel\x18\x02 \x01(\t\"y\n\nGetTxReply\x12\x15\n\rresponse_code\x18\x01 \x02(\x05\x12\x0c\n\x04meta\x18\x02 \x02(\t\x12\x0c\n\x04\x64\x61ta\x18\x03 \x02(\t\x12\x11\n\tmore_info\x18\x04 \x02(\t\x12\x11\n\tsignature\x18\x05 \x02(\x0c\x12\x12\n\npublic_key\x18\x06 \x02(\x0c\":\n\x16GetInvokeResultRequest\x12\x0f\n\x07tx_hash\x18\x01 \x02(\t\x12\x0f\n\x07\x63hannel\x18\x02 \x01(\t\"=\n\x14GetInvokeResultReply\x12\x15\n\rresponse_code\x18\x01 \x02(\x05\x12\x0e\n\x06result\x18\x02 \x01(\t\"7\n\x10\x42lockSyncRequest\x12\x12\n\nblock_hash\x18\x01 \x02(\t\x12\x0f\n\x07\x63hannel\x18\x02 \x01(\t\"f\n\x0e\x42lockSyncReply\x12\x15\n\rresponse_code\x18\x01 \x02(\x05\x12\x14\n\x0c\x62lock_height\x18\x02 \x02(\x05\x12\x18\n\x10max_block_height\x18\x03 \x02(\x05\x12\r\n\x05\x62lock\x18\x04 \x02(\x0c\"+\n\tBlockSend\x12\r\n\x05\x62lock\x18\x01 \x02(\x0c\x12\x0f\n\x07\x63hannel\x18\x02 \x01(\t\"H\n\nBlockReply\x12\x15\n\rresponse_code\x18\x01 \x02(\x05\x12\x0f\n\x07message\x18\x02 \x02(\t\x12\x12\n\nblock_hash\x18\x03 \x02(\t\"w\n\tBlockVote\x12\x11\n\tvote_code\x18\x01 \x02(\x05\x12\x0f\n\x07\x63hannel\x18\x02 \x01(\t\x12\x0f\n\x07message\x18\x03 \x02(\t\x12\x12\n\nblock_hash\x18\x04 \x02(\t\x12\x0f\n\x07peer_id\x18\x05 \x02(\t\x12\x10\n\x08group_id\x18\x06 \x02(\t\"C\n\rBlockAnnounce\x12\x12\n\nblock_hash\x18\x01 \x02(\t\x12\x0f\n\x07\x63hannel\x18\x02 \x01(\t\x12\r\n\x05\x62lock\x18\x03 \x01(\x0c\"C\n\rCommonRequest\x12\x0f\n\x07request\x18\x01 \x02(\t\x12\x0f\n\x07\x63hannel\x18\x02 \x01(\t\x12\x10\n\x08group_id\x18\x03 \x01(\t\"5\n\x0b\x43ommonReply\x12\x15\n\rresponse_code\x18\x01 \x02(\x05\x12\x0f\n\x07message\x18\x02 \x02(\t\"1\n\rStatusRequest\x12\x0f\n\x07request\x18\x01 \x02(\t\x12\x0f\n\x07\x63hannel\x18\x02 \x01(\t\"d\n\x0bStatusReply\x12\x0e\n\x06status\x18\x01 \x02(\t\x12\x14\n\x0c\x62lock_height\x18\x02 \x02(\x05\x12\x10\n\x08total_tx\x18\x03 \x02(\x05\x12\x1d\n\x15is_leader_complaining\x18\x04 \x01(\x05\"\x1d\n\x0bStopRequest\x12\x0e\n\x06reason\x18\x01 \x02(\t\"\x1b\n\tStopReply\x12\x0e\n\x06status\x18\x01 \x02(\t\"\xab\x01\n\x0bPeerRequest\x12\x0f\n\x07peer_id\x18\x01 \x02(\t\x12\x0f\n\x07\x63hannel\x18\x02 \x01(\t\x12\x13\n\x0bpeer_target\x18\x03 \x02(\t\x12\x10\n\x08group_id\x18\x04 \x02(\t\x12\x1c\n\tpeer_type\x18\x05 \x02(\x0e\x32\t.PeerType\x12\x0c\n\x04\x63\x65rt\x18\x06 \x01(\x0c\x12\x12\n\npeer_order\x18\x07 \x01(\x05\x12\x13\n\x0bpeer_object\x18\x08 \x01(\x0c\"<\n\x06PeerID\x12\x0f\n\x07peer_id\x18\x01 \x02(\t\x12\x0f\n\x07\x63hannel\x18\x02 \x01(\t\x12\x10\n\x08group_id\x18\x03 \x02(\t\"Z\n\x10\x43onnectPeerReply\x12\x0e\n\x06status\x18\x01 \x02(\x05\x12\x11\n\tpeer_list\x18\x02 \x02(\x0c\x12\x10\n\x08\x63hannels\x18\x03 \x03(\t\x12\x11\n\tmore_info\x18\x04 \x01(\t*<\n\x08PeerType\x12\x08\n\x04PEER\x10\x00\x12\x13\n\x0f\x42LOCK_GENERATOR\x10\x01\x12\x11\n\rRADIO_STATION\x10\x02\x32\xf5\x03\n\x0cInnerService\x12\x1f\n\x07Request\x12\x08.Message\x1a\x08.Message\"\x00\x12+\n\tGetStatus\x12\x0e.StatusRequest\x1a\x0c.StatusReply\"\x00\x12\x30\n\x0eGetScoreStatus\x12\x0e.StatusRequest\x1a\x0c.StatusReply\"\x00\x12\"\n\x04Stop\x12\x0c.StopRequest\x1a\n.StopReply\"\x00\x12&\n\x04\x45\x63ho\x12\x0e.CommonRequest\x1a\x0c.CommonReply\"\x00\x12.\n\x08GetBlock\x12\x10.GetBlockRequest\x1a\x0e.GetBlockReply\"\x00\x12%\n\x05Query\x12\r.QueryRequest\x1a\x0b.QueryReply\"\x00\x12)\n\tSubscribe\x12\x0c.PeerRequest\x1a\x0c.CommonReply\"\x00\x12+\n\x0bUnSubscribe\x12\x0c.PeerRequest\x1a\x0c.CommonReply\"\x00\x12\x34\n\x12NotifyLeaderBroken\x12\x0e.CommonRequest\x1a\x0c.CommonReply\"\x00\x12\x34\n\x12NotifyProcessError\x12\x0e.CommonRequest\x1a\x0c.CommonReply\"\x00\x32\xa9\x08\n\x0bPeerService\x12\x1f\n\x07Request\x12\x08.Message\x1a\x08.Message\"\x00\x12+\n\tGetStatus\x12\x0e.StatusRequest\x1a\x0c.StatusReply\"\x00\x12\x30\n\x0eGetScoreStatus\x12\x0e.StatusRequest\x1a\x0c.StatusReply\"\x00\x12\"\n\x04Stop\x12\x0c.StopRequest\x1a\n.StopReply\"\x00\x12.\n\x08\x43reateTx\x12\x10.CreateTxRequest\x1a\x0e.CreateTxReply\"\x00\x12%\n\x05GetTx\x12\r.GetTxRequest\x1a\x0b.GetTxReply\"\x00\x12.\n\x08GetBlock\x12\x10.GetBlockRequest\x1a\x0e.GetBlockReply\"\x00\x12%\n\x05Query\x12\r.QueryRequest\x1a\x0b.QueryReply\"\x00\x12\x43\n\x0fGetInvokeResult\x12\x17.GetInvokeResultRequest\x1a\x15.GetInvokeResultReply\"\x00\x12\x31\n\tBlockSync\x12\x11.BlockSyncRequest\x1a\x0f.BlockSyncReply\"\x00\x12\x36\n\x18\x41nnounceUnconfirmedBlock\x12\n.BlockSend\x1a\x0c.CommonReply\"\x00\x12\x38\n\x16\x41nnounceConfirmedBlock\x12\x0e.BlockAnnounce\x1a\x0c.CommonReply\"\x00\x12/\n\x0f\x41nnounceNewPeer\x12\x0c.PeerRequest\x1a\x0c.CommonReply\"\x00\x12-\n\x12\x41nnounceDeletePeer\x12\x07.PeerID\x1a\x0c.CommonReply\"\x00\x12&\n\x04\x45\x63ho\x12\x0e.CommonRequest\x1a\x0c.CommonReply\"\x00\x12\x38\n\x0e\x43omplainLeader\x12\x16.ComplainLeaderRequest\x1a\x0c.CommonReply\"\x00\x12;\n\x11\x41nnounceNewLeader\x12\x16.ComplainLeaderRequest\x1a\x0c.CommonReply\"\x00\x12\x31\n\x10GetLastBlockHash\x12\x0e.CommonRequest\x1a\x0b.BlockReply\"\x00\x12)\n\tSubscribe\x12\x0c.PeerRequest\x1a\x0c.CommonReply\"\x00\x12+\n\x0bUnSubscribe\x12\x0c.PeerRequest\x1a\x0c.CommonReply\"\x00\x12 \n\x05\x41\x64\x64Tx\x12\x07.TxSend\x1a\x0c.CommonReply\"\x00\x12\x32\n\x14VoteUnconfirmedBlock\x12\n.BlockVote\x1a\x0c.CommonReply\"\x00\x32\x9d\x03\n\x0cRadioStation\x12\x1f\n\x07Request\x12\x08.Message\x1a\x08.Message\"\x00\x12+\n\tGetStatus\x12\x0e.StatusRequest\x1a\x0c.StatusReply\"\x00\x12\"\n\x04Stop\x12\x0c.StopRequest\x1a\n.StopReply\"\x00\x12\x30\n\x0b\x43onnectPeer\x12\x0c.PeerRequest\x1a\x11.ConnectPeerReply\"\x00\x12*\n\x0bGetPeerList\x12\x0e.CommonRequest\x1a\t.PeerList\"\x00\x12(\n\rGetPeerStatus\x12\x07.PeerID\x1a\x0c.StatusReply\"\x00\x12;\n\x11\x41nnounceNewLeader\x12\x16.ComplainLeaderRequest\x1a\x0c.CommonReply\"\x00\x12)\n\tSubscribe\x12\x0c.PeerRequest\x1a\x0c.CommonReply\"\x00\x12+\n\x0bUnSubscribe\x12\x0c.PeerRequest\x1a\x0c.CommonReply\"\x00\x32,\n\tContainer\x12\x1f\n\x07Request\x12\x08.Message\x1a\x08.Message\"\x00')
+  serialized_pb=_b('\n\x0floopchain.proto\"W\n\x07Message\x12\x0c\n\x04\x63ode\x18\x01 \x02(\x05\x12\x0f\n\x07\x63hannel\x18\x02 \x01(\t\x12\x0f\n\x07message\x18\x03 \x01(\t\x12\x0c\n\x04meta\x18\x04 \x01(\t\x12\x0e\n\x06object\x18\x05 \x01(\x0c\"n\n\x15\x43omplainLeaderRequest\x12\x1c\n\x14\x63omplained_leader_id\x18\x01 \x02(\t\x12\x0f\n\x07\x63hannel\x18\x02 \x01(\t\x12\x15\n\rnew_leader_id\x18\x03 \x02(\t\x12\x0f\n\x07message\x18\x04 \x02(\t\"\x1d\n\x08PeerList\x12\x11\n\tpeer_list\x18\x01 \x02(\x0c\"0\n\x0f\x43reateTxRequest\x12\x0c\n\x04\x64\x61ta\x18\x01 \x02(\t\x12\x0f\n\x07\x63hannel\x18\x02 \x01(\t\"J\n\rCreateTxReply\x12\x15\n\rresponse_code\x18\x01 \x02(\x05\x12\x0f\n\x07tx_hash\x18\x02 \x02(\t\x12\x11\n\tmore_info\x18\x03 \x02(\t\"%\n\x06TxSend\x12\n\n\x02tx\x18\x01 \x02(\x0c\x12\x0f\n\x07\x63hannel\x18\x02 \x01(\t\"\x83\x01\n\x0fGetBlockRequest\x12\x12\n\nblock_hash\x18\x01 \x01(\t\x12\x0f\n\x07\x63hannel\x18\x02 \x01(\t\x12\x18\n\x0c\x62lock_height\x18\x03 \x01(\x05:\x02-1\x12\x19\n\x11\x62lock_data_filter\x18\x04 \x02(\t\x12\x16\n\x0etx_data_filter\x18\x05 \x02(\t\"i\n\rGetBlockReply\x12\x15\n\rresponse_code\x18\x01 \x02(\x05\x12\x12\n\nblock_hash\x18\x02 \x02(\t\x12\x17\n\x0f\x62lock_data_json\x18\x03 \x02(\t\x12\x14\n\x0ctx_data_json\x18\x04 \x03(\t\"/\n\x0cQueryRequest\x12\x0e\n\x06params\x18\x01 \x02(\t\x12\x0f\n\x07\x63hannel\x18\x02 \x01(\t\"5\n\nQueryReply\x12\x15\n\rresponse_code\x18\x01 \x02(\x05\x12\x10\n\x08response\x18\x02 \x02(\t\"0\n\x0cGetTxRequest\x12\x0f\n\x07tx_hash\x18\x01 \x02(\t\x12\x0f\n\x07\x63hannel\x18\x02 \x01(\t\"y\n\nGetTxReply\x12\x15\n\rresponse_code\x18\x01 \x02(\x05\x12\x0c\n\x04meta\x18\x02 \x02(\t\x12\x0c\n\x04\x64\x61ta\x18\x03 \x02(\t\x12\x11\n\tmore_info\x18\x04 \x02(\t\x12\x11\n\tsignature\x18\x05 \x02(\x0c\x12\x12\n\npublic_key\x18\x06 \x02(\x0c\":\n\x16GetInvokeResultRequest\x12\x0f\n\x07tx_hash\x18\x01 \x02(\t\x12\x0f\n\x07\x63hannel\x18\x02 \x01(\t\"=\n\x14GetInvokeResultReply\x12\x15\n\rresponse_code\x18\x01 \x02(\x05\x12\x0e\n\x06result\x18\x02 \x01(\t\"7\n\x10\x42lockSyncRequest\x12\x12\n\nblock_hash\x18\x01 \x02(\t\x12\x0f\n\x07\x63hannel\x18\x02 \x01(\t\"f\n\x0e\x42lockSyncReply\x12\x15\n\rresponse_code\x18\x01 \x02(\x05\x12\x14\n\x0c\x62lock_height\x18\x02 \x02(\x05\x12\x18\n\x10max_block_height\x18\x03 \x02(\x05\x12\r\n\x05\x62lock\x18\x04 \x02(\x0c\"+\n\tBlockSend\x12\r\n\x05\x62lock\x18\x01 \x02(\x0c\x12\x0f\n\x07\x63hannel\x18\x02 \x01(\t\"H\n\nBlockReply\x12\x15\n\rresponse_code\x18\x01 \x02(\x05\x12\x0f\n\x07message\x18\x02 \x02(\t\x12\x12\n\nblock_hash\x18\x03 \x02(\t\"w\n\tBlockVote\x12\x11\n\tvote_code\x18\x01 \x02(\x05\x12\x0f\n\x07\x63hannel\x18\x02 \x01(\t\x12\x0f\n\x07message\x18\x03 \x02(\t\x12\x12\n\nblock_hash\x18\x04 \x02(\t\x12\x0f\n\x07peer_id\x18\x05 \x02(\t\x12\x10\n\x08group_id\x18\x06 \x02(\t\"C\n\rBlockAnnounce\x12\x12\n\nblock_hash\x18\x01 \x02(\t\x12\x0f\n\x07\x63hannel\x18\x02 \x01(\t\x12\r\n\x05\x62lock\x18\x03 \x01(\x0c\"C\n\rCommonRequest\x12\x0f\n\x07request\x18\x01 \x02(\t\x12\x0f\n\x07\x63hannel\x18\x02 \x01(\t\x12\x10\n\x08group_id\x18\x03 \x01(\t\"5\n\x0b\x43ommonReply\x12\x15\n\rresponse_code\x18\x01 \x02(\x05\x12\x0f\n\x07message\x18\x02 \x02(\t\"1\n\rStatusRequest\x12\x0f\n\x07request\x18\x01 \x02(\t\x12\x0f\n\x07\x63hannel\x18\x02 \x01(\t\"d\n\x0bStatusReply\x12\x0e\n\x06status\x18\x01 \x02(\t\x12\x14\n\x0c\x62lock_height\x18\x02 \x02(\x05\x12\x10\n\x08total_tx\x18\x03 \x02(\x05\x12\x1d\n\x15is_leader_complaining\x18\x04 \x01(\x05\"\x1d\n\x0bStopRequest\x12\x0e\n\x06reason\x18\x01 \x02(\t\"\x1b\n\tStopReply\x12\x0e\n\x06status\x18\x01 \x02(\t\"\xab\x01\n\x0bPeerRequest\x12\x0f\n\x07peer_id\x18\x01 \x02(\t\x12\x0f\n\x07\x63hannel\x18\x02 \x01(\t\x12\x13\n\x0bpeer_target\x18\x03 \x02(\t\x12\x10\n\x08group_id\x18\x04 \x02(\t\x12\x1c\n\tpeer_type\x18\x05 \x02(\x0e\x32\t.PeerType\x12\x0c\n\x04\x63\x65rt\x18\x06 \x01(\x0c\x12\x12\n\npeer_order\x18\x07 \x01(\x05\x12\x13\n\x0bpeer_object\x18\x08 \x01(\x0c\"\x94\x01\n\x12\x43onnectPeerRequest\x12\x0f\n\x07peer_id\x18\x01 \x02(\t\x12\x0f\n\x07\x63hannel\x18\x02 \x01(\t\x12\x13\n\x0bpeer_target\x18\x03 \x02(\t\x12\x10\n\x08group_id\x18\x04 \x02(\t\x12\x0c\n\x04\x63\x65rt\x18\x05 \x01(\x0c\x12\x12\n\npeer_order\x18\x06 \x01(\x05\x12\x13\n\x0bpeer_object\x18\x07 \x01(\x0c\"Z\n\x10\x43onnectPeerReply\x12\x0e\n\x06status\x18\x01 \x02(\x05\x12\x11\n\tpeer_list\x18\x02 \x02(\x0c\x12\x10\n\x08\x63hannels\x18\x03 \x03(\t\x12\x11\n\tmore_info\x18\x04 \x01(\t\"^\n\x16GetChannelInfosRequest\x12\x0f\n\x07peer_id\x18\x01 \x02(\t\x12\x13\n\x0bpeer_target\x18\x02 \x02(\t\x12\x10\n\x08group_id\x18\x03 \x02(\t\x12\x0c\n\x04\x63\x65rt\x18\x04 \x01(\x0c\"D\n\x14GetChannelInfosReply\x12\x15\n\rresponse_code\x18\x01 \x02(\x05\x12\x15\n\rchannel_infos\x18\x02 \x02(\t\"<\n\x06PeerID\x12\x0f\n\x07peer_id\x18\x01 \x02(\t\x12\x0f\n\x07\x63hannel\x18\x02 \x01(\t\x12\x10\n\x08group_id\x18\x03 \x02(\t*<\n\x08PeerType\x12\x08\n\x04PEER\x10\x00\x12\x13\n\x0f\x42LOCK_GENERATOR\x10\x01\x12\x11\n\rRADIO_STATION\x10\x02\x32\xf5\x03\n\x0cInnerService\x12\x1f\n\x07Request\x12\x08.Message\x1a\x08.Message\"\x00\x12+\n\tGetStatus\x12\x0e.StatusRequest\x1a\x0c.StatusReply\"\x00\x12\x30\n\x0eGetScoreStatus\x12\x0e.StatusRequest\x1a\x0c.StatusReply\"\x00\x12\"\n\x04Stop\x12\x0c.StopRequest\x1a\n.StopReply\"\x00\x12&\n\x04\x45\x63ho\x12\x0e.CommonRequest\x1a\x0c.CommonReply\"\x00\x12.\n\x08GetBlock\x12\x10.GetBlockRequest\x1a\x0e.GetBlockReply\"\x00\x12%\n\x05Query\x12\r.QueryRequest\x1a\x0b.QueryReply\"\x00\x12)\n\tSubscribe\x12\x0c.PeerRequest\x1a\x0c.CommonReply\"\x00\x12+\n\x0bUnSubscribe\x12\x0c.PeerRequest\x1a\x0c.CommonReply\"\x00\x12\x34\n\x12NotifyLeaderBroken\x12\x0e.CommonRequest\x1a\x0c.CommonReply\"\x00\x12\x34\n\x12NotifyProcessError\x12\x0e.CommonRequest\x1a\x0c.CommonReply\"\x00\x32\xa9\x08\n\x0bPeerService\x12\x1f\n\x07Request\x12\x08.Message\x1a\x08.Message\"\x00\x12+\n\tGetStatus\x12\x0e.StatusRequest\x1a\x0c.StatusReply\"\x00\x12\x30\n\x0eGetScoreStatus\x12\x0e.StatusRequest\x1a\x0c.StatusReply\"\x00\x12\"\n\x04Stop\x12\x0c.StopRequest\x1a\n.StopReply\"\x00\x12.\n\x08\x43reateTx\x12\x10.CreateTxRequest\x1a\x0e.CreateTxReply\"\x00\x12%\n\x05GetTx\x12\r.GetTxRequest\x1a\x0b.GetTxReply\"\x00\x12.\n\x08GetBlock\x12\x10.GetBlockRequest\x1a\x0e.GetBlockReply\"\x00\x12%\n\x05Query\x12\r.QueryRequest\x1a\x0b.QueryReply\"\x00\x12\x43\n\x0fGetInvokeResult\x12\x17.GetInvokeResultRequest\x1a\x15.GetInvokeResultReply\"\x00\x12\x31\n\tBlockSync\x12\x11.BlockSyncRequest\x1a\x0f.BlockSyncReply\"\x00\x12\x36\n\x18\x41nnounceUnconfirmedBlock\x12\n.BlockSend\x1a\x0c.CommonReply\"\x00\x12\x38\n\x16\x41nnounceConfirmedBlock\x12\x0e.BlockAnnounce\x1a\x0c.CommonReply\"\x00\x12/\n\x0f\x41nnounceNewPeer\x12\x0c.PeerRequest\x1a\x0c.CommonReply\"\x00\x12-\n\x12\x41nnounceDeletePeer\x12\x07.PeerID\x1a\x0c.CommonReply\"\x00\x12&\n\x04\x45\x63ho\x12\x0e.CommonRequest\x1a\x0c.CommonReply\"\x00\x12\x38\n\x0e\x43omplainLeader\x12\x16.ComplainLeaderRequest\x1a\x0c.CommonReply\"\x00\x12;\n\x11\x41nnounceNewLeader\x12\x16.ComplainLeaderRequest\x1a\x0c.CommonReply\"\x00\x12\x31\n\x10GetLastBlockHash\x12\x0e.CommonRequest\x1a\x0b.BlockReply\"\x00\x12)\n\tSubscribe\x12\x0c.PeerRequest\x1a\x0c.CommonReply\"\x00\x12+\n\x0bUnSubscribe\x12\x0c.PeerRequest\x1a\x0c.CommonReply\"\x00\x12 \n\x05\x41\x64\x64Tx\x12\x07.TxSend\x1a\x0c.CommonReply\"\x00\x12\x32\n\x14VoteUnconfirmedBlock\x12\n.BlockVote\x1a\x0c.CommonReply\"\x00\x32\x9b\x04\n\x0cRadioStation\x12\x1f\n\x07Request\x12\x08.Message\x1a\x08.Message\"\x00\x12+\n\tGetStatus\x12\x0e.StatusRequest\x1a\x0c.StatusReply\"\x00\x12\"\n\x04Stop\x12\x0c.StopRequest\x1a\n.StopReply\"\x00\x12\x43\n\x0fGetChannelInfos\x12\x17.GetChannelInfosRequest\x1a\x15.GetChannelInfosReply\"\x00\x12\x37\n\x0b\x43onnectPeer\x12\x13.ConnectPeerRequest\x1a\x11.ConnectPeerReply\"\x00\x12*\n\x0bGetPeerList\x12\x0e.CommonRequest\x1a\t.PeerList\"\x00\x12(\n\rGetPeerStatus\x12\x07.PeerID\x1a\x0c.StatusReply\"\x00\x12;\n\x11\x41nnounceNewLeader\x12\x16.ComplainLeaderRequest\x1a\x0c.CommonReply\"\x00\x12\x30\n\x0eGetRandomTable\x12\x0e.CommonRequest\x1a\x0c.CommonReply\"\x00\x12)\n\tSubscribe\x12\x0c.PeerRequest\x1a\x0c.CommonReply\"\x00\x12+\n\x0bUnSubscribe\x12\x0c.PeerRequest\x1a\x0c.CommonReply\"\x00\x32/\n\x0c\x41\x64minService\x12\x1f\n\x07Request\x12\x08.Message\x1a\x08.Message\"\x00\x32,\n\tContainer\x12\x1f\n\x07Request\x12\x08.Message\x1a\x08.Message\"\x00')
 )
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
@@ -45,8 +45,8 @@ _PEERTYPE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   options=None,
-  serialized_start=2192,
-  serialized_end=2252,
+  serialized_start=2509,
+  serialized_end=2569,
 )
 _sym_db.RegisterEnumDescriptor(_PEERTYPE)
 
@@ -1286,31 +1286,59 @@ _PEERREQUEST = _descriptor.Descriptor(
 )
 
 
-_PEERID = _descriptor.Descriptor(
-  name='PeerID',
-  full_name='PeerID',
+_CONNECTPEERREQUEST = _descriptor.Descriptor(
+  name='ConnectPeerRequest',
+  full_name='ConnectPeerRequest',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='peer_id', full_name='PeerID.peer_id', index=0,
+      name='peer_id', full_name='ConnectPeerRequest.peer_id', index=0,
       number=1, type=9, cpp_type=9, label=2,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='channel', full_name='PeerID.channel', index=1,
+      name='channel', full_name='ConnectPeerRequest.channel', index=1,
       number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='group_id', full_name='PeerID.group_id', index=2,
+      name='peer_target', full_name='ConnectPeerRequest.peer_target', index=2,
       number=3, type=9, cpp_type=9, label=2,
       has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='group_id', full_name='ConnectPeerRequest.group_id', index=3,
+      number=4, type=9, cpp_type=9, label=2,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='cert', full_name='ConnectPeerRequest.cert', index=4,
+      number=5, type=12, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b(""),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='peer_order', full_name='ConnectPeerRequest.peer_order', index=5,
+      number=6, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='peer_object', full_name='ConnectPeerRequest.peer_object', index=6,
+      number=7, type=12, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b(""),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
@@ -1326,8 +1354,8 @@ _PEERID = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2038,
-  serialized_end=2098,
+  serialized_start=2039,
+  serialized_end=2187,
 )
 
 
@@ -1378,8 +1406,143 @@ _CONNECTPEERREPLY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2100,
-  serialized_end=2190,
+  serialized_start=2189,
+  serialized_end=2279,
+)
+
+
+_GETCHANNELINFOSREQUEST = _descriptor.Descriptor(
+  name='GetChannelInfosRequest',
+  full_name='GetChannelInfosRequest',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='peer_id', full_name='GetChannelInfosRequest.peer_id', index=0,
+      number=1, type=9, cpp_type=9, label=2,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='peer_target', full_name='GetChannelInfosRequest.peer_target', index=1,
+      number=2, type=9, cpp_type=9, label=2,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='group_id', full_name='GetChannelInfosRequest.group_id', index=2,
+      number=3, type=9, cpp_type=9, label=2,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='cert', full_name='GetChannelInfosRequest.cert', index=3,
+      number=4, type=12, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b(""),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto2',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=2281,
+  serialized_end=2375,
+)
+
+
+_GETCHANNELINFOSREPLY = _descriptor.Descriptor(
+  name='GetChannelInfosReply',
+  full_name='GetChannelInfosReply',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='response_code', full_name='GetChannelInfosReply.response_code', index=0,
+      number=1, type=5, cpp_type=1, label=2,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='channel_infos', full_name='GetChannelInfosReply.channel_infos', index=1,
+      number=2, type=9, cpp_type=9, label=2,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto2',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=2377,
+  serialized_end=2445,
+)
+
+
+_PEERID = _descriptor.Descriptor(
+  name='PeerID',
+  full_name='PeerID',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='peer_id', full_name='PeerID.peer_id', index=0,
+      number=1, type=9, cpp_type=9, label=2,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='channel', full_name='PeerID.channel', index=1,
+      number=2, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='group_id', full_name='PeerID.group_id', index=2,
+      number=3, type=9, cpp_type=9, label=2,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto2',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=2447,
+  serialized_end=2507,
 )
 
 _PEERREQUEST.fields_by_name['peer_type'].enum_type = _PEERTYPE
@@ -1410,8 +1573,11 @@ DESCRIPTOR.message_types_by_name['StatusReply'] = _STATUSREPLY
 DESCRIPTOR.message_types_by_name['StopRequest'] = _STOPREQUEST
 DESCRIPTOR.message_types_by_name['StopReply'] = _STOPREPLY
 DESCRIPTOR.message_types_by_name['PeerRequest'] = _PEERREQUEST
-DESCRIPTOR.message_types_by_name['PeerID'] = _PEERID
+DESCRIPTOR.message_types_by_name['ConnectPeerRequest'] = _CONNECTPEERREQUEST
 DESCRIPTOR.message_types_by_name['ConnectPeerReply'] = _CONNECTPEERREPLY
+DESCRIPTOR.message_types_by_name['GetChannelInfosRequest'] = _GETCHANNELINFOSREQUEST
+DESCRIPTOR.message_types_by_name['GetChannelInfosReply'] = _GETCHANNELINFOSREPLY
+DESCRIPTOR.message_types_by_name['PeerID'] = _PEERID
 DESCRIPTOR.enum_types_by_name['PeerType'] = _PEERTYPE
 
 Message = _reflection.GeneratedProtocolMessageType('Message', (_message.Message,), dict(
@@ -1603,12 +1769,12 @@ PeerRequest = _reflection.GeneratedProtocolMessageType('PeerRequest', (_message.
   ))
 _sym_db.RegisterMessage(PeerRequest)
 
-PeerID = _reflection.GeneratedProtocolMessageType('PeerID', (_message.Message,), dict(
-  DESCRIPTOR = _PEERID,
+ConnectPeerRequest = _reflection.GeneratedProtocolMessageType('ConnectPeerRequest', (_message.Message,), dict(
+  DESCRIPTOR = _CONNECTPEERREQUEST,
   __module__ = 'loopchain_pb2'
-  # @@protoc_insertion_point(class_scope:PeerID)
+  # @@protoc_insertion_point(class_scope:ConnectPeerRequest)
   ))
-_sym_db.RegisterMessage(PeerID)
+_sym_db.RegisterMessage(ConnectPeerRequest)
 
 ConnectPeerReply = _reflection.GeneratedProtocolMessageType('ConnectPeerReply', (_message.Message,), dict(
   DESCRIPTOR = _CONNECTPEERREPLY,
@@ -1616,6 +1782,27 @@ ConnectPeerReply = _reflection.GeneratedProtocolMessageType('ConnectPeerReply', 
   # @@protoc_insertion_point(class_scope:ConnectPeerReply)
   ))
 _sym_db.RegisterMessage(ConnectPeerReply)
+
+GetChannelInfosRequest = _reflection.GeneratedProtocolMessageType('GetChannelInfosRequest', (_message.Message,), dict(
+  DESCRIPTOR = _GETCHANNELINFOSREQUEST,
+  __module__ = 'loopchain_pb2'
+  # @@protoc_insertion_point(class_scope:GetChannelInfosRequest)
+  ))
+_sym_db.RegisterMessage(GetChannelInfosRequest)
+
+GetChannelInfosReply = _reflection.GeneratedProtocolMessageType('GetChannelInfosReply', (_message.Message,), dict(
+  DESCRIPTOR = _GETCHANNELINFOSREPLY,
+  __module__ = 'loopchain_pb2'
+  # @@protoc_insertion_point(class_scope:GetChannelInfosReply)
+  ))
+_sym_db.RegisterMessage(GetChannelInfosReply)
+
+PeerID = _reflection.GeneratedProtocolMessageType('PeerID', (_message.Message,), dict(
+  DESCRIPTOR = _PEERID,
+  __module__ = 'loopchain_pb2'
+  # @@protoc_insertion_point(class_scope:PeerID)
+  ))
+_sym_db.RegisterMessage(PeerID)
 
 
 try:
@@ -1630,7 +1817,10 @@ try:
 
   class InnerServiceStub(object):
     """########################################################################
-    Peer Service for Inner Process
+    Peer Services
+    ########################################################################
+
+    Peer Inner Service
     """
 
     def __init__(self, channel):
@@ -1698,12 +1888,13 @@ try:
 
   class InnerServiceServicer(object):
     """########################################################################
-    Peer Service for Inner Process
+    Peer Services
+    ########################################################################
+
+    Peer Inner Service
     """
 
     def Request(self, request, context):
-      """Connection
-      """
       context.set_code(grpc.StatusCode.UNIMPLEMENTED)
       context.set_details('Method not implemented!')
       raise NotImplementedError('Method not implemented!')
@@ -1823,7 +2014,7 @@ try:
 
 
   class PeerServiceStub(object):
-    """Peer Service for Outer Client or other Peer
+    """Peer Outer Service for Outer Client or other Peer
     """
 
     def __init__(self, channel):
@@ -1945,12 +2136,10 @@ try:
 
 
   class PeerServiceServicer(object):
-    """Peer Service for Outer Client or other Peer
+    """Peer Outer Service for Outer Client or other Peer
     """
 
     def Request(self, request, context):
-      """Connection
-      """
       context.set_code(grpc.StatusCode.UNIMPLEMENTED)
       context.set_details('Method not implemented!')
       raise NotImplementedError('Method not implemented!')
@@ -2195,8 +2384,11 @@ try:
 
 
   class RadioStationStub(object):
-    """#######################################################
-    RadioStation Service
+    """########################################################################
+    RadioStation Services
+    ########################################################################
+
+    RadioStation Outer Service
     """
 
     def __init__(self, channel):
@@ -2220,9 +2412,14 @@ try:
           request_serializer=StopRequest.SerializeToString,
           response_deserializer=StopReply.FromString,
           )
+      self.GetChannelInfos = channel.unary_unary(
+          '/RadioStation/GetChannelInfos',
+          request_serializer=GetChannelInfosRequest.SerializeToString,
+          response_deserializer=GetChannelInfosReply.FromString,
+          )
       self.ConnectPeer = channel.unary_unary(
           '/RadioStation/ConnectPeer',
-          request_serializer=PeerRequest.SerializeToString,
+          request_serializer=ConnectPeerRequest.SerializeToString,
           response_deserializer=ConnectPeerReply.FromString,
           )
       self.GetPeerList = channel.unary_unary(
@@ -2240,6 +2437,11 @@ try:
           request_serializer=ComplainLeaderRequest.SerializeToString,
           response_deserializer=CommonReply.FromString,
           )
+      self.GetRandomTable = channel.unary_unary(
+          '/RadioStation/GetRandomTable',
+          request_serializer=CommonRequest.SerializeToString,
+          response_deserializer=CommonReply.FromString,
+          )
       self.Subscribe = channel.unary_unary(
           '/RadioStation/Subscribe',
           request_serializer=PeerRequest.SerializeToString,
@@ -2253,8 +2455,11 @@ try:
 
 
   class RadioStationServicer(object):
-    """#######################################################
-    RadioStation Service
+    """########################################################################
+    RadioStation Services
+    ########################################################################
+
+    RadioStation Outer Service
     """
 
     def Request(self, request, context):
@@ -2272,9 +2477,14 @@ try:
       context.set_details('Method not implemented!')
       raise NotImplementedError('Method not implemented!')
 
-    def ConnectPeer(self, request, context):
+    def GetChannelInfos(self, request, context):
       """Peer 접속
       """
+      context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+      context.set_details('Method not implemented!')
+      raise NotImplementedError('Method not implemented!')
+
+    def ConnectPeer(self, request, context):
       context.set_code(grpc.StatusCode.UNIMPLEMENTED)
       context.set_details('Method not implemented!')
       raise NotImplementedError('Method not implemented!')
@@ -2290,6 +2500,11 @@ try:
       raise NotImplementedError('Method not implemented!')
 
     def AnnounceNewLeader(self, request, context):
+      context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+      context.set_details('Method not implemented!')
+      raise NotImplementedError('Method not implemented!')
+
+    def GetRandomTable(self, request, context):
       context.set_code(grpc.StatusCode.UNIMPLEMENTED)
       context.set_details('Method not implemented!')
       raise NotImplementedError('Method not implemented!')
@@ -2324,9 +2539,14 @@ try:
             request_deserializer=StopRequest.FromString,
             response_serializer=StopReply.SerializeToString,
         ),
+        'GetChannelInfos': grpc.unary_unary_rpc_method_handler(
+            servicer.GetChannelInfos,
+            request_deserializer=GetChannelInfosRequest.FromString,
+            response_serializer=GetChannelInfosReply.SerializeToString,
+        ),
         'ConnectPeer': grpc.unary_unary_rpc_method_handler(
             servicer.ConnectPeer,
-            request_deserializer=PeerRequest.FromString,
+            request_deserializer=ConnectPeerRequest.FromString,
             response_serializer=ConnectPeerReply.SerializeToString,
         ),
         'GetPeerList': grpc.unary_unary_rpc_method_handler(
@@ -2342,6 +2562,11 @@ try:
         'AnnounceNewLeader': grpc.unary_unary_rpc_method_handler(
             servicer.AnnounceNewLeader,
             request_deserializer=ComplainLeaderRequest.FromString,
+            response_serializer=CommonReply.SerializeToString,
+        ),
+        'GetRandomTable': grpc.unary_unary_rpc_method_handler(
+            servicer.GetRandomTable,
+            request_deserializer=CommonRequest.FromString,
             response_serializer=CommonReply.SerializeToString,
         ),
         'Subscribe': grpc.unary_unary_rpc_method_handler(
@@ -2360,9 +2585,51 @@ try:
     server.add_generic_rpc_handlers((generic_handler,))
 
 
+  class AdminServiceStub(object):
+    """RadioStation Inner Service for Admin
+    """
+
+    def __init__(self, channel):
+      """Constructor.
+
+      Args:
+        channel: A grpc.Channel.
+      """
+      self.Request = channel.unary_unary(
+          '/AdminService/Request',
+          request_serializer=Message.SerializeToString,
+          response_deserializer=Message.FromString,
+          )
+
+
+  class AdminServiceServicer(object):
+    """RadioStation Inner Service for Admin
+    """
+
+    def Request(self, request, context):
+      context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+      context.set_details('Method not implemented!')
+      raise NotImplementedError('Method not implemented!')
+
+
+  def add_AdminServiceServicer_to_server(servicer, server):
+    rpc_method_handlers = {
+        'Request': grpc.unary_unary_rpc_method_handler(
+            servicer.Request,
+            request_deserializer=Message.FromString,
+            response_serializer=Message.SerializeToString,
+        ),
+    }
+    generic_handler = grpc.method_handlers_generic_handler(
+        'AdminService', rpc_method_handlers)
+    server.add_generic_rpc_handlers((generic_handler,))
+
+
   class ContainerStub(object):
-    """#######################################################
+    """########################################################################
     Container Service
+    ########################################################################
+
     """
 
     def __init__(self, channel):
@@ -2379,8 +2646,10 @@ try:
 
 
   class ContainerServicer(object):
-    """#######################################################
+    """########################################################################
     Container Service
+    ########################################################################
+
     """
 
     def Request(self, request, context):
@@ -2409,11 +2678,12 @@ try:
     file not marked beta) for all further purposes. This class was generated
     only to ease transition from grpcio<0.15.0 to grpcio>=0.15.0."""
     """########################################################################
-    Peer Service for Inner Process
+    Peer Services
+    ########################################################################
+
+    Peer Inner Service
     """
     def Request(self, request, context):
-      """Connection
-      """
       context.code(beta_interfaces.StatusCode.UNIMPLEMENTED)
     def GetStatus(self, request, context):
       context.code(beta_interfaces.StatusCode.UNIMPLEMENTED)
@@ -2444,11 +2714,12 @@ try:
     file not marked beta) for all further purposes. This class was generated
     only to ease transition from grpcio<0.15.0 to grpcio>=0.15.0."""
     """########################################################################
-    Peer Service for Inner Process
+    Peer Services
+    ########################################################################
+
+    Peer Inner Service
     """
     def Request(self, request, timeout, metadata=None, with_call=False, protocol_options=None):
-      """Connection
-      """
       raise NotImplementedError()
     Request.future = None
     def GetStatus(self, request, timeout, metadata=None, with_call=False, protocol_options=None):
@@ -2587,11 +2858,9 @@ try:
     It is recommended to use the GA API (classes and functions in this
     file not marked beta) for all further purposes. This class was generated
     only to ease transition from grpcio<0.15.0 to grpcio>=0.15.0."""
-    """Peer Service for Outer Client or other Peer
+    """Peer Outer Service for Outer Client or other Peer
     """
     def Request(self, request, context):
-      """Connection
-      """
       context.code(beta_interfaces.StatusCode.UNIMPLEMENTED)
     def GetStatus(self, request, context):
       context.code(beta_interfaces.StatusCode.UNIMPLEMENTED)
@@ -2658,11 +2927,9 @@ try:
     It is recommended to use the GA API (classes and functions in this
     file not marked beta) for all further purposes. This class was generated
     only to ease transition from grpcio<0.15.0 to grpcio>=0.15.0."""
-    """Peer Service for Outer Client or other Peer
+    """Peer Outer Service for Outer Client or other Peer
     """
     def Request(self, request, timeout, metadata=None, with_call=False, protocol_options=None):
-      """Connection
-      """
       raise NotImplementedError()
     Request.future = None
     def GetStatus(self, request, timeout, metadata=None, with_call=False, protocol_options=None):
@@ -2915,8 +3182,11 @@ try:
     It is recommended to use the GA API (classes and functions in this
     file not marked beta) for all further purposes. This class was generated
     only to ease transition from grpcio<0.15.0 to grpcio>=0.15.0."""
-    """#######################################################
-    RadioStation Service
+    """########################################################################
+    RadioStation Services
+    ########################################################################
+
+    RadioStation Outer Service
     """
     def Request(self, request, context):
       context.code(beta_interfaces.StatusCode.UNIMPLEMENTED)
@@ -2924,15 +3194,19 @@ try:
       context.code(beta_interfaces.StatusCode.UNIMPLEMENTED)
     def Stop(self, request, context):
       context.code(beta_interfaces.StatusCode.UNIMPLEMENTED)
-    def ConnectPeer(self, request, context):
+    def GetChannelInfos(self, request, context):
       """Peer 접속
       """
+      context.code(beta_interfaces.StatusCode.UNIMPLEMENTED)
+    def ConnectPeer(self, request, context):
       context.code(beta_interfaces.StatusCode.UNIMPLEMENTED)
     def GetPeerList(self, request, context):
       context.code(beta_interfaces.StatusCode.UNIMPLEMENTED)
     def GetPeerStatus(self, request, context):
       context.code(beta_interfaces.StatusCode.UNIMPLEMENTED)
     def AnnounceNewLeader(self, request, context):
+      context.code(beta_interfaces.StatusCode.UNIMPLEMENTED)
+    def GetRandomTable(self, request, context):
       context.code(beta_interfaces.StatusCode.UNIMPLEMENTED)
     def Subscribe(self, request, context):
       """Subscribe 와 UnSubscribe 는 Broadcast 관련 메소드로 loopchain.proto 와 동일하게 구성되어야 한다.
@@ -2948,8 +3222,11 @@ try:
     It is recommended to use the GA API (classes and functions in this
     file not marked beta) for all further purposes. This class was generated
     only to ease transition from grpcio<0.15.0 to grpcio>=0.15.0."""
-    """#######################################################
-    RadioStation Service
+    """########################################################################
+    RadioStation Services
+    ########################################################################
+
+    RadioStation Outer Service
     """
     def Request(self, request, timeout, metadata=None, with_call=False, protocol_options=None):
       raise NotImplementedError()
@@ -2960,9 +3237,12 @@ try:
     def Stop(self, request, timeout, metadata=None, with_call=False, protocol_options=None):
       raise NotImplementedError()
     Stop.future = None
-    def ConnectPeer(self, request, timeout, metadata=None, with_call=False, protocol_options=None):
+    def GetChannelInfos(self, request, timeout, metadata=None, with_call=False, protocol_options=None):
       """Peer 접속
       """
+      raise NotImplementedError()
+    GetChannelInfos.future = None
+    def ConnectPeer(self, request, timeout, metadata=None, with_call=False, protocol_options=None):
       raise NotImplementedError()
     ConnectPeer.future = None
     def GetPeerList(self, request, timeout, metadata=None, with_call=False, protocol_options=None):
@@ -2974,6 +3254,9 @@ try:
     def AnnounceNewLeader(self, request, timeout, metadata=None, with_call=False, protocol_options=None):
       raise NotImplementedError()
     AnnounceNewLeader.future = None
+    def GetRandomTable(self, request, timeout, metadata=None, with_call=False, protocol_options=None):
+      raise NotImplementedError()
+    GetRandomTable.future = None
     def Subscribe(self, request, timeout, metadata=None, with_call=False, protocol_options=None):
       """Subscribe 와 UnSubscribe 는 Broadcast 관련 메소드로 loopchain.proto 와 동일하게 구성되어야 한다.
       """
@@ -2992,9 +3275,11 @@ try:
     generated only to ease transition from grpcio<0.15.0 to grpcio>=0.15.0"""
     request_deserializers = {
       ('RadioStation', 'AnnounceNewLeader'): ComplainLeaderRequest.FromString,
-      ('RadioStation', 'ConnectPeer'): PeerRequest.FromString,
+      ('RadioStation', 'ConnectPeer'): ConnectPeerRequest.FromString,
+      ('RadioStation', 'GetChannelInfos'): GetChannelInfosRequest.FromString,
       ('RadioStation', 'GetPeerList'): CommonRequest.FromString,
       ('RadioStation', 'GetPeerStatus'): PeerID.FromString,
+      ('RadioStation', 'GetRandomTable'): CommonRequest.FromString,
       ('RadioStation', 'GetStatus'): StatusRequest.FromString,
       ('RadioStation', 'Request'): Message.FromString,
       ('RadioStation', 'Stop'): StopRequest.FromString,
@@ -3004,8 +3289,10 @@ try:
     response_serializers = {
       ('RadioStation', 'AnnounceNewLeader'): CommonReply.SerializeToString,
       ('RadioStation', 'ConnectPeer'): ConnectPeerReply.SerializeToString,
+      ('RadioStation', 'GetChannelInfos'): GetChannelInfosReply.SerializeToString,
       ('RadioStation', 'GetPeerList'): PeerList.SerializeToString,
       ('RadioStation', 'GetPeerStatus'): StatusReply.SerializeToString,
+      ('RadioStation', 'GetRandomTable'): CommonReply.SerializeToString,
       ('RadioStation', 'GetStatus'): StatusReply.SerializeToString,
       ('RadioStation', 'Request'): Message.SerializeToString,
       ('RadioStation', 'Stop'): StopReply.SerializeToString,
@@ -3015,8 +3302,10 @@ try:
     method_implementations = {
       ('RadioStation', 'AnnounceNewLeader'): face_utilities.unary_unary_inline(servicer.AnnounceNewLeader),
       ('RadioStation', 'ConnectPeer'): face_utilities.unary_unary_inline(servicer.ConnectPeer),
+      ('RadioStation', 'GetChannelInfos'): face_utilities.unary_unary_inline(servicer.GetChannelInfos),
       ('RadioStation', 'GetPeerList'): face_utilities.unary_unary_inline(servicer.GetPeerList),
       ('RadioStation', 'GetPeerStatus'): face_utilities.unary_unary_inline(servicer.GetPeerStatus),
+      ('RadioStation', 'GetRandomTable'): face_utilities.unary_unary_inline(servicer.GetRandomTable),
       ('RadioStation', 'GetStatus'): face_utilities.unary_unary_inline(servicer.GetStatus),
       ('RadioStation', 'Request'): face_utilities.unary_unary_inline(servicer.Request),
       ('RadioStation', 'Stop'): face_utilities.unary_unary_inline(servicer.Stop),
@@ -3035,9 +3324,11 @@ try:
     generated only to ease transition from grpcio<0.15.0 to grpcio>=0.15.0"""
     request_serializers = {
       ('RadioStation', 'AnnounceNewLeader'): ComplainLeaderRequest.SerializeToString,
-      ('RadioStation', 'ConnectPeer'): PeerRequest.SerializeToString,
+      ('RadioStation', 'ConnectPeer'): ConnectPeerRequest.SerializeToString,
+      ('RadioStation', 'GetChannelInfos'): GetChannelInfosRequest.SerializeToString,
       ('RadioStation', 'GetPeerList'): CommonRequest.SerializeToString,
       ('RadioStation', 'GetPeerStatus'): PeerID.SerializeToString,
+      ('RadioStation', 'GetRandomTable'): CommonRequest.SerializeToString,
       ('RadioStation', 'GetStatus'): StatusRequest.SerializeToString,
       ('RadioStation', 'Request'): Message.SerializeToString,
       ('RadioStation', 'Stop'): StopRequest.SerializeToString,
@@ -3047,8 +3338,10 @@ try:
     response_deserializers = {
       ('RadioStation', 'AnnounceNewLeader'): CommonReply.FromString,
       ('RadioStation', 'ConnectPeer'): ConnectPeerReply.FromString,
+      ('RadioStation', 'GetChannelInfos'): GetChannelInfosReply.FromString,
       ('RadioStation', 'GetPeerList'): PeerList.FromString,
       ('RadioStation', 'GetPeerStatus'): StatusReply.FromString,
+      ('RadioStation', 'GetRandomTable'): CommonReply.FromString,
       ('RadioStation', 'GetStatus'): StatusReply.FromString,
       ('RadioStation', 'Request'): Message.FromString,
       ('RadioStation', 'Stop'): StopReply.FromString,
@@ -3058,8 +3351,10 @@ try:
     cardinalities = {
       'AnnounceNewLeader': cardinality.Cardinality.UNARY_UNARY,
       'ConnectPeer': cardinality.Cardinality.UNARY_UNARY,
+      'GetChannelInfos': cardinality.Cardinality.UNARY_UNARY,
       'GetPeerList': cardinality.Cardinality.UNARY_UNARY,
       'GetPeerStatus': cardinality.Cardinality.UNARY_UNARY,
+      'GetRandomTable': cardinality.Cardinality.UNARY_UNARY,
       'GetStatus': cardinality.Cardinality.UNARY_UNARY,
       'Request': cardinality.Cardinality.UNARY_UNARY,
       'Stop': cardinality.Cardinality.UNARY_UNARY,
@@ -3070,14 +3365,79 @@ try:
     return beta_implementations.dynamic_stub(channel, 'RadioStation', cardinalities, options=stub_options)
 
 
+  class BetaAdminServiceServicer(object):
+    """The Beta API is deprecated for 0.15.0 and later.
+
+    It is recommended to use the GA API (classes and functions in this
+    file not marked beta) for all further purposes. This class was generated
+    only to ease transition from grpcio<0.15.0 to grpcio>=0.15.0."""
+    """RadioStation Inner Service for Admin
+    """
+    def Request(self, request, context):
+      context.code(beta_interfaces.StatusCode.UNIMPLEMENTED)
+
+
+  class BetaAdminServiceStub(object):
+    """The Beta API is deprecated for 0.15.0 and later.
+
+    It is recommended to use the GA API (classes and functions in this
+    file not marked beta) for all further purposes. This class was generated
+    only to ease transition from grpcio<0.15.0 to grpcio>=0.15.0."""
+    """RadioStation Inner Service for Admin
+    """
+    def Request(self, request, timeout, metadata=None, with_call=False, protocol_options=None):
+      raise NotImplementedError()
+    Request.future = None
+
+
+  def beta_create_AdminService_server(servicer, pool=None, pool_size=None, default_timeout=None, maximum_timeout=None):
+    """The Beta API is deprecated for 0.15.0 and later.
+
+    It is recommended to use the GA API (classes and functions in this
+    file not marked beta) for all further purposes. This function was
+    generated only to ease transition from grpcio<0.15.0 to grpcio>=0.15.0"""
+    request_deserializers = {
+      ('AdminService', 'Request'): Message.FromString,
+    }
+    response_serializers = {
+      ('AdminService', 'Request'): Message.SerializeToString,
+    }
+    method_implementations = {
+      ('AdminService', 'Request'): face_utilities.unary_unary_inline(servicer.Request),
+    }
+    server_options = beta_implementations.server_options(request_deserializers=request_deserializers, response_serializers=response_serializers, thread_pool=pool, thread_pool_size=pool_size, default_timeout=default_timeout, maximum_timeout=maximum_timeout)
+    return beta_implementations.server(method_implementations, options=server_options)
+
+
+  def beta_create_AdminService_stub(channel, host=None, metadata_transformer=None, pool=None, pool_size=None):
+    """The Beta API is deprecated for 0.15.0 and later.
+
+    It is recommended to use the GA API (classes and functions in this
+    file not marked beta) for all further purposes. This function was
+    generated only to ease transition from grpcio<0.15.0 to grpcio>=0.15.0"""
+    request_serializers = {
+      ('AdminService', 'Request'): Message.SerializeToString,
+    }
+    response_deserializers = {
+      ('AdminService', 'Request'): Message.FromString,
+    }
+    cardinalities = {
+      'Request': cardinality.Cardinality.UNARY_UNARY,
+    }
+    stub_options = beta_implementations.stub_options(host=host, metadata_transformer=metadata_transformer, request_serializers=request_serializers, response_deserializers=response_deserializers, thread_pool=pool, thread_pool_size=pool_size)
+    return beta_implementations.dynamic_stub(channel, 'AdminService', cardinalities, options=stub_options)
+
+
   class BetaContainerServicer(object):
     """The Beta API is deprecated for 0.15.0 and later.
 
     It is recommended to use the GA API (classes and functions in this
     file not marked beta) for all further purposes. This class was generated
     only to ease transition from grpcio<0.15.0 to grpcio>=0.15.0."""
-    """#######################################################
+    """########################################################################
     Container Service
+    ########################################################################
+
     """
     def Request(self, request, context):
       context.code(beta_interfaces.StatusCode.UNIMPLEMENTED)
@@ -3089,8 +3449,10 @@ try:
     It is recommended to use the GA API (classes and functions in this
     file not marked beta) for all further purposes. This class was generated
     only to ease transition from grpcio<0.15.0 to grpcio>=0.15.0."""
-    """#######################################################
+    """########################################################################
     Container Service
+    ########################################################################
+
     """
     def Request(self, request, timeout, metadata=None, with_call=False, protocol_options=None):
       raise NotImplementedError()

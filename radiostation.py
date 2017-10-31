@@ -23,7 +23,6 @@ import yappi
 
 import loopchain.utils as util
 from loopchain import configure as conf
-from loopchain.baseservice import ObjectManager
 from loopchain.radiostation import RadioStationService
 
 
@@ -31,11 +30,12 @@ def main(argv):
     logging.info("RadioStation main got argv(list): " + str(argv))
 
     try:
-        opts, args = getopt.getopt(argv, "dhp:o:",
+        opts, args = getopt.getopt(argv, "dhp:o:s:",
                                    ["help",
                                     "port=",
                                     "cert=",
-                                    "configure_file_path="
+                                    "configure_file_path=",
+                                    "seed="
                                     ])
     except getopt.GetoptError as e:
         logging.error(e)
@@ -51,6 +51,7 @@ def main(argv):
     port = conf.PORT_RADIOSTATION
     cert = None
     pw = None
+    seed = None
 
     # apply option values
     for opt, arg in opts:
@@ -60,6 +61,12 @@ def main(argv):
             port = arg
         elif opt == "--cert":
             cert = arg
+        elif (opt == "-s") or (opt == "--seed"):
+            try:
+                seed = int(arg)
+            except ValueError as e:
+                util.exit_and_msg(f"seed or s opt must be int \n"
+                                  f"intput value : {arg}")
         elif (opt == "-h") or (opt == "--help"):
             usage()
             return
@@ -69,8 +76,7 @@ def main(argv):
         logging.error('RadioStation Service Port is Using '+str(port))
         return
 
-    ObjectManager().rs_service = RadioStationService(conf.IP_RADIOSTATION, cert, pw)
-    ObjectManager().rs_service.serve(port)
+    RadioStationService(conf.IP_RADIOSTATION, cert, pw, seed).serve(port)
 
 
 def usage():
@@ -80,6 +86,7 @@ def usage():
     print("-------------------------------")
     print("-p or --port : port of RadioStation Service itself")
     print("-d : Display colored log.")
+    print("-s or --seed : create random table seed for kms")
     print("--cert : certificate directory path")
 
 

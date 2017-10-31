@@ -48,6 +48,11 @@ LOG_FILE_PATH = "/var/tmp/loop_service.log"
 LOG_FORMAT = "'%(asctime)s %(levelname)s %(message)s'"
 LOG_FORMAT_DEBUG = "%(asctime)s %(process)d %(levelname)s %(message)s"
 
+MONITOR_LOG = False
+MONITOR_LOG_HOST = 'localhost'
+MONITOR_LOG_PORT = 24224
+MONITOR_LOG_MODULE = 'fluent'
+
 
 ###################
 # MULTI PROCESS ###
@@ -62,6 +67,7 @@ IP_LOCAL = '127.0.0.1'
 IP_BLOCKGENERATOR = IP_LOCAL
 IP_PEER = IP_LOCAL
 IP_RADIOSTATION = IP_LOCAL
+IP_RADIOSTATION_SUB = IP_LOCAL
 INNER_SERVER_BIND_IP = '127.0.0.1'
 DOCKER_HOST = os.getenv('DOCKER_HOST')
 LOOPCHAIN_HOST = os.getenv('LOOPCHAIN_HOST', DOCKER_HOST)
@@ -71,8 +77,10 @@ PORT_INNER_SERVICE = 0
 PORT_DIFF_INNER_SERVICE = 10000  # set inner_service_port to (peer_service_port + this value)
 PORT_BLOCKGENERATOR = 7101
 PORT_RADIOSTATION = 7102
+PORT_RADIOSTATION_SUB = 7102
 PORT_SCORE_CONTAINER = 7103
-PORT_DIFF_SCORE_CONTAINER = 10021  # peer service 가 score container 를 시작할 때 자신과 다른 포트를 사용하도록 차이를 설정한다.
+PORT_DIFF_SCORE_CONTAINER = 20021  # peer service 가 score container 를 시작할 때 자신과 다른 포트를 사용하도록 차이를 설정한다.
+PORT_DIFF_BETWEEN_SCORE_CONTAINER = 30
 PORT_DIFF_TX_CONTAINER = 10051
 PORT_DIFF_BROADCAST_CONTAINER = 10081
 MAX_WORKERS = 100
@@ -117,11 +125,11 @@ HASH_KEY_ENCODING = 'UTF-8'
 # Consensus Algorithm
 CONSENSUS_ALGORITHM = ConsensusAlgorithm.siever
 # 블럭의 최대 크기 (kbytes), gRPC 최대 메시지는 4MB (4096) 이므로 그보다 작게 설정할 것
-MAX_BLOCK_KBYTES = 4000  # default: 4000
+MAX_BLOCK_KBYTES = 3000  # default: 3000
 # 블럭의 담기는 트랜잭션의 최대 갯수, 메시지 크기를 계속 dump 로 비교하는 것은 성능에 부담이 되므로 tx 추가시에는 갯수로만 방지한다.
 # tx -> block 상황을 체크하는 것이므로 (블럭 나누기의 기준은 아니므로) 실제 블럭에는 설정값 이상의 tx 가 블럭에 담길 수 있다.
 # 실제 블럭에 담기는 tx 를 이 값으로 제어하려면 코드가 추가 되어야 한다. (이 경우 성능 저하 요인이 될 수 있다.)
-MAX_BLOCK_TX_NUM = 20000  # default: 20000
+MAX_BLOCK_TX_NUM = 10000  # default: 10000
 # 블럭이 합의 되는 투표율 1 = 100%, 0.5 = 50%
 VOTING_RATIO = 0.65
 # Block Height 를 level_db 의 key(bytes)로 변환할때 bytes size
@@ -160,6 +168,8 @@ INTERVAL_LOAD_SCORE = 1  # seconds
 SCORE_RETRY_TIMES = 3
 SCORE_QUERY_TIMEOUT = 120
 SCORE_INVOKE_TIMEOUT = 60 * 5  # seconds
+SCORE_LOAD_RETRY_TIMES = 3  # times
+SCORE_LOAD_RETRY_INTERVAL = 25.0  # seconds
 
 
 ##################
@@ -172,6 +182,8 @@ DEFAULT_SSL_CERT_PATH = 'resources/ssl_test_cert/cert.pem'
 DEFAULT_SSL_KEY_PATH = 'resources/ssl_test_cert/key.pem'
 DEFAULT_SSL_TRUST_CERT_PATH = 'resources/ssl_test_ca/cert.pem'
 REST_ADDITIONAL_TIMEOUT = 30  # seconds
+REST_PROXY_DEFAULT_PORT = 5000
+USE_GUNICORN_HA_SERVER = False   # Use high aviability gunicorn web server.
 
 
 # check default stroage path exist
@@ -189,6 +201,8 @@ CONNECTION_RETRY_TIMEOUT = 60  # seconds
 CONNECTION_RETRY_TIMEOUT_TO_RS = 60 * 5  # seconds
 CONNECTION_RETRY_TIMEOUT_TO_RS_TEST = 30  # seconds for testcase
 CONNECTION_RETRY_TIMES = 2  # times
+CONNECTION_RETRY_TIMES_TO_RS = 5  # times
+CONNECTION_TIMEOUT_TO_RS = 60 * 2  # seconds
 REQUEST_BLOCK_GENERATOR_TIMEOUT = 10  # seconds
 BLOCK_GENERATOR_BROADCAST_TIMEOUT = 5  # seconds
 WAIT_GRPC_SERVICE_START = 5  # seconds
@@ -216,8 +230,10 @@ TOKEN_INTERVAL = 10
 # If disconnected state of the peer is maintained, That peer will removed from peer list after this minutes.
 TIMEOUT_PEER_REMOVE_IN_LIST = 5  # minutes, replace by NO_RESPONSE_COUNT_ALLOW_BY_HEARTBEAT
 IS_LOAD_PEER_MANAGER_FROM_DB = False
-LOOPCHAIN_DEFAULT_CHANNEL = "channel_loopchain_default"
-LOOPCHAIN_TEST_CHANNEL = "channel_loopchain_test"
+LOOPCHAIN_DEFAULT_CHANNEL = "kofia_certificate"  # Default Channel Name
+LOOPCHAIN_TEST_CHANNEL = "kofia_fine"
+CHANNEL_MANAGE_DATA_PATH = os.path.join(LOOPCHAIN_ROOT_PATH, 'channel_manage_data.json')  # Channel Manage Data Path
+ENABLE_CHANNEL_AUTH = False  # if this option is true, peer only gets channel infos to which it belongs.
 
 
 ####################
@@ -227,13 +243,21 @@ TOKEN_TYPE_TOKEN = "00"
 TOKEN_TYPE_CERT = "01"
 TOKEN_TYPE_SIGN = "02"
 
+
 ###############
 # Signature ###
 ###############
 IS_KEY_FILE_LOAD = True
-PRIVATE_PATH = os.path.join(LOOPCHAIN_ROOT_PATH, 'resources/default_certs/key.pem')
-CERT_PATH = os.path.join(LOOPCHAIN_ROOT_PATH, 'resources/default_certs/cert.pem')
-DEFAULT_PW = None
+PRIVATE_PATH = os.path.join(LOOPCHAIN_ROOT_PATH, 'resources/default_pki/private.der')
+PUBLIC_PATH = os.path.join(LOOPCHAIN_ROOT_PATH, 'resources/default_pki/public.der')
+DEFAULT_PW = b'test'
+ENABLE_KMS = False
+RANDOM_TABLE_SIZE = 128
+RANDOM_SIZE = 128
+FIRST_SEED = 50
+SECOND_SEED = 25
+MY_SEED = 123456  # for create pki added data
+
 
 ####################
 # TimerService ###

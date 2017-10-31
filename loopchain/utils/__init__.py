@@ -16,7 +16,9 @@
 import datetime
 import importlib.machinery
 import json
+import leveldb
 import logging
+import os.path as osp
 import re
 import socket
 import time
@@ -29,18 +31,24 @@ from subprocess import PIPE, Popen, TimeoutExpired
 import coloredlogs
 import grpc
 import verboselogs
+from fluent import event
+from fluent import sender
 
 from loopchain import configure as conf
 from loopchain.protos import loopchain_pb2, message_code
 
-
 # for verbose logs
 logger = verboselogs.VerboseLogger("dev")
+apm_event = None
 
 
 def set_log_level():
     logging.basicConfig(handlers=[logging.FileHandler(conf.LOG_FILE_PATH, 'w', 'utf-8'), logging.StreamHandler()],
                         format=conf.LOG_FORMAT, level=conf.LOG_LEVEL)
+
+    # monitor setting
+    if conf.MONITOR_LOG:
+        sender.setup('loopchain', host=conf.MONITOR_LOG_HOST, port=conf.MONITOR_LOG_PORT)
 
 
 def set_colored_log_level():
@@ -48,6 +56,7 @@ def set_colored_log_level():
     coloredlogs.install(fmt=conf.LOG_FORMAT_DEBUG, datefmt="%m%d %H:%M:%S", level=verboselogs.SPAM)
     logging.basicConfig(format=conf.LOG_FORMAT_DEBUG, level=verboselogs.SPAM)
     logger = verboselogs.VerboseLogger("dev")
+
 
 # for logger color reset during test
 logger_reset = set_log_level
@@ -121,11 +130,13 @@ def change_log_color_set(is_leader=False):
     logger_reset()
 
 
-def get_stub_to_server(target, stub_class, time_out_seconds=conf.CONNECTION_RETRY_TIMEOUT, is_check_status=True):
+def get_stub_to_server(target, stub_class, time_out_seconds=None, is_check_status=True):
     """gRPC connection to server
 
     :return: stub to server
     """
+    if time_out_seconds is None:
+        time_out_seconds = conf.CONNECTION_RETRY_TIMEOUT
     stub = None
     start_time = timeit.default_timer()
     duration = timeit.default_timer() - start_time
@@ -150,7 +161,7 @@ def get_stub_to_server(target, stub_class, time_out_seconds=conf.CONNECTION_RETR
     return stub
 
 
-def request_server_in_time(stub_method, message, time_out_seconds=conf.CONNECTION_RETRY_TIMEOUT):
+def request_server_in_time(stub_method, message, time_out_seconds=None):
     """서버로 gRPC 메시지를 타임아웃 설정안에서 반복 요청한다.
 
     :param stub_method: gRPC stub.method
@@ -158,6 +169,8 @@ def request_server_in_time(stub_method, message, time_out_seconds=conf.CONNECTIO
     :param time_out_seconds: time out seconds
     :return: gRPC response
     """
+    if time_out_seconds is None:
+        time_out_seconds = conf.CONNECTION_RETRY_TIMEOUT
     start_time = timeit.default_timer()
     duration = timeit.default_timer() - start_time
 
@@ -177,7 +190,7 @@ def request_server_in_time(stub_method, message, time_out_seconds=conf.CONNECTIO
     return None
 
 
-def request_server_wait_response(stub_method, message, time_out_seconds=conf.CONNECTION_RETRY_TIMEOUT):
+def request_server_wait_response(stub_method, message, time_out_seconds=None):
     """서버로 gRPC 메시지를 타임아웃 설정안에서 응답이 올때까지 반복 요청한다.
 
     :param stub_method: gRPC stub.method
@@ -185,6 +198,9 @@ def request_server_wait_response(stub_method, message, time_out_seconds=conf.CON
     :param time_out_seconds: time out seconds
     :return: gRPC response
     """
+
+    if time_out_seconds is None:
+        time_out_seconds = conf.CONNECTION_RETRY_TIMEOUT
     start_time = timeit.default_timer()
     duration = timeit.default_timer() - start_time
 
@@ -362,4 +378,55 @@ def pretty_json(json_text, indent=4):
     return json.dumps(json.loads(json_text), indent=indent, separators=(',', ': '))
 
 
+def parse_target_list(targets: str) -> list:
+    targets_split_by_comma = targets.split(",")
+    target_list = []
+
+    for target in targets_split_by_comma:
+        target_split = target.strip().split(":")
+        target_list.append((target_split[0], int(target_split[1])))
+
+    return target_list
+
+
+def init_level_db(level_db_identity):
+    """init Level Db
+
+    :param level_db_identity: identity for leveldb
+    :return: level_db, level_db_path
+    """
+    level_db = None
+
+    db_default_path = osp.join(conf.DEFAULT_STORAGE_PATH, 'db_' + level_db_identity)
+    db_path = db_default_path
+    logger.spam(f"utils:init_level_db ({level_db_identity})")
+
+    retry_count = 0
+    while level_db is None and retry_count < conf.MAX_RETRY_CREATE_DB:
+        try:
+            level_db = leveldb.LevelDB(db_path, create_if_missing=True)
+        except leveldb.LevelDBError:
+            db_path = db_default_path + str(retry_count)
+        retry_count += 1
+
+    if level_db is None:
+        logging.error("Fail! Create LevelDB")
+        raise leveldb.LevelDBError("Fail To Create Level DB(path): " + db_path)
+
+    return level_db, db_path
+
+
+def no_send_apm_event(peer_id, event_param):
+    pass
+
+
+def send_apm_event(peer_id, event_param):
+    event.Event(peer_id, event_param)
+
+
 set_log_level()
+
+if not conf.MONITOR_LOG:
+    apm_event = no_send_apm_event
+else:
+    apm_event = send_apm_event

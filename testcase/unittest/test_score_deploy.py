@@ -52,6 +52,9 @@ class TestScoreDeploy(unittest.TestCase):
     def tearDownClass(cls):
         shutil.rmtree(cls.__deploy_path, True)
 
+    def setUp(self):
+        test_util.print_testname(self._testMethodName)
+
     @unittest.skip("git config")
     def test_global_config(self):
         # global git 설정 확인

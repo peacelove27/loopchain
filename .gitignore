@@ -188,11 +188,13 @@ resources/test_score_repository/develop/test_query_exception/deploy/
 score/loopchain/
 score/develop/dev_score/deploy
 score/develop/black_score/deploy
+score/develop/test_score/deploy
+score/develop/test_score/.git
 score/develop/certificate
-score/develop/test_score
 loopchain/configure_user.py
 run_a_test.sh
 testcase/unittest/blockchain_db*
+channel_manage_data_test.json
 
 gen_docs/_build
 gen_docs/docs

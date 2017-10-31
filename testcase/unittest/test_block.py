@@ -22,6 +22,7 @@ import unittest
 
 import loopchain.utils as util
 import testcase.unittest.test_util as test_util
+from loopchain import configure as conf
 from loopchain.baseservice import PeerInfo, PeerStatus, PeerObject, ObjectManager
 
 sys.path.append('../')
@@ -40,7 +41,7 @@ class TestBlock(unittest.TestCase):
         peer_service_mock = Mock()
         peer_service_mock.peer_manager = Mock()
         mock_info = PeerInfo(peer_id=self.__peer_id, group_id='a', target="192.0.0.1:1234", status=PeerStatus.unknown,
-                             cert=self.__peer_auth.serialized_cert, order=0)
+                             cert=self.__peer_auth.get_public_der(), order=0)
         mock_peer_object = PeerObject(mock_info)
 
         def get_leader_object():
@@ -59,7 +60,7 @@ class TestBlock(unittest.TestCase):
         genesis = Block(channel_name="test_channel")
         genesis.generate_block()
         # Block 생성
-        block = Block()
+        block = Block(channel_name=conf.LOOPCHAIN_DEFAULT_CHANNEL)
         # Transaction(s) 추가
         for x in range(0, 10):
             block.put_transaction(test_util.create_basic_tx(self.__peer_id, self.__peer_auth))
@@ -88,7 +89,7 @@ class TestBlock(unittest.TestCase):
         """
         Block 에 여러 개 transaction 들을 넣는 것을 test.
         """
-        block = Block()
+        block = Block(channel_name=conf.LOOPCHAIN_DEFAULT_CHANNEL)
         tx_list = []
         tx_size = 10
         for x in range(0, tx_size):
@@ -143,7 +144,7 @@ class TestBlock(unittest.TestCase):
         """
         block = self.__generate_block()
         test_dmp = block.serialize_block()
-        block2 = Block()
+        block2 = Block(channel_name=conf.LOOPCHAIN_DEFAULT_CHANNEL)
         block2.deserialize_block(test_dmp)
         logging.debug("serialize block hash : %s , deserialize block hash %s", block.merkle_tree_root_hash, block2.merkle_tree_root_hash)
         self.assertEqual(block.merkle_tree_root_hash, block2.merkle_tree_root_hash, "블럭이 같지 않습니다 ")

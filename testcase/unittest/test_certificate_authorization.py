@@ -28,9 +28,9 @@ from cryptography.hazmat.primitives.asymmetric import rsa, padding, ec
 
 import loopchain.utils as util
 import testcase.unittest.test_util as test_util
-from loopchain.radiostation import CertificateAuthorization
+from loopchain.peer import PeerAuthorization
+from loopchain.radiostation import CertificateAuthorization, RadioStationService
 from loopchain import configure as conf
-
 
 sys.path.append('../')
 
@@ -147,6 +147,39 @@ class TestCertificateAuthorization(unittest.TestCase):
 
         private_key = serialization.load_pem_private_key(cert_key, pw, default_backend())
         return {'cert': cert, 'private_key': private_key}
+
+    def test_load_pki_by_seed(self):
+        """ GIVEN random table conf.KMS = TRUE
+        WHEN create two PeerAuthorization
+        THEN create PeerAuthorization success
+        THEN both PeerAuthorization sign and verify can both signature
+        """
+
+        # GIVEN
+        conf.ENABLE_KMS = True
+        seed = 1234
+        rs_service = RadioStationService(rand_seed=seed)
+        rand_table = rs_service._RadioStationService__random_table
+
+        # WHEN THEN
+        peer_auth = PeerAuthorization(rand_table=rand_table)
+        peer_auth2 = PeerAuthorization(rand_table=rand_table)
+
+        # THEN
+        sign = peer_auth.sign_data(b'a')
+        sign2 = peer_auth2.sign_data(b'a')
+        # both public key must same
+        self.assertEqual(peer_auth.get_public_der(), peer_auth2.get_public_der())
+        # both peer_auth can verify signature
+        self.assertTrue(peer_auth.verify_data(b'a', sign2))
+        self.assertTrue(peer_auth2.verify_data(b'a', sign))
+
+        # if have another seed can't verify
+        conf.MY_SEED = 100
+        peer_auth3 = PeerAuthorization(rand_table=rand_table)
+        self.assertFalse(peer_auth3.verify_data(b'a', sign))
+
+        conf.ENABLE_KMS = False
 
 
 if __name__ == '__main__':

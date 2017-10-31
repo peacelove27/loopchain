@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """A module for restful API server of Radio station"""
-
+import base64
 import json
 import logging
 import pickle
@@ -20,10 +20,10 @@ import pickle
 from flask import Flask, request
 from flask_restful import reqparse, Api, Resource
 
-from components.singleton import *
 from loopchain import configure as conf
 from loopchain.baseservice import CommonThread, StubManager
 from loopchain.baseservice import PeerManager, PeerStatus
+from loopchain.components import SingletonMetaClass
 from loopchain.baseservice.ca_service import CAService
 from loopchain.protos import loopchain_pb2, loopchain_pb2_grpc, message_code
 
@@ -70,26 +70,27 @@ class ServerComponents(metaclass=SingletonMetaClass):
         self.__parser.add_argument('peer_id')
         self.__parser.add_argument('group_id')
         self.__parser.add_argument('name')
+        self.__parser.add_argument('channel')
 
     def set_resource(self):
         self.__api.add_resource(Peer, '/api/v1/peer/<string:request_type>')
         self.__api.add_resource(Configuration, '/api/v1/conf')
         self.__api.add_resource(Certificate, '/api/v1/cert/<string:request_type>/<string:certificate_type>')
 
-    def get_peer_list(self):
+    def get_peer_list(self, channel):
         return self.__stub_to_rs_service.call(
             "GetPeerList",
-            loopchain_pb2.CommonRequest(request="", group_id=conf.ALL_GROUP_ID))
+            loopchain_pb2.CommonRequest(request="", group_id=conf.ALL_GROUP_ID, channel=channel))
 
-    def get_leader_peer(self):
+    def get_leader_peer(self, channel):
         return self.__stub_to_rs_service.call(
             "Request",
-            loopchain_pb2.Message(code=message_code.Request.peer_get_leader))
+            loopchain_pb2.Message(code=message_code.Request.peer_get_leader, channel=channel))
 
-    def get_peer_status(self, peer_id, group_id):
+    def get_peer_status(self, peer_id, group_id, channel):
         return self.__stub_to_rs_service.call_in_times(
             "GetPeerStatus",
-            loopchain_pb2.PeerID(peer_id=peer_id, group_id=group_id))
+            loopchain_pb2.PeerID(peer_id=peer_id, group_id=group_id, channel=channel))
 
     def get_configuration(self, conf_info):
         return self.__stub_to_rs_service.call(
@@ -118,6 +119,15 @@ class ServerComponents(metaclass=SingletonMetaClass):
         return result
 
 
+def get_channel_name_from_args(args) -> str:
+    """ get channel name from args, if channel is None return conf.LOOPCHAIN_DEFAULT_CHANNEL
+    :param args: params
+    :return: channel name if args channel is None return conf.LOOPCHAIN_DEFAULT_CHANNEL
+    """
+
+    return conf.LOOPCHAIN_DEFAULT_CHANNEL if args.get('channel') is None else args.get('channel')
+
+
 class Peer(Resource):
     __REQUEST_TYPE = {
         'PEER_LIST': 'list',
@@ -128,9 +138,10 @@ class Peer(Resource):
 
     def get(self, request_type):
         args = ServerComponents().parser.parse_args()
-
+        channel = get_channel_name_from_args(args)
+        logging.debug(f'channel name : {channel}')
         if request_type == self.__REQUEST_TYPE['PEER_LIST']:
-            response = ServerComponents().get_peer_list()
+            response = ServerComponents().get_peer_list(channel)
 
             peer_manager = PeerManager()
             peer_list_data = pickle.loads(response.peer_list)
@@ -169,7 +180,7 @@ class Peer(Resource):
             result['data'] = json_data
             
         elif request_type == self.__REQUEST_TYPE['PEER_STATUS_LIST']:
-            response = ServerComponents().get_peer_list()
+            response = ServerComponents().get_peer_list(channel)
 
             peer_manager = PeerManager()
             peer_list_data = pickle.loads(response.peer_list)
@@ -178,7 +189,7 @@ class Peer(Resource):
             all_peer_list = []
 
             for peer_id in peer_manager. peer_list[conf.ALL_GROUP_ID]:
-                response = ServerComponents().get_peer_status(peer_id, conf.ALL_GROUP_ID)
+                response = ServerComponents().get_peer_status(peer_id, conf.ALL_GROUP_ID, channel)
                 if response is not None and response.status != "":
                     peer_each = peer_manager.peer_list[conf.ALL_GROUP_ID][peer_id]
                     status_json = json.loads(response.status)
@@ -195,7 +206,7 @@ class Peer(Resource):
             result['data'] = json_data
 
         elif request_type == self.__REQUEST_TYPE['LEADER_PEER']:
-            response = ServerComponents().get_leader_peer()
+            response = ServerComponents().get_leader_peer(channel)
 
             result = json.loads('{}')
             result['response_code'] = response.code
@@ -213,7 +224,7 @@ class Peer(Resource):
                 return self.__abort_if_arg_isnt_enough('peer_id, group_id')
 
             # logging.debug(f"try get_peer_status peer_id({peer_id}), group_id({group_id})")
-            response = ServerComponents().get_peer_status(args['peer_id'], args['group_id'])
+            response = ServerComponents().get_peer_status(args['peer_id'], args['group_id'], channel)
             result = json.loads(response.status)
 
         else:
@@ -227,7 +238,7 @@ class Peer(Resource):
         json_data['peer_id'] = peer.peer_id
         json_data['group_id'] = peer.group_id
         json_data['target'] = peer.target
-        json_data['cert'] = peer.cert.decode("utf-8")
+        json_data['cert'] = base64.b64encode(peer.cert).decode("utf-8")
         json_data['status_update_time'] = str(peer.status_update_time)
         json_data['status'] = peer.status
 

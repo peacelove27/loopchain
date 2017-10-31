@@ -13,10 +13,11 @@
 # limitations under the License.
 """A management class for blockchain."""
 
-import os.path as osp
 import queue
 import shutil
 import uuid
+
+import grpc
 
 from loopchain.baseservice import CommonThread, ObjectManager, Timer
 from loopchain.blockchain import *
@@ -25,6 +26,7 @@ from loopchain.peer.consensus_default import ConsensusDefault
 from loopchain.peer.consensus_lft import ConsensusLFT
 from loopchain.peer.consensus_none import ConsensusNone
 from loopchain.peer.consensus_siever import ConsensusSiever
+from loopchain.protos import loopchain_pb2_grpc
 
 import loopchain_pb2
 
@@ -39,11 +41,12 @@ class BlockManager(CommonThread):
         self.__channel_name = channel_name
         self.__level_db = None
         self.__level_db_path = ""
-        self.__init_level_db(f"{level_db_identity}_{channel_name}")
-        self.__peer_id = peer_id if peer_id is not None else self.__make_peer_id()
+        self.__level_db, self.__level_db_path = util.init_level_db(f"{level_db_identity}_{channel_name}")
         self.__txQueue = queue.Queue()
         self.__unconfirmedBlockQueue = queue.Queue()
-        self.__candidate_blocks = CandidateBlocks(self.__peer_id, channel_name)
+        self.__candidate_blocks = None
+        if ObjectManager().peer_service is not None:
+            self.__candidate_blocks = CandidateBlocks(ObjectManager().peer_service.peer_id, channel_name)
         self.__common_service = common_service
         self.__blockchain = BlockChain(self.__level_db, channel_name)
         self.__total_tx = self.__blockchain.rebuild_blocks()
@@ -51,6 +54,7 @@ class BlockManager(CommonThread):
         self.__block_type = BlockType.general
         self.__consensus = None
         self.__run_logic = None
+        self.__block_height_sync_lock = False
         self.set_peer_type(loopchain_pb2.PEER)
 
     @property
@@ -72,54 +76,6 @@ class BlockManager(CommonThread):
     @block_type.setter
     def block_type(self, block_type):
         self.__block_type = block_type
-
-    def __init_level_db(self, level_db_identity):
-        """init Level Db
-
-        :param level_db_identity: identity for leveldb
-        :return:
-        """
-        level_db = None
-
-        db_default_path = osp.join(conf.DEFAULT_STORAGE_PATH, 'db_' + level_db_identity)
-        db_path = db_default_path
-
-        retry_count = 0
-        while level_db is None and retry_count < conf.MAX_RETRY_CREATE_DB:
-            try:
-                level_db = leveldb.LevelDB(db_path, create_if_missing=True)
-            except leveldb.LevelDBError:
-                db_path = db_default_path + str(retry_count)
-            retry_count += 1
-
-        if level_db is None:
-            logging.error("Fail! Create LevelDB")
-            raise leveldb.LevelDBError("Fail To Create Level DB(path): " + db_path)
-
-        self.__level_db = level_db
-        self.__level_db_path = db_path
-
-    def __make_peer_id(self):
-        """네트워크에서 Peer 를 식별하기 위한 UUID를 level db 에 생성한다.
-        """
-        if self.__channel_name != conf.LOOPCHAIN_DEFAULT_CHANNEL:
-            util.exit_and_msg(f"Only default channel can make peer id!")
-
-        try:
-            uuid_bytes = bytes(self.__level_db.Get(conf.LEVEL_DB_KEY_FOR_PEER_ID))
-            peer_id = uuid.UUID(bytes=uuid_bytes)
-        except KeyError:  # It's first Run
-            peer_id = None
-
-        if peer_id is None:
-            peer_id = uuid.uuid1()
-            logging.info("make new peer_id: " + str(peer_id))
-            self.__level_db.Put(conf.LEVEL_DB_KEY_FOR_PEER_ID, peer_id.bytes)
-
-        return str(peer_id)
-
-    def get_peer_id(self):
-        return self.__peer_id
 
     def get_level_db(self):
         return self.__level_db
@@ -253,7 +209,7 @@ class BlockManager(CommonThread):
             self.__total_tx += self.__blockchain.confirm_block(block_hash)
         except BlockchainError as e:
             logging.warning("BlockchainError, retry block_height_sync")
-            ObjectManager().peer_service.block_height_sync()
+            self.block_height_sync()
 
     def add_unconfirmed_block(self, unconfirmed_block):
         # siever 인 경우 블럭에 담긴 투표 결과를 이전 블럭에 반영한다.
@@ -297,6 +253,138 @@ class BlockManager(CommonThread):
         self.__total_tx += block.confirmed_transaction_list.__len__()
         self.__blockchain.add_block(block)
 
+    def block_height_sync(self, target_peer_stub=None):
+        """block height sync with other peers
+        """
+
+        if self.__block_height_sync_lock is True:
+            # ***** 이 보정 프로세스는 AnnounceConfirmBlock 메시지를 받았을때 블럭 Height 차이로 Peer 가 처리하지 못한 경우에도 진행한다.
+            # 따라서 이미 sync 가 진행 중일때의 요청은 무시한다.
+            logging.warning("block height sync is already running...")
+            return
+
+        peer_target = ObjectManager().peer_service.peer_target
+        peer_manager = ObjectManager().peer_service.channel_manager.get_peer_manager(self.__channel_name)
+        block_manager = ObjectManager().peer_service.channel_manager.get_block_manager(self.__channel_name)
+
+        self.__block_height_sync_lock = True
+        if target_peer_stub is None:
+            target_peer_stub = peer_manager.get_leader_stub_manager()
+
+        ### Block Height 보정 작업, Peer의 데이타 동기화 Process ###
+        ### Love&Hate Algorithm ###
+        logging.info("try block height sync...with love&hate")
+
+        # Make Peer Stub List [peer_stub, ...] and get max_height of network
+        max_height = 0
+        peer_stubs = []
+        target_list = list(peer_manager.get_IP_of_peers_in_group())
+        for peer_target_each in target_list:
+            target = ":".join(peer_target_each.split(":")[1:])
+            if target != peer_target:
+                logging.debug(f"try to target({target})")
+                channel = grpc.insecure_channel(target)
+                stub = loopchain_pb2_grpc.PeerServiceStub(channel)
+                try:
+                    response = stub.GetStatus(loopchain_pb2.StatusRequest(
+                        request="",
+                        channel=self.__channel_name
+                    ))
+                    if response.block_height > max_height:
+                        # Add peer as higher than this
+                        max_height = response.block_height
+                        peer_stubs.append(stub)
+                except Exception as e:
+                    logging.warning("Already bad.... I don't love you" + str(e))
+
+        if len(peer_stubs) == 0:
+            util.logger.warning(f"peer_service:block_height_sync there is no other peer to height sync!")
+            self.__block_height_sync_lock = False
+            return
+
+        my_height = block_manager.get_blockchain().block_height
+
+        if max_height > my_height:  # 자기가 가장 높은 블럭일때 처리 필요 TODO
+            logging.info(f"You need block height sync to: {max_height} yours: {my_height}")
+            # 자기(현재 Peer)와 다르면 Peer 목록을 순회하며 마지막 block 에서 자기 Height Block 까지 역순으로 요청한다.
+            # (blockchain 의 block 탐색 로직 때문에 height 순으로 조회는 비효율적이다.)
+
+            preload_blocks = {}  # height : block dictionary
+
+            # Target Peer 의 마지막 block hash 부터 시작한다.
+            response = target_peer_stub.call(
+                "GetLastBlockHash",
+                loopchain_pb2.StatusRequest(request="", channel=self.__channel_name)
+            )
+            logging.debug(response)
+            request_hash = response.block_hash
+
+            max_try = max_height - my_height
+            while block_manager.get_blockchain().last_block.block_hash \
+                    != request_hash and max_try > 0:
+
+                for peer_stub in peer_stubs:
+                    response = None
+                    try:
+                        # 이때 요청 받은 Peer 는 해당 Block 과 함께 자신의 현재 Height 를 같이 보내준다.
+                        # TODO target peer 의 마지막 block 보다 높은 Peer 가 있으면 현재 target height 까지 완료 후
+                        # TODO Height Sync 를 다시 한다.
+                        response = peer_stub.BlockSync(loopchain_pb2.BlockSyncRequest(
+                            block_hash=request_hash,
+                            channel=self.__channel_name
+                        ), conf.GRPC_TIMEOUT)
+                    except Exception as e:
+                        logging.warning("There is a bad peer, I hate you: " + str(e))
+
+                    if response is not None and response.response_code == message_code.Response.success:
+                        util.logger.spam(f"response block_height({response.block_height})")
+                        dump = response.block
+                        block = pickle.loads(dump)
+
+                        # 마지막 블럭에서 역순으로 블럭을 구한다.
+                        request_hash = block.prev_block_hash
+
+                        # add block to preload_blocks
+                        logging.debug("Add preload_blocks Height: " + str(block.height))
+                        preload_blocks[block.height] = block
+
+                        if response.max_block_height > max_height:
+                            max_height = response.max_block_height
+
+                        if (my_height + 1) == block.height:
+                            max_try = 0  # 더이상 요청을 진행하지 않는다.
+                            logging.info("Block Height Sync Complete.")
+                            break
+                        max_try -= 1
+                    else:
+                        # 이 반복 요청중 응답 하지 않은 Peer 는 반복중에 다시 요청하지 않는다.
+                        # (TODO: 향후 Bad에 대한 리포트 전략은 별도로 작업한다.)
+                        peer_stubs.remove(peer_stub)
+                        logging.warning("Make this peer to bad (error above or no response): " + str(peer_stub))
+
+            if preload_blocks.__len__() > 0:
+                while my_height < max_height:
+                    add_height = my_height + 1
+                    logging.debug("try add block height: " + str(add_height))
+                    try:
+                        block_manager.add_block(preload_blocks[add_height])
+                        my_height = add_height
+                    except KeyError as e:
+                        logging.error("fail block height sync: " + str(e))
+                        break
+                    except exception.BlockError as e:
+                        logging.error("Block Error Clear all block and restart peer.")
+                        block_manager.clear_all_blocks()
+                        util.exit_and_msg("Block Error Clear all block and restart peer.")
+
+            if my_height < max_height:
+                # block height sync 가 완료되지 않았으면 다시 시도한다.
+                logging.warning("fail block height sync in one time... try again...")
+                self.__block_height_sync_lock = False
+                self.block_height_sync(target_peer_stub)
+
+        self.__block_height_sync_lock = False
+
     def run(self):
         """Block Manager Thread Loop
         PEER 의 type 에 따라 Block Generator 또는 Peer 로 동작한다.
@@ -305,7 +393,7 @@ class BlockManager(CommonThread):
 
         logging.info(f"channel({self.__channel_name}) Block Manager thread Start.")
 
-        while self.is_run:
+        while self.is_run():
             self.__run_logic()
 
         logging.info(f"channel({self.__channel_name}) Block Manager thread Ended.")
@@ -347,7 +435,7 @@ class BlockManager(CommonThread):
                 elif reason == "block_height":
                     # Announce 되는 블럭과 자신의 height 가 다르면 Block Height Sync 를 다시 시도한다.
 
-                    ObjectManager().peer_service.block_height_sync()
+                    self.block_height_sync()
 
             self.__common_service.vote_unconfirmed_block(
                 unconfirmed_block.block_hash, block_is_validated, self.__channel_name)

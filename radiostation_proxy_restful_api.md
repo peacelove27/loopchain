@@ -1,4 +1,4 @@
-### GET /api/v1/peer/list
+### GET /api/v1/peer/list?channel={channel_name}
 Radio Station에 등록/연결 된 Peer 정보를 가져옴
 #### Response Body
 ```json
@@ -43,7 +43,7 @@ Radio Station에 등록/연결 된 Peer 정보를 가져옴
 ```
 
 
-### GET /api/v1/peer/leader
+### GET /api/v1/peer/leader?channel={channel_name}
 Leader Peer의 정보를 가져옴
 #### Response Body
 ```json
@@ -63,7 +63,7 @@ Leader Peer의 정보를 가져옴
 ```
 
 
-### GET /api/v1/peer/status?peer_id={Peer의 ID}&group_id={Peer의 group ID}
+### GET /api/v1/peer/status?peer_id={Peer의 ID}&group_id={Peer의 group ID}&channel={channel_name}
 Parameter로 전달한 target 정보와 일치하는 Peer의 상태 정보를 가져옴
 #### Response Body
 ```json

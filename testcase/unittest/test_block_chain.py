@@ -23,6 +23,7 @@ import unittest
 
 import loopchain.utils as util
 import testcase.unittest.test_util as test_util
+from loopchain import configure as conf
 from loopchain.blockchain import Block
 from loopchain.blockchain import BlockChain, BlockStatus
 from loopchain.protos import message_code
@@ -45,7 +46,6 @@ class TestBlockChain(unittest.TestCase):
         test_util.print_testname(self._testMethodName)
         self.__peer_auth = test_util.create_peer_auth()
 
-
     def tearDown(self):
         # Blockchain을 삭제
         leveldb.DestroyDB(self.db_name)
@@ -56,7 +56,7 @@ class TestBlockChain(unittest.TestCase):
         :return: 임시 블럭
         """
 
-        block = Block()
+        block = Block(channel_name=conf.LOOPCHAIN_DEFAULT_CHANNEL)
         for x in range(0, 10):
             tx = test_util.create_basic_tx(self.__peer_id, self.__peer_auth)
             self.assertNotEqual(tx.tx_hash, "", "트랜잭션 생성 실패")
@@ -158,7 +158,7 @@ class TestBlockChain(unittest.TestCase):
 
     def __add_single_tx_block_blockchain_return_tx(self):
         last_block = self.chain.last_block
-        block = Block()
+        block = Block(channel_name=conf.LOOPCHAIN_DEFAULT_CHANNEL)
         tx = test_util.create_basic_tx(self.__peer_id, self.__peer_auth)
         block.put_transaction(tx)
 

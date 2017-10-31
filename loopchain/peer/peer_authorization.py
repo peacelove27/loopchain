@@ -22,18 +22,12 @@ from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import rsa, padding, ec, utils
 
 import loopchain.utils as util
-from loopchain.tools import CertVerifier
+from loopchain.tools import PublicVerifier
+from loopchain import configure as conf
 
 
-class PeerAuthorization(CertVerifier):
+class PeerAuthorization(PublicVerifier):
     """ Peer의 인증을 처리한다 """
-    # 인증서/개인키 파일명
-    CERT_FILE = "cert.pem"
-    PRI_FILE = "key.pem"
-
-    # Peer 보관 CA 인증서 파일명
-    PEER_CA_CERT_NAME = "ca.der"
-
     __peer_pri = None
     __ca_cert = None
     __token = None
@@ -41,14 +35,25 @@ class PeerAuthorization(CertVerifier):
     # RequestPeer 요청 생성 시 저장 정보
     __peer_info = None
 
-    def __init__(self, cert_file, pri_file, cert_pass):
-        logging.debug(f"cert file : {cert_file}")
-        logging.debug(f"private file : {pri_file}")
-        with open(cert_file, "rb") as der:
-            cert_bytes = der.read()
-            super().__init__(cert_bytes)
+    def __init__(self, public_file="", pri_file="", cert_pass="", rand_table=None):
 
-        self.__load_private(pri_file, cert_pass)
+        try:
+            if conf.ENABLE_KMS:
+                self.__peer_pri = self.__key_derivation(rand_table)
+                super().__init__(self.__peer_pri.public_key())
+
+            else:
+                logging.debug(f"public file : {public_file}")
+                logging.debug(f"private file : {pri_file}")
+
+                with open(public_file, "rb") as der:
+                    public_bytes = der.read()
+                    super().__init__(public_bytes)
+
+                self.__load_private(pri_file, cert_pass)
+
+        except Exception as e:
+            util.exit_and_msg(f"key load fail cause : {e}")
 
     def __load_private(self, pri_file, cert_pass):
         """인증서 로드
@@ -57,22 +62,14 @@ class PeerAuthorization(CertVerifier):
         :param cert_pass: 개인키 패스워드
         :return:
         """
-        # TODO KMS 정책 정해지면 살리기
-        # ca_cert_file = join(cert_path, self.PEER_CA_CERT_NAME)
-
         # 인증서/개인키 로드
         with open(pri_file, "rb") as der:
             private_bytes = der.read()
             try:
-                self.__peer_pri = serialization.load_pem_private_key(private_bytes, cert_pass, default_backend())
-            except ValueError:
+                self.__peer_pri = serialization.load_der_private_key(private_bytes, cert_pass, default_backend())
+            except ValueError as e:
+                logging.exception(f"error {e}")
                 util.exit_and_msg("Invalid Password")
-
-        # TODO KMS 정책 정해지면 살리기
-        # CA 인증서 로드
-        # with open(ca_cert_file, "rb") as der:
-        #     cert_bytes = der.read()
-        #     self.__ca_cert = x509.load_pem_x509_certificate(cert_bytes, default_backend())
 
         # 키 쌍 검증
         sign = self.sign_data(b'TEST')
@@ -143,3 +140,14 @@ class PeerAuthorization(CertVerifier):
             return bytes.fromhex(token_time)
 
         return None
+
+    @staticmethod
+    def __key_derivation(rand_table):
+        """ key derivation using rand_table and conf.FIRST_SEED conf.SECOND_SEED
+
+        :param rand_table:
+        :return: private_key
+        """
+
+        hash_value = rand_table[conf.FIRST_SEED] + rand_table[conf.SECOND_SEED] + conf.MY_SEED
+        return ec.derive_private_key(hash_value, ec.SECP256K1(), default_backend())

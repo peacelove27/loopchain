@@ -1,0 +1,30 @@
+{
+  "kofia_certificate": {
+    "score_package": "loopchain/default",
+    "peers": [
+      {
+        "peer_target": "111.123.123:7101"
+      },
+      {
+        "peer_target": "222.123.123:7102"
+      },
+      {
+        "peer_target": "333.123.123:7103"
+      }
+    ]
+  },
+  "kofia_fine": {
+    "score_package": "loopchain/default",
+    "peers": [
+      {
+        "peer_target": "111.123.123:7101"
+      },
+      {
+        "peer_target": "222.123.123:7102"
+      },
+      {
+        "peer_target": "333.123.123:7103"
+      }
+    ]
+  }
+}

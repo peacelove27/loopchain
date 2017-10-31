@@ -35,7 +35,7 @@ class TestVote(unittest.TestCase):
     def setUp(self):
         test_util.print_testname(self._testMethodName)
         if self.__cert is None:
-            with open(conf.CERT_PATH, "rb") as der:
+            with open(conf.PUBLIC_PATH, "rb") as der:
                 cert_byte = der.read()
                 self.__cert = cert_byte
 

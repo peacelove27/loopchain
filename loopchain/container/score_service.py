@@ -17,6 +17,8 @@ import logging
 import grpc
 import json
 import pickle
+
+import loopchain.utils as util
 from loopchain.baseservice import ObjectManager, PeerScore
 from loopchain.blockchain import Transaction, ScoreInvokeError
 from loopchain.container import Container
@@ -131,13 +133,17 @@ class ScoreService(Container, loopchain_pb2_grpc.ContainerServicer):
         return loopchain_pb2.Message(code=message_code.Response.success)
 
     def __handler_score_load(self, request, context):
-        logging.debug("ScoreService handler load...")
+        logging.debug(f"ScoreService Score Load Request : {request}")
         try:
             params = json.loads(request.meta)
             self.__peer_id = params[message_code.MetaParams.ScoreLoad.peer_id]
+
+            util.logger.spam(f"score_service:__handler_score_load try init PeerScore")
             self.__score = PeerScore(params[message_code.MetaParams.ScoreLoad.repository_path],
                                      params[message_code.MetaParams.ScoreLoad.score_package],
                                      params[message_code.MetaParams.ScoreLoad.base])
+            util.logger.spam(f"score_service:__handler_score_load after init PeerScore")
+
             score_info = dict()
             score_info[message_code.MetaParams.ScoreInfo.score_id] = self.__score.id()
             score_info[message_code.MetaParams.ScoreInfo.score_version] = self.__score.version()
@@ -145,7 +151,7 @@ class ScoreService(Container, loopchain_pb2_grpc.ContainerServicer):
             return loopchain_pb2.Message(code=message_code.Response.success, meta=meta)
 
         except Exception as e:
-            logging.error('__handler_score_load SCORE LOAD IS FAIL %s', str(e))
+            logging.exception(f"score_service:__handler_score_load SCORE LOAD IS FAIL params({params}) error({e})")
             return loopchain_pb2.Message(code=message_code.Response.fail, message=str(e))
 
     def __handler_score_invoke(self, request, context):
@@ -185,12 +191,18 @@ class ScoreService(Container, loopchain_pb2_grpc.ContainerServicer):
 
                     # if score raise exception result to fail and put error message
                     except Exception as e:
-                        logging.error("tx %s score invoke is fail!! : %s ", str(tx_hash), e)
+                        logging.exception("tx %s score invoke is fail!! : %s ", str(tx_hash), e)
                         results[tx_hash][code_key] = ScoreResponse.EXCEPTION
                         results[tx_hash][error_message_key] = str(e)
                         continue
 
             # logging.debug('results : %s', str(results))
+            util.apm_event(self.__peer_id, {
+                'event_type': 'InvokeResult',
+                'peer_id': self.__peer_id,
+                'data': {'invoke_result': invoke_result}})
+
+
             meta = json.dumps(results)
             return loopchain_pb2.Message(code=message_code.Response.success, meta=meta)
 
@@ -220,8 +232,6 @@ class ScoreService(Container, loopchain_pb2_grpc.ContainerServicer):
         return loopchain_pb2.Message(code=message_code.Response.success)
 
     def Request(self, request, context):
-        # logging.debug("ScoreService got request: " + str(request))
-
         if request.code in self.__handler_map.keys():
             return self.__handler_map[request.code](request, context)
 

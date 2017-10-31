@@ -99,7 +99,7 @@ class Transaction:
         """
         self.__meta[key] = value
 
-    def init_meta(self, peer_id, score_id, score_ver, channel_name: str=conf.LOOPCHAIN_DEFAULT_CHANNEL):
+    def init_meta(self, peer_id, score_id, score_ver, channel_name: str):
         """Tx 의 meta 정보 중 Peer 에 의해서 초기화되는 부분을 집약하였댜.
         tx 의 put_data 발생시 tx 의 hash 를 생성하게 되며 이때 meta 정보를 hash 계산에 사용하게 되므로
         meta 정보의 구성은 put_data 이전에 완료하거나 혹은 put_data 후에 meta 정보를 추가하게 된다면

@@ -1,39 +1,8 @@
 
-Peer proxy RESTful API 
-------
+Peer RESTful API
+----------------
 
-
-### GET /api/v1/transactions?hash={찾으려는 트랜잭션 해시}
-트랜잭션 해시로 블록체인에 저장된 데이터를 가져옴 
-
-#### Response Body
-```json
-{
-    "response_code" : "int : RES_CODE",
-    "data" : "트랜잭션 생성시 보낸 데이터",
-    "meta" : {
-        "peer_id" : "트랜잭션을 생성한 피어 아이디",
-        "score_id" : "실행한 SCORE id",
-        "score_version" : "실행한 SCORE version"
-    },
-    "more_info" : "추가 정보"
-}
-```
-
-### GET /api/v1/transactions/result?hash={찾으려는 트랜잭션 해시}
-Score 실행 결과를 Transaction Hash를 통해 가져옴
-#### Response Body
-```json
-{
-    "response_code" : "int : RES_CODE",
-    "result" : {
-        "code" : "int : 0 성공 -1 실패 -11 블록에 추가되지 않음",
-        "error_message" : "실패시 실패 메시지" 
-    }
-}
-```
-
-### GET /api/v1/status/peer
+### GET /api/v1/status/peer?channel={channel name}
 loopchain의 현재 상태를 가져옴(block height, total tx등)
 #### Response Body
 ```json
@@ -46,7 +15,7 @@ loopchain의 현재 상태를 가져옴(block height, total tx등)
 }
 ```
 
-### GET /api/v1/status/score
+### GET /api/v1/status/score?channel={channel name} 
 loopchain의 SCORE 상태를 가져옴 (Score version , 배포된 버젼, 스코어 아이디)
 #### Response Body
 ```json
@@ -98,11 +67,11 @@ Ex)
 POST /api/v1/query
 {
     "jsonrpc": "2.0",
-    "method": "get_bid",
+    "channel": "channel_name",
+    "method": "get_name",
     "id": "test_query",
     "params": {
-        "name": "1",
-        "identity": "2"
+        "id": "1",
     }
 }
 ```
@@ -111,7 +80,7 @@ POST /api/v1/query
 
 #### Response Body
 * Content-Type : application/json
-* response_cpde : TO-DO
+* response_code :
 * Request-body : Raw 데이터로써, JSON형태의 데이터
    * jsonrpc : 반드시 2.0으로 설정.
    * code    : SCORE안에서 실행한 결과. 
@@ -126,7 +95,7 @@ Ex)
         "jsonrpc": "2.0",
         "code": 0,
         "response": {
-            "bid": "a1HUMd9dfxQcvs7M957fPdhhw7QGnwsRZho+76y7qRg="
+            "name": "godong"
         },
         "id": "test_query"
     }
@@ -134,7 +103,7 @@ Ex)
 ```
 
 
-### GET /api/v1/transactions?hash={찾으려는 트랜잭션 해시}
+### GET /api/v1/transactions?hash={찾으려는 트랜잭션 해시}&channel={channel_name}
 트랜잭션 해시로 블록체인에 저장된 데이터를 가져옴
 
 #### Response Body
@@ -151,7 +120,7 @@ Ex)
 }
 ```
 
-### GET /api/v1/transactions/result?hash={찾으려는 트랜잭션 해시}
+### GET /api/v1/transactions/result?hash={찾으려는 트랜잭션 해시}&channel={channel_name}
 Score 실행 결과를 Transaction Hash를 통해 가져옴
 
 #### Response Body
@@ -166,7 +135,7 @@ Score 실행 결과를 Transaction Hash를 통해 가져옴
 ```
 
 
-### POST /api/v1/transactions
+###  /api/v1/transactions
 트랜잭션을 생성하여 SCORE를 실행
 
 #### Request BODY
@@ -175,7 +144,8 @@ Score 실행 결과를 Transaction Hash를 통해 가져옴
 
 ```json
 {
-    "jsonrpc": "2.0",      
+    "jsonrpc": "2.0",
+    "channel": "channel_name",
     "method": "get_bid",   # SCORE안에 호출할 Function 이름 
     "id": "test_query",    # 비동기 응답시 이용할 예정. 현재는 사용 안함.
     "params": {            # JSON으로 구성된 SCORE안에 호출할 Function의 parameters.
@@ -198,10 +168,7 @@ Score 실행 결과를 Transaction Hash를 통해 가져옴
 }
 ```
 
-
-
-
-### GET /api/v1/blocks
+### GET /api/v1/blocks?channel={channel name}
 마지막 블록의 hash 데이터를 가져온다.
 #### Response Body
 ```json
@@ -211,7 +178,7 @@ Score 실행 결과를 Transaction Hash를 통해 가져옴
     "block_data_json" : "block_data_json"
 }
 ```
-### GET  /api/v1/blocks?hash={찾으려는 블록 해시}
+### GET  /api/v1/blocks?channel={channel name}&hash={찾으려는 블록 해시}
 블록 해시에 알맞은 블록에서 헤더 데이터로 filter에 있는 데이터를 가져오고 txFilter에 있는 데이터를 트랜잭션 데이터에 추가하여 블록데이터를 가져온다 .
 
 #### Response Body

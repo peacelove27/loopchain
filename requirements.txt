@@ -8,10 +8,10 @@ cryptography == 1.8.1
 PyJWT
 pyopenssl
 yappi
-Sphinx
-sphinx_rtd_theme == 0.1.9
 GitPython >= 2.1.1
-tox
 Flask
 Flask-RESTful
 requests
+fluent-logger >= 0.5.0
+gunicorn
+

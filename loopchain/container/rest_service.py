@@ -13,10 +13,13 @@
 # limitations under the License.
 """REST Service for Peer"""
 
+from loopchain import configure as conf
 from loopchain.container import ServerType, Container
 
 
 class RestService(Container):
-    def __init__(self, port):
-        Container.__init__(self, port, ServerType.REST_PEER)
+    def __init__(self, port, peer_ip=None):
+        if peer_ip is None:
+            peer_ip = conf.IP_LOCAL
+        Container.__init__(self, port, ServerType.REST_PEER, peer_ip)
         self.start()  # Container Runs RestServer.start()

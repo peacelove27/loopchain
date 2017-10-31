@@ -89,8 +89,9 @@ class InnerService(loopchain_pb2_grpc.InnerServiceServicer):
         """
         logging.debug("Peer GetScoreStatus request : %s", request)
         score_status = json.loads("{}")
+        channel_name = conf.LOOPCHAIN_DEFAULT_CHANNEL if request.channel == '' else request.channel
         try:
-            score_status_response = self.peer_service.stub_to_score_service.call(
+            score_status_response = self.peer_service.channel_manager.get_score_container_stub(channel_name).call(
                 "Request",
                 loopchain_pb2.Message(code=message_code.Request.status)
             )
@@ -117,10 +118,7 @@ class InnerService(loopchain_pb2_grpc.InnerServiceServicer):
             logging.info('Peer will stop... by: ' + request.reason)
 
         try:
-            response = self.peer_service.stub_to_score_service.call(
-                "Request",
-                loopchain_pb2.Message(code=message_code.Request.stop)
-            )
+            response = self.peer_service.channel_manager.stop_score_containers()
             logging.debug("try stop score container: " + str(response))
         except Exception as e:
             logging.debug("Score Service Already stop by other reason. %s", e)
@@ -217,12 +215,13 @@ class InnerService(loopchain_pb2_grpc.InnerServiceServicer):
         if util.check_is_json_string(request.params):
             logging.debug(f'Query request with {request.params}')
             try:
-                response_from_score_service = self.peer_service.stub_to_score_service.call(
-                    method_name="Request",
-                    message=loopchain_pb2.Message(code=message_code.Request.score_query, meta=request.params),
-                    timeout=conf.SCORE_QUERY_TIMEOUT,
-                    is_raise=True
-                )
+                response_from_score_service = \
+                    self.peer_service.channel_manager.get_score_container_stub(request.channel).call(
+                        method_name="Request",
+                        message=loopchain_pb2.Message(code=message_code.Request.score_query, meta=request.params),
+                        timeout=conf.SCORE_QUERY_TIMEOUT,
+                        is_raise=True
+                    )
                 response = response_from_score_service.meta
             except Exception as e:
                 logging.error(f'Execute Query Error : {e}')

@@ -82,7 +82,7 @@ class BroadcastProcess(ManageProcess):
         __process_variables[self.PROCESS_VARIABLE_PEER_STATUS] = PeerProcessStatus.normal
 
         def __broadcast_tx(stored_tx_item: TxItem):
-            # logging.debug(f"({self.__process_name}): broadcast tx ")
+            # logging.debug(f"({self.__process_name}): broadcast tx audience({len(__audience)})")
             result_add_tx = None
 
             for peer_target in list(__audience):
@@ -152,8 +152,7 @@ class BroadcastProcess(ManageProcess):
             __broadcast_run(broadcast_method_name, broadcast_method_param)
 
         def __handler_status(status_param):
-            logging.debug(f"({self.__process_name}) Status, param: " + str(status_param))
-            logging.debug("Audience: " + str(len(__audience)))
+            logging.debug(f"({self.__process_name}) Status, param({status_param}) audience({len(__audience)})")
 
             status = dict()
             status['result'] = message_code.get_response_msg(message_code.Response.success)

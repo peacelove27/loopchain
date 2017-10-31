@@ -33,7 +33,8 @@ class OuterService(loopchain_pb2_grpc.PeerServiceServicer):
     def __init__(self):
         self.__handler_map = {
             message_code.Request.status: self.__handler_status,
-            message_code.Request.peer_peer_list: self.__handler_peer_list
+            message_code.Request.peer_peer_list: self.__handler_peer_list,
+            message_code.Request.peer_reconnect_to_rs: self.__handler_reconnect_to_rs
         }
 
     @property
@@ -44,11 +45,13 @@ class OuterService(loopchain_pb2_grpc.PeerServiceServicer):
         util.logger.debug(f"peer_outer_service:handler_status")
         channel_name = conf.LOOPCHAIN_DEFAULT_CHANNEL if request.channel == '' else request.channel
         status = dict()
+
+        status['peer_type'] = '0'
         if ObjectManager().peer_service is not None:
-            status['peer_type'] = \
-                str(self.peer_service.channel_manager.get_block_manager(channel_name).peer_type)
-        else:
-            status['peer_type'] = '0'
+            block_manager = self.peer_service.channel_manager.get_block_manager(channel_name)
+            if block_manager is not None:
+                status['peer_type'] = block_manager.peer_type
+
         status_json = json.dumps(status)
 
         return loopchain_pb2.Message(code=message_code.Response.success, meta=status_json)
@@ -62,6 +65,13 @@ class OuterService(loopchain_pb2_grpc.PeerServiceServicer):
             code=message_code.Response.success,
             message=message,
             meta=str(peer_manager.peer_list))
+
+    def __handler_reconnect_to_rs(self, request, context):
+        logging.warning(f"RS lost peer info (candidate reason: RS restart)")
+        logging.warning(f"try reconnect to RS....")
+        ObjectManager().peer_service.connect_to_radiostation(channel=request.channel, is_reconnect=True)
+
+        return loopchain_pb2.Message(code=message_code.Response.success)
 
     def Request(self, request, context):
         # util.logger.debug(f"Peer Service got request({request.code})")
@@ -98,8 +108,9 @@ class OuterService(loopchain_pb2_grpc.PeerServiceServicer):
         """
         logging.debug("Peer GetScoreStatus request : %s", request)
         score_status = json.loads("{}")
+        channel_name = conf.LOOPCHAIN_DEFAULT_CHANNEL if request.channel == '' else request.channel
         try:
-            score_status_response = self.peer_service.stub_to_score_service.call(
+            score_status_response = self.peer_service.channel_manager.get_score_container_stub(channel_name).call(
                 "Request",
                 loopchain_pb2.Message(code=message_code.Request.status)
             )
@@ -126,10 +137,7 @@ class OuterService(loopchain_pb2_grpc.PeerServiceServicer):
             logging.info('Peer will stop... by: ' + request.reason)
 
         try:
-            response = self.peer_service.stub_to_score_service.call(
-                "Request",
-                loopchain_pb2.Message(code=message_code.Request.stop)
-            )
+            response = self.peer_service.channel_manager.stop_score_containers()
             logging.debug("try stop score container: " + str(response))
         except Exception as e:
             logging.debug("Score Service Already stop by other reason. %s", e)
@@ -162,17 +170,30 @@ class OuterService(loopchain_pb2_grpc.PeerServiceServicer):
         result_code = message_code.Response.success
         more_info = ""
 
-        if self.peer_service.score_info is not None:
-            # logging.debug("peer_outer_service create tx is have peer service info ")
-            score_id = self.peer_service.score_info[message_code.MetaParams.ScoreInfo.score_id]
-            score_version = self.peer_service.score_info[message_code.MetaParams.ScoreInfo.score_version]
-
         channel_name = conf.LOOPCHAIN_DEFAULT_CHANNEL if request.channel == '' else request.channel
+
+        try:
+            # logging.debug("peer_outer_service create tx is have peer service info ")
+            score_id = self.peer_service.channel_manager.get_score_info(channel_name)[
+                message_code.MetaParams.ScoreInfo.score_id]
+            score_version = self.peer_service.channel_manager.get_score_info(channel_name)[
+                message_code.MetaParams.ScoreInfo.score_version]
+        except KeyError as e:
+            logging.debug(f"CreateTX : load score info fail\n"
+                          f"cause : {e}")
 
         tx.init_meta(self.peer_service.peer_id, score_id, score_version, channel_name)
         result_hash = tx.put_data(request.data)
         tx.sign_hash(self.peer_service.auth)
         # logging.debug("peer_outer_service result hash : " + result_hash)
+
+        block_manager = self.peer_service.channel_manager.get_block_manager(channel_name)
+        util.apm_event(self.peer_service.peer_id, {
+            'event_type': 'CreateTx',
+            'peer_id': self.peer_service.peer_id,
+            'data': {
+                'tx_hash': result_hash,
+                'total_tx': block_manager.get_total_tx()}})
 
         self.peer_service.send_to_process_thread.send_to_process((BroadcastProcess.CREATE_TX_COMMAND, tx))
 
@@ -200,13 +221,35 @@ class OuterService(loopchain_pb2_grpc.PeerServiceServicer):
 
         block_manager.add_tx_unloaded(request.tx)
 
+        # TODO AddTx 는 성능에 민감한 구간으로 이곳에 기능과 무관한 코드를 삽입하면 성능에 영향을 줍니다.
+        # 이 곳에서 tx_hash 를 로그로 남겨야 하면 request 에 tx_hash 를 포함해서 보내도록 코드를 수정해야 합니다.
+        tx = pickle.loads(request.tx)
+
+        # logger = sender.FluentSender('app', host=conf.MONITOR_LOG_HOST, port=conf.MONITOR_LOG_PORT)
+        # logger.emit('follow', {'from': 'userA', 'to': 'userB'})
+        # logger.emit_with_time('follow', time.time(), {'from': 'userA', 'to': 'userB'})
+        # if not logger.emit('follow', {'from': 'userA', 'to': 'userB'}):
+        #     logging.debug('hrkim>>event_test>>>>' + str(logger.last_error))
+        #     logger.clear_last_error()
+        # else:
+        #     logging.debug('hrkim>>event_test>>success!!')
+        #
+        # logging.debug('hrkim>>event_test>>anyway passed')
+
+        util.apm_event(self.peer_service.peer_id, {
+            'event_type': 'AddTx',
+            'peer_id': self.peer_service.peer_id,
+            'data': {
+                'tx_hash': tx.tx_hash,
+                'total_tx': block_manager.get_total_tx()}})
+
         return loopchain_pb2.CommonReply(response_code=message_code.Response.success, message="success")
 
     def GetTx(self, request, context):
         """get transaction
 
         :param request: tx_hash
-        :param context:
+        :param context:channel_loopchain_default
         :return:
         """
         channel_name = conf.LOOPCHAIN_DEFAULT_CHANNEL if request.channel == '' else request.channel
@@ -333,20 +376,27 @@ class OuterService(loopchain_pb2_grpc.PeerServiceServicer):
                                            tx_data_json=tx_data_json_list)
 
     def Query(self, request, context):
-        """Score 의 invoke 로 생성된 data 에 대한 query 를 수행한다.
+        """Score 의 invoke 로 생성된 data 에 대한 query 를 수행한다."""
+        channel_name = conf.LOOPCHAIN_DEFAULT_CHANNEL if request.channel == '' else request.channel
 
-        """
         # TODO 입력값 오류를 검사하는 방법을 고려해본다, 현재는 json string 여부만 확인
         if util.check_is_json_string(request.params):
             logging.debug(f'Query request with {request.params}')
             try:
-                response_from_score_service = self.peer_service.stub_to_score_service.call(
-                    method_name="Request",
-                    message=loopchain_pb2.Message(code=message_code.Request.score_query, meta=request.params),
-                    timeout=conf.SCORE_QUERY_TIMEOUT,
-                    is_raise=True
-                )
+                response_from_score_service = \
+                    self.peer_service.channel_manager.get_score_container_stub(channel_name).call(
+                        method_name="Request",
+                        message=loopchain_pb2.Message(code=message_code.Request.score_query, meta=request.params),
+                        timeout=conf.SCORE_QUERY_TIMEOUT,
+                        is_raise=True
+                    )
                 response = response_from_score_service.meta
+
+                util.apm_event(self.peer_service.peer_id, {
+                    'event_type': 'Query',
+                    'peer_id': self.peer_service.peer_id,
+                    'data': {'score_query': json.loads(request.params)}})
+
             except Exception as e:
                 logging.error(f'Execute Query Error : {e}')
                 if isinstance(e, _Rendezvous):
@@ -366,27 +416,39 @@ class OuterService(loopchain_pb2_grpc.PeerServiceServicer):
         else:
             response_code = message_code.Response.fail
 
-        return loopchain_pb2.QueryReply(response_code=response_code,
-                                        response=response)
+        return loopchain_pb2.QueryReply(response_code=response_code, response=response)
 
     def GetInvokeResult(self, request, context):
-        """ get invoke result by tx_hash
+        """get invoke result by tx_hash
 
         :param request: request.tx_hash = tx_hash
         :param context:
         :return: verify result
         """
         channel_name = conf.LOOPCHAIN_DEFAULT_CHANNEL if request.channel == '' else request.channel
-        logging.debug('GetInvokeResult')
+        logging.debug(f"peer_outer_service:GetInvokeResult in channel({channel_name})")
+
         try:
             invoke_result = \
                 self.peer_service.channel_manager.get_block_manager(channel_name).get_invoke_result(request.tx_hash)
             invoke_result_str = json.dumps(invoke_result)
             logging.debug('invoke_result : ' + invoke_result_str)
+
+            util.apm_event(self.peer_service.peer_id, {
+                'event_type': 'InvokeResult',
+                'peer_id': self.peer_service.peer_id,
+                'data': {'invoke_result': invoke_result, 'tx_hash': request.tx_hash}})
             return loopchain_pb2.GetInvokeResultReply(response_code=message_code.Response.success
                                                       , result=invoke_result_str)
         except Exception as e:
-            logging.error("get invoke result error : %s", str(e))
+            logging.error(f"get invoke result error : {e}")
+            util.apm_event(self.peer_service.peer_id, {
+                'event_type': 'Error',
+                'peer_id': self.peer_service.peer_id,
+                'data': {
+                    'error_type': 'InvokeResultError',
+                    'code': message_code.Response.fail,
+                    'message': f"get invoke result error : {e}"}})
             return loopchain_pb2.GetInvokeResultReply(response_code=message_code.Response.fail)
 
     def AnnounceUnconfirmedBlock(self, request, context):
@@ -397,7 +459,7 @@ class OuterService(loopchain_pb2_grpc.PeerServiceServicer):
         :return:
         """
         channel_name = conf.LOOPCHAIN_DEFAULT_CHANNEL if request.channel == '' else request.channel
-        # logging.debug(f"peer_outer_service::AnnounceUnconfirmedBlock channel({channel_name})")
+        logging.debug(f"peer_outer_service::AnnounceUnconfirmedBlock channel({channel_name})")
         unconfirmed_block = pickle.loads(request.block)
 
         # logging.debug(f"#block \n"
@@ -412,6 +474,8 @@ class OuterService(loopchain_pb2_grpc.PeerServiceServicer):
         if unconfirmed_block.made_block_count >= conf.LEADER_BLOCK_CREATION_LIMIT \
                 and unconfirmed_block.block_type is BlockType.vote \
                 and unconfirmed_block.is_divided_block is False:
+            util.logger.spam(f"peer_outer_service:AnnounceUnconfirmedBlock try self.peer_service.reset_leader"
+                             f"\nnext_leader_peer({unconfirmed_block.next_leader_peer}, channel({channel_name}))")
             self.peer_service.reset_leader(unconfirmed_block.next_leader_peer, channel_name)
 
         # if unconfirmed_block.block_type is BlockType.peer_list:
@@ -422,6 +486,7 @@ class OuterService(loopchain_pb2_grpc.PeerServiceServicer):
 
     def AnnounceConfirmedBlock(self, request, context):
         """Block Generator 가 announce 하는 인증된 블록의 대한 hash 를 전달받는다.
+
         :param request: BlockAnnounce of loopchain.proto
         :param context: gRPC parameter
         :return: CommonReply of loopchain.proto
@@ -455,7 +520,7 @@ class OuterService(loopchain_pb2_grpc.PeerServiceServicer):
     def BlockSync(self, request, context):
         # Peer To Peer
         channel_name = conf.LOOPCHAIN_DEFAULT_CHANNEL if request.channel == '' else request.channel
-        logging.info("BlockSync request: " + request.block_hash)
+        logging.info(f"BlockSync request hash({request.block_hash}) channel({channel_name})")
         block_manager = self.peer_service.channel_manager.get_block_manager(channel_name)
 
         block = block_manager.get_blockchain().find_block_by_hash(request.block_hash)
@@ -548,6 +613,9 @@ class OuterService(loopchain_pb2_grpc.PeerServiceServicer):
             # TODO leader 가 peer manager tx 를 생성하여 블록에 peer 정보를 담는다면 채널별로 peer manager 를 저장할 필요도 있지
             # 않을까? 현재는 default 채널의 peer 만 announce new peer 와 peer manager tx 생성이 이뤄지고 있다.
             self.add_peer_manager_tx(channel_name)
+            # util.apm_event(self.peer_service.peer_id, {
+            #     'event_type': 'AddPeerManagerTx',
+            #     'peer_id': self.peer_service.peer_id})
 
         return loopchain_pb2.CommonReply(response_code=0, message="success")
 
@@ -577,6 +645,9 @@ class OuterService(loopchain_pb2_grpc.PeerServiceServicer):
         :param context:
         :return:
         """
+        # TODO 현재 RS heartbeat 은 channel 별로 deletepeer 를 발생하도록 되어 있지만, 우선 하나의 channel 에만
+        # 이상이 발생한 peer 도 전체에서 제거하도록 처리하고 있다.
+
         # channel_name = conf.LOOPCHAIN_DEFAULT_CHANNEL if request.channel == '' else request.channel
         # logging.debug(f"AnnounceDeletePeer peer_id({request.peer_id}) group_id({request.group_id})")
         self.peer_service.channel_manager.remove_peer(request.peer_id, request.group_id)
@@ -586,9 +657,11 @@ class OuterService(loopchain_pb2_grpc.PeerServiceServicer):
     def VoteUnconfirmedBlock(self, request, context):
         channel_name = conf.LOOPCHAIN_DEFAULT_CHANNEL if request.channel == '' else request.channel
         block_manager = self.peer_service.channel_manager.get_block_manager(channel_name)
+        util.logger.spam(f"peer_outer_service:VoteUnconfirmedBlock ({channel_name})")
 
         if conf.CONSENSUS_ALGORITHM != conf.ConsensusAlgorithm.lft:
             if block_manager.peer_type == loopchain_pb2.PEER:
+                # util.logger.warning(f"peer_outer_service:VoteUnconfirmedBlock ({channel_name}) Not Leader Peer!")
                 return loopchain_pb2.CommonReply(
                     response_code=message_code.Response.fail_no_leader_peer,
                     message=message_code.get_response_msg(message_code.Response.fail_no_leader_peer))
@@ -616,6 +689,6 @@ class OuterService(loopchain_pb2_grpc.PeerServiceServicer):
 
     def AnnounceNewLeader(self, request, context):
         channel_name = conf.LOOPCHAIN_DEFAULT_CHANNEL if request.channel == '' else request.channel
-        logging.debug("AnnounceNewLeader: " + request.message)
+        logging.debug(f"AnnounceNewLeader({channel_name}): " + request.message)
         self.peer_service.reset_leader(request.new_leader_id, channel_name)
         return loopchain_pb2.CommonReply(response_code=message_code.Response.success, message="success")
