@@ -36,7 +36,6 @@ from loopchain.container import ScoreService
 from loopchain.peer import PeerService, PeerAuthorization
 from loopchain.protos import loopchain_pb2, loopchain_pb2_grpc
 from loopchain.radiostation import RadioStationService
-from testcase.integration.black_service import BlackService
 
 util.set_log_level_debug()
 
