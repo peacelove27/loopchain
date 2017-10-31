@@ -6,7 +6,10 @@ import loopchain_pb2 as loopchain__pb2
 
 class InnerServiceStub(object):
   """########################################################################
-  Peer Service for Inner Process
+  Peer Services
+  ########################################################################
+
+  Peer Inner Service
   """
 
   def __init__(self, channel):
@@ -74,12 +77,13 @@ class InnerServiceStub(object):
 
 class InnerServiceServicer(object):
   """########################################################################
-  Peer Service for Inner Process
+  Peer Services
+  ########################################################################
+
+  Peer Inner Service
   """
 
   def Request(self, request, context):
-    """Connection
-    """
     context.set_code(grpc.StatusCode.UNIMPLEMENTED)
     context.set_details('Method not implemented!')
     raise NotImplementedError('Method not implemented!')
@@ -199,7 +203,7 @@ def add_InnerServiceServicer_to_server(servicer, server):
 
 
 class PeerServiceStub(object):
-  """Peer Service for Outer Client or other Peer
+  """Peer Outer Service for Outer Client or other Peer
   """
 
   def __init__(self, channel):
@@ -321,12 +325,10 @@ class PeerServiceStub(object):
 
 
 class PeerServiceServicer(object):
-  """Peer Service for Outer Client or other Peer
+  """Peer Outer Service for Outer Client or other Peer
   """
 
   def Request(self, request, context):
-    """Connection
-    """
     context.set_code(grpc.StatusCode.UNIMPLEMENTED)
     context.set_details('Method not implemented!')
     raise NotImplementedError('Method not implemented!')
@@ -571,8 +573,11 @@ def add_PeerServiceServicer_to_server(servicer, server):
 
 
 class RadioStationStub(object):
-  """#######################################################
-  RadioStation Service
+  """########################################################################
+  RadioStation Services
+  ########################################################################
+
+  RadioStation Outer Service
   """
 
   def __init__(self, channel):
@@ -596,9 +601,14 @@ class RadioStationStub(object):
         request_serializer=loopchain__pb2.StopRequest.SerializeToString,
         response_deserializer=loopchain__pb2.StopReply.FromString,
         )
+    self.GetChannelInfos = channel.unary_unary(
+        '/RadioStation/GetChannelInfos',
+        request_serializer=loopchain__pb2.GetChannelInfosRequest.SerializeToString,
+        response_deserializer=loopchain__pb2.GetChannelInfosReply.FromString,
+        )
     self.ConnectPeer = channel.unary_unary(
         '/RadioStation/ConnectPeer',
-        request_serializer=loopchain__pb2.PeerRequest.SerializeToString,
+        request_serializer=loopchain__pb2.ConnectPeerRequest.SerializeToString,
         response_deserializer=loopchain__pb2.ConnectPeerReply.FromString,
         )
     self.GetPeerList = channel.unary_unary(
@@ -616,6 +626,11 @@ class RadioStationStub(object):
         request_serializer=loopchain__pb2.ComplainLeaderRequest.SerializeToString,
         response_deserializer=loopchain__pb2.CommonReply.FromString,
         )
+    self.GetRandomTable = channel.unary_unary(
+        '/RadioStation/GetRandomTable',
+        request_serializer=loopchain__pb2.CommonRequest.SerializeToString,
+        response_deserializer=loopchain__pb2.CommonReply.FromString,
+        )
     self.Subscribe = channel.unary_unary(
         '/RadioStation/Subscribe',
         request_serializer=loopchain__pb2.PeerRequest.SerializeToString,
@@ -629,8 +644,11 @@ class RadioStationStub(object):
 
 
 class RadioStationServicer(object):
-  """#######################################################
-  RadioStation Service
+  """########################################################################
+  RadioStation Services
+  ########################################################################
+
+  RadioStation Outer Service
   """
 
   def Request(self, request, context):
@@ -648,9 +666,14 @@ class RadioStationServicer(object):
     context.set_details('Method not implemented!')
     raise NotImplementedError('Method not implemented!')
 
-  def ConnectPeer(self, request, context):
+  def GetChannelInfos(self, request, context):
     """Peer 접속
     """
+    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+    context.set_details('Method not implemented!')
+    raise NotImplementedError('Method not implemented!')
+
+  def ConnectPeer(self, request, context):
     context.set_code(grpc.StatusCode.UNIMPLEMENTED)
     context.set_details('Method not implemented!')
     raise NotImplementedError('Method not implemented!')
@@ -666,6 +689,11 @@ class RadioStationServicer(object):
     raise NotImplementedError('Method not implemented!')
 
   def AnnounceNewLeader(self, request, context):
+    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+    context.set_details('Method not implemented!')
+    raise NotImplementedError('Method not implemented!')
+
+  def GetRandomTable(self, request, context):
     context.set_code(grpc.StatusCode.UNIMPLEMENTED)
     context.set_details('Method not implemented!')
     raise NotImplementedError('Method not implemented!')
@@ -700,9 +728,14 @@ def add_RadioStationServicer_to_server(servicer, server):
           request_deserializer=loopchain__pb2.StopRequest.FromString,
           response_serializer=loopchain__pb2.StopReply.SerializeToString,
       ),
+      'GetChannelInfos': grpc.unary_unary_rpc_method_handler(
+          servicer.GetChannelInfos,
+          request_deserializer=loopchain__pb2.GetChannelInfosRequest.FromString,
+          response_serializer=loopchain__pb2.GetChannelInfosReply.SerializeToString,
+      ),
       'ConnectPeer': grpc.unary_unary_rpc_method_handler(
           servicer.ConnectPeer,
-          request_deserializer=loopchain__pb2.PeerRequest.FromString,
+          request_deserializer=loopchain__pb2.ConnectPeerRequest.FromString,
           response_serializer=loopchain__pb2.ConnectPeerReply.SerializeToString,
       ),
       'GetPeerList': grpc.unary_unary_rpc_method_handler(
@@ -718,6 +751,11 @@ def add_RadioStationServicer_to_server(servicer, server):
       'AnnounceNewLeader': grpc.unary_unary_rpc_method_handler(
           servicer.AnnounceNewLeader,
           request_deserializer=loopchain__pb2.ComplainLeaderRequest.FromString,
+          response_serializer=loopchain__pb2.CommonReply.SerializeToString,
+      ),
+      'GetRandomTable': grpc.unary_unary_rpc_method_handler(
+          servicer.GetRandomTable,
+          request_deserializer=loopchain__pb2.CommonRequest.FromString,
           response_serializer=loopchain__pb2.CommonReply.SerializeToString,
       ),
       'Subscribe': grpc.unary_unary_rpc_method_handler(
@@ -736,9 +774,51 @@ def add_RadioStationServicer_to_server(servicer, server):
   server.add_generic_rpc_handlers((generic_handler,))
 
 
+class AdminServiceStub(object):
+  """RadioStation Inner Service for Admin
+  """
+
+  def __init__(self, channel):
+    """Constructor.
+
+    Args:
+      channel: A grpc.Channel.
+    """
+    self.Request = channel.unary_unary(
+        '/AdminService/Request',
+        request_serializer=loopchain__pb2.Message.SerializeToString,
+        response_deserializer=loopchain__pb2.Message.FromString,
+        )
+
+
+class AdminServiceServicer(object):
+  """RadioStation Inner Service for Admin
+  """
+
+  def Request(self, request, context):
+    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+    context.set_details('Method not implemented!')
+    raise NotImplementedError('Method not implemented!')
+
+
+def add_AdminServiceServicer_to_server(servicer, server):
+  rpc_method_handlers = {
+      'Request': grpc.unary_unary_rpc_method_handler(
+          servicer.Request,
+          request_deserializer=loopchain__pb2.Message.FromString,
+          response_serializer=loopchain__pb2.Message.SerializeToString,
+      ),
+  }
+  generic_handler = grpc.method_handlers_generic_handler(
+      'AdminService', rpc_method_handlers)
+  server.add_generic_rpc_handlers((generic_handler,))
+
+
 class ContainerStub(object):
-  """#######################################################
+  """########################################################################
   Container Service
+  ########################################################################
+
   """
 
   def __init__(self, channel):
@@ -755,8 +835,10 @@ class ContainerStub(object):
 
 
 class ContainerServicer(object):
-  """#######################################################
+  """########################################################################
   Container Service
+  ########################################################################
+
   """
 
   def Request(self, request, context):

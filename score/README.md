@@ -88,4 +88,3 @@ DEFAULT_SCORE_PACKAGE = '[company_name]/[package]'
      - PEER_NAME은 Peer의 이름을 지칭합니다.
      - PORT는 radio_station 의 위치 IP:PORT 로 설정됩니다. 
      - /deploy/launch_containers_in_local_demo.sh 파일을 참조 바랍니다.
-

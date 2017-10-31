@@ -115,6 +115,132 @@ $ ./peer.py --configure_file_path loopchain/configure.json
 ```
 `radiostation.py`에도 똑같은 방법으로 적용이 가능합니다.
 
+## Multichannel
+MultiChannel을 이용하기 위해서는 RadioStation이 각 채널의 SCORE 정보와 Peer 정보를 알고 있어야 합니다. 
+
+
+### 1. Channel 정보를 담고 있는 파일을 만듭니다. 
+
+  이 파일에는 1. Channel의 이름, 2. 해당 Chennel에서 실행할 SCORE의 이름, 3. 채널에 참여할 Peer들의 목록이 담겨야 합니다 
+  예를 들어 ```channel_manage_data.json``` 이라고 만들었다면 아래와 같이 만듭니다. 
+
+``` channel_manage_data.json```
+```json
+{
+  "%CHANNEL_NAME1%": { // 1st channel name
+    "score_package": "your_score_package", // The name of SCORE to execute in this channel.
+    "peers": [
+      {
+        "peer_target": "%IP%:%PORT%" // The list of eer targets
+      },
+     ........
+    ]
+  },
+  "%CHANNEL_NAME2%": {  // 2nd channel name
+    "score_package": "your_score_package", // The name of SCORE to execute in this channel
+    "peers": [
+      {
+        "peer_target": ""%IP%:%PORT%"   // The list of eer targets
+      },
+      .......
+    ]
+  }
+}
+```
+
+  TIP: ```peers```가 명확하지 않으면 없이 만들어도 됩니다.
+  
+  예를 들어 kofia_0, kofia_1이라고 channel 이름을 정하고 하나는 score/code1, score/code2를 읽어서 처리하라고 하면 아래와 같이 만들면 됩니다. 
+```json
+{
+  "kofia_0": { 
+    "score_package": "score/code1", 
+    "peers": [
+      {
+        "peer_target": "111.123.145.123:7100" 
+      },
+      ......
+    ]
+  },
+  "kofia_1": {  
+    "score_package": "score/code2", 
+    "peers": [
+      {
+        "peer_target": "111.123.145.123:7100" 
+      },
+      ........
+    ]
+  }
+}
+
+```
+  
+### 2. 위의 파일을 읽어서 Multichannel을 동작하게 RadioStation 설정하고 실행하기. 
+
+ 이제 앞서 만든 ```channel_manage_data.json``` 을 RadioStation에서 읽어서 Multichannel을 사용할 수 있게 하려고 합니다 
+ 
+ 아래와 같이 radiostation용 설정 파일을 만들어 내용을 추가해주십시오. 
+ 
+```json
+{
+    "CHANNEL_MANAGE_DATA_PATH" : "your channel_manage_data path",
+    "ENABLE_CHANNEL_AUTH" : true
+}
+```
+ 각 Parameter의 내용은 아래와 같습니다. 
+  * ```CHANNEL_MANAGE_DATA_PATH```: 앞서 설정한 multichannel 설정 파일의 위치. 파일 이름까지 같이 적어야 합니다. 
+  * ```ENABLE_CHANNEL_AUTH``` :  
+     - ```true``` = multichannel 설정 파일에서 정해진 peer들만 multichannel을 허용합니다. 
+     - ```false```= 임의로 peer가 추가되어도 multichannel이 동작하게 합니다. 미리 peer목록을 만들어 놓지 않을경우 이용합니다. 
+
+
+ 예를들어, 여기에서는 임의로 ```rs_config.json```이라고 하면 아래와 같이 적어야 합니다. 
+ 
+ ``` rs_config.js```
+ ```json
+ {
+    "CHANNEL_MANAGE_DATA_PATH" : "./channel_manage_data.json",
+    "ENABLE_CHANNEL_AUTH" : true
+  }
+ ``` 
+  
+ 이렇게 설정한 설정 파일을 아래 ```-o``` option으로 읽게 합니다 
+ 
+ ```
+$ ./radiostation.py -o rs_config.json
+```
+
+### 3. Peer 설정하고 실행하기 
+
+이제 Peer에게 Multichannel로 동작하게 하기 위해서 1. 여러 channel중에 기본으로 동작할 Chennel이 무엇인지 2. SCORE에서 어떤 Branch를 사용할 지 정해야 합니다. 이 설정이 필요한 이유는 Peer가 여러개의 multichannel을 쓸 수도 있지만 기본적으로 사용하는 channel을 지정해서 오동작을 막기위해서입니다 .
+
+```json
+{
+    "LOOPCHAIN_DEFAULT_CHANNEL" : "basic channel name",
+    "DEFAULT_SCORE_BRANCH": "your working branch name"
+}
+```
+
+각 변수들의 뜻은 ,
+ * LOOPCHAIN_DEFAULT_CHANNEL : 이 Peer에서 사용하게 될 기본 channel.
+ * DEFAULT_SCORE_BRANCH : SCORE의 branch (기본이 master) 
+ 
+예를 들어 아래와 같이 적어주면 됩니다.  
+
+```peer_config.js```
+
+```json
+{
+    "LOOPCHAIN_DEFAULT_CHANNEL" : "kofia_0",
+    "DEFAULT_SCORE_BRANCH": "master"
+}
+```
+이 파일은 아래와 같이 적어서 peer를 실행합니다. 
+```
+$ ./peer.py -o peer_config.json
+```
+
+
 
 ## Deployment
   실제 LoopChain을 돌리는 방법으로 두가지가 있습니다.

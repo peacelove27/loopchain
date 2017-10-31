@@ -13,7 +13,7 @@
 # limitations under the License.
 """Facade Class for interface of inner gRPC services"""
 
-from components.singleton import *
+from loopchain.components import SingletonMetaClass
 
 
 class ObjectManager(metaclass=SingletonMetaClass):
@@ -23,3 +23,4 @@ class ObjectManager(metaclass=SingletonMetaClass):
     rs_service = None
     peer_service = None
     score_service = None
+    rest_proxy_service = None

@@ -23,6 +23,7 @@ import unittest
 
 import loopchain.utils as util
 import testcase.unittest.test_util as test_util
+from loopchain import configure as conf
 from loopchain.blockchain import BlockChain, BlockStatus, Block
 from loopchain.blockchain import ScoreBase
 
@@ -59,12 +60,11 @@ class TestScore(unittest.TestCase):
         leveldb.DestroyDB(cls.test_block_db)
 
     def generate_block(self):
-        """
-        임시 블럭 생성하는 메소드
+        """임시 블럭 생성하는 메소드
+
         :return: 임시 블럭
         """
-
-        block = Block()
+        block = Block(channel_name=conf.LOOPCHAIN_DEFAULT_CHANNEL)
         for x in range(10):
             tx = test_util.create_basic_tx(self.__peer_id, self.__peer_auth)
             block.put_transaction(tx)
@@ -124,6 +124,7 @@ class TestScore(unittest.TestCase):
             block_index = self.chain.last_block.find_transaction_index(row[1])
             logging.debug(block_index)
             logging.debug(self.chain.last_block.mk_merkle_proof(block_index))
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -28,9 +28,9 @@ import grpc
 
 import loopchain
 import loopchain.utils as util
-from components.singleton import *
 from loopchain import configure as conf
 from loopchain.baseservice import ObjectManager, StubManager
+from loopchain.components import SingletonMetaClass
 from loopchain.blockchain import Transaction
 from loopchain.container import ScoreService
 from loopchain.peer import PeerService, PeerAuthorization
@@ -56,9 +56,19 @@ def run_peer_server(port, radiostation_port=conf.PORT_RADIOSTATION, group_id=Non
         # ObjectManager().peer_service.serve(port, score_path)
 
 
+def run_black_peer_server(port, radiostation_port=conf.PORT_RADIOSTATION, group_id=None):
+    ObjectManager().peer_service = BlackService(group_id, conf.IP_RADIOSTATION, radiostation_port)
+    conf.DEFAULT_SCORE_REPOSITORY_PATH = \
+        os.path.join(os.path.dirname(__file__), '..', '..', 'resources', 'test_score_repository')
+    try:
+        ObjectManager().peer_service.serve(port)
+    except FileNotFoundError:
+        # test 코드 실행 위치에 따라서(use IDE or use console) 경로 문제가 발생 할 수 있다.
+        ObjectManager().peer_service.serve(port, "loopchain/default")
+
+
 def run_radio_station(port):
-    server = RadioStationService()
-    server.serve(port)
+    RadioStationService().serve(port)
 
 
 def run_score_server(port):
@@ -86,6 +96,20 @@ def run_peer_server_as_process_and_stub_manager(
     stub_manager = StubManager.get_stub_manager_to_server(
         'localhost:' + str(port), loopchain_pb2_grpc.PeerServiceStub)
     return process, stub_manager
+
+
+def run_black_peer_server_as_process(port, radiostation_port=conf.PORT_RADIOSTATION, group_id=None):
+    process = multiprocessing.Process(target=run_black_peer_server, args=(port, radiostation_port, group_id,))
+    process.start()
+    time.sleep(1)
+    return process
+
+
+def run_black_peer_server_as_process_and_stub(port, radiostation_port=conf.PORT_RADIOSTATION, group_id=None):
+    process = run_black_peer_server_as_process(port, radiostation_port, group_id)
+    channel = grpc.insecure_channel('localhost:' + str(port))
+    stub = loopchain_pb2_grpc.PeerServiceStub(channel)
+    return process, stub
 
 
 def run_radio_station_as_process(port):
@@ -186,7 +210,7 @@ def create_basic_tx(peer_id: str, peer_auth: PeerAuthorization) -> Transaction:
 
 
 def create_peer_auth() -> PeerAuthorization:
-    peer_auth = PeerAuthorization(cert_file=conf.CERT_PATH,
+    peer_auth = PeerAuthorization(public_file=conf.PUBLIC_PATH,
                                   pri_file=conf.PRIVATE_PATH,
                                   cert_pass=conf.DEFAULT_PW)
     return peer_auth
@@ -256,7 +280,14 @@ class TestServerManager(metaclass=SingletonMetaClass):
         self.__peer_info[num] = (process, stub_manager, peer_port)
         time.sleep(1)
 
+    def start_black_peers(self, peer_count):
+        pass
+
     def add_peer(self):
+        num = 0
+        return num
+
+    def add_black_peer(self):
         num = 0
         return num
 

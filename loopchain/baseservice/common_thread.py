@@ -29,7 +29,6 @@ class CommonThread:
         self.__is_run = False
         self.__run_thread = None
 
-    @property
     def is_run(self):
         return self.__is_run
 
@@ -61,6 +60,6 @@ class CommonThread:
         sample 구현을 참고 한다.
         """
         # # sample 구현
-        # while self.is_run:
+        # while self.is_run():
         #     time.sleep(conf.SLEEP_SECONDS_IN_SERVICE_LOOP)
         pass

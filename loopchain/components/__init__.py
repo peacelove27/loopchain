@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
 # Copyright 2017 theloop, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,22 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Run REST Server alone"""
+"""common base class for loopchain"""
 
-import sys
-import logging
-import loopchain.utils as util
-from loopchain import configure as conf
-from loopchain.rest_server import *
-
-
-def main(argv):
-    app.run(debug=True)
-
-
-# Run grpc server as a Peer
-if __name__ == "__main__":
-    try:
-        main(sys.argv[1:])
-    except KeyboardInterrupt:
-        pass
+from .singleton import *

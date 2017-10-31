@@ -34,14 +34,6 @@ class PeerScore:
     Score를 관리하는 모듈
     TODO 프로세스를 분리
     """
-    __score_base = None
-    __score_package = None
-    __scores = {}
-    __current_version = ''
-    __score_versions = []
-    __repository_path = None
-    __package_path = None
-    __package_repository = None
 
     def __init__(self,
                  repository_path=conf.DEFAULT_SCORE_REPOSITORY_PATH,
@@ -53,14 +45,24 @@ class PeerScore:
         :param base: Score Repository 주소
         :param score_package: score 패키지명
         """
+
+        self.__score_base = None
+        self.__score_package = None
+        self.__scores = {}
+        self.__current_version = ''
+        self.__score_versions = []
+        self.__repository_path = None
+        self.__package_path = None
+        self.__package_repository = None
+
         logging.debug('Peer Score Manager : '+repository_path + ' [' + score_package + ']')
         self.__score_base = base
         self.__score_package = score_package
         # check if exist peer_score repository path
         self.__repository_path = osp.abspath(repository_path)
-        self.__package_path = osp.join(self.__repository_path, self.__score_package)
 
         # package 를 로드
+        self.__package_path = osp.join(self.__repository_path, self.__score_package)
         self.load_package()
 
         # score repository check
@@ -317,7 +319,7 @@ class PeerScore:
 
         return self.score_version(version, True)
 
-    def invoke(self, transaction, block=None):
+    def invoke(self, transaction: Transaction, block: Block=None):
         meta = transaction.meta  # tx meta property has copy action so prevent duplicate action().
         # transaction 에서 version을 불러서 실행
         if Transaction.SCORE_VERSION_KEY in meta:

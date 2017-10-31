@@ -30,13 +30,12 @@ import loopchain_pb2
 
 
 class CommonService(CommonThread):
-    """Manage common part of 'Peer' and 'Radio station' especially broadcast service
+    """Manage common part of 'Peer' and 'Radio station' especially broadcast service"""
 
-    """
+    def __init__(self, gRPC_module, inner_service_port=None):
+        self.__peer_id = None if ObjectManager().peer_service is None else ObjectManager().peer_service.peer_id
 
-    def __init__(self, gRPC_module, inner_service_port=conf.PORT_PEER + conf.PORT_DIFF_INNER_SERVICE):
-        # members for public (we don't use getter/setter but you can use @property for that)
-        self.peer_id = ""
+        # for peer_service, it refers to peer_inner_service / for rs_service, it refers to rs_admin_service
         self.inner_server = grpc.server(futures.ThreadPoolExecutor(max_workers=conf.MAX_WORKERS))
         self.outer_server = grpc.server(futures.ThreadPoolExecutor(max_workers=conf.MAX_WORKERS))
 
@@ -44,10 +43,11 @@ class CommonService(CommonThread):
         self.__gRPC_module = gRPC_module
         self.__port = 0
         self.__inner_service_port = inner_service_port
-        self.__peer_port = inner_service_port - conf.PORT_DIFF_INNER_SERVICE
-        self.__subscriptions = queue.Queue()
-        self.__peer_target = util.get_private_ip() + ":" + str(self.__peer_port)
-        self.__stub_to_blockgenerator = None
+        self.__peer_target = None
+        if inner_service_port is not None:  # It means this is Peer's CommonService not RS.
+            peer_port = inner_service_port - conf.PORT_DIFF_INNER_SERVICE
+            self.__peer_target = util.get_private_ip() + ":" + str(peer_port)
+        self.__subscriptions = queue.Queue()  # tuple with (channel, stub)
         self.__group_id = ""
 
         # broadcast process
@@ -59,23 +59,10 @@ class CommonService(CommonThread):
     def broadcast_process(self):
         return self.__broadcast_process
 
-    def set_peer_id(self, peer_id):
-        """set peer id
-
-        """
-        self.peer_id = peer_id
-
-    def get_peer_id(self):
-        return self.peer_id
-
     def getstatus(self, block_manager):
-        """
-        블럭체인의 상태 조회
+        """블럭체인의 상태 조회
 
-        :param request: 상태조회
-        :param context:
-        :param block_manager: 블럭매니저
-        :param score: 체인코드
+        :param block_manager:
         :return:
         """
         logging.debug("CommonService.getstatus")
@@ -97,14 +84,17 @@ class CommonService(CommonThread):
                 # Score와 상관없이 TransactionTx는 블럭매니저가 관리 합니다.
                 total_tx = block_manager.get_total_tx()
 
-        status_data["status"] = "Service is online: " + str(block_manager.peer_type)
+            status_data["status"] = "Service is online: " + str(block_manager.peer_type)
+            status_data["peer_type"] = str(block_manager.peer_type)
+        else:
+            status_data["status"] = "Service is online: 2"
+            status_data["peer_type"] = "2"
 
         # TODO 더이상 사용하지 않는다. REST API 업데이트 후 제거할 것
         status_data["audience_count"] = "0"
 
         status_data["consensus"] = str(conf.CONSENSUS_ALGORITHM.name)
-        status_data["peer_id"] = str(self.get_peer_id())
-        status_data["peer_type"] = str(block_manager.peer_type)
+        status_data["peer_id"] = str(self.__peer_id)
         status_data["block_height"] = block_height
         status_data["total_tx"] = total_tx
         status_data["peer_target"] = self.__peer_target
@@ -135,7 +125,10 @@ class CommonService(CommonThread):
                 util.exit_and_msg("Broadcast Process start Fail!")
 
         logging.debug(f"Broadcast Process start({wait_for_process_start})")
-        broadcast_process.send_to_process((BroadcastProcess.MAKE_SELF_PEER_CONNECTION_COMMAND, self.__peer_target))
+
+        if self.__peer_target is not None:
+            broadcast_process.send_to_process(
+                (BroadcastProcess.MAKE_SELF_PEER_CONNECTION_COMMAND, self.__peer_target))
 
         return broadcast_process
 
@@ -143,7 +136,7 @@ class CommonService(CommonThread):
         self.__broadcast_process.stop()
         self.__broadcast_process.wait()
 
-    def __subscribe(self, port, subscribe_stub, is_unsubscribe=False, channel_name=conf.LOOPCHAIN_DEFAULT_CHANNEL):
+    def __subscribe(self, channel, port, subscribe_stub, is_unsubscribe=False):
         # self.__peer_target = util.get_private_ip() + ":" + str(port)
         # logging.debug("peer_info: " + self.__peer_target)
         # logging.debug("subscribe_stub type: " + str(subscribe_stub.stub.__module__))
@@ -156,21 +149,21 @@ class CommonService(CommonThread):
                 subscribe_stub.call(
                     "UnSubscribe",
                     self.__gRPC_module.PeerRequest(
-                        channel=channel_name,
+                        channel=channel,
                         peer_target=self.__peer_target, peer_type=subscribe_peer_type,
-                        peer_id=self.peer_id, group_id=self.__group_id
+                        peer_id=self.__peer_id, group_id=self.__group_id
                     ),
-                    is_stub_reuse=False
+                    is_stub_reuse=True
                 )
             else:
                 subscribe_stub.call(
                     "Subscribe",
                     self.__gRPC_module.PeerRequest(
-                        channel=channel_name,
+                        channel=channel,
                         peer_target=self.__peer_target, peer_type=subscribe_peer_type,
-                        peer_id=self.peer_id, group_id=self.__group_id
+                        peer_id=self.__peer_id, group_id=self.__group_id
                     ),
-                    is_stub_reuse=False
+                    is_stub_reuse=True
                 )
 
             logging.info(("Subscribe", "UnSubscribe")[is_unsubscribe])
@@ -178,8 +171,8 @@ class CommonService(CommonThread):
             logging.info("gRPC Exception: " + type(e).__name__)
             logging.error("Fail " + ("Subscribe", "UnSubscribe")[is_unsubscribe])
 
-    def __un_subscribe(self, port, subscribe_stub):
-        self.__subscribe(port, subscribe_stub, True)
+    def __un_subscribe(self, channel, port, subscribe_stub):
+        self.__subscribe(channel, port, subscribe_stub, True)
 
     def add_audience(self, peer_info):
         """broadcast 를 수신 받을 peer 를 등록한다.
@@ -213,42 +206,42 @@ class CommonService(CommonThread):
 
     def start(self, port, peer_id="", group_id=""):
         self.__port = port
-        self.peer_id = peer_id
+        if self.__inner_service_port is None:
+            self.__inner_service_port = port + conf.PORT_DIFF_INNER_SERVICE
+        self.__peer_id = peer_id
         self.__group_id = group_id
         CommonThread.start(self)
-        self.__broadcast_process.set_to_process(BroadcastProcess.PROCESS_INFO_KEY, f"peer_id({self.get_peer_id()})")
+        self.__broadcast_process.set_to_process(BroadcastProcess.PROCESS_INFO_KEY, f"peer_id({self.__peer_id})")
 
-    def subscribe(self, subscribe_stub, type=None, channel_name=conf.LOOPCHAIN_DEFAULT_CHANNEL):
-        self.__subscribe(port=self.__port, subscribe_stub=subscribe_stub, channel_name=channel_name)
-        self.__subscriptions.put(subscribe_stub)
+    def subscribe(self, channel, subscribe_stub, peer_type=None):
+        if subscribe_stub is None:
+            util.logger.spam(f"common_service:subscribe subscribe_stub is None!")
+            return
 
-        if type == loopchain_pb2.BLOCK_GENERATOR or type == loopchain_pb2.PEER:
+        self.__subscribe(channel=channel, port=self.__port, subscribe_stub=subscribe_stub)
+        self.__subscriptions.put((channel, subscribe_stub))
+
+        if peer_type == loopchain_pb2.BLOCK_GENERATOR or peer_type == loopchain_pb2.PEER:
             # tx broadcast 를 위해서 leader 인 경우 자신의 audience 에 같이 추가를 한다.
             self.__broadcast_process.send_to_process((BroadcastProcess.SUBSCRIBE_COMMAND, subscribe_stub.target))
-            self.__stub_to_blockgenerator = subscribe_stub
 
-    def vote_unconfirmed_block(self, block_hash, is_validated, channel_name=conf.LOOPCHAIN_DEFAULT_CHANNEL):
-        logging.debug("vote_unconfirmed_block ....")
+    def vote_unconfirmed_block(self, block_hash, is_validated, channel):
+        logging.debug(f"vote_unconfirmed_block ({channel})")
+
         if is_validated:
             vote_code, message = message_code.get_response(message_code.Response.success_validate_block)
         else:
             vote_code, message = message_code.get_response(message_code.Response.fail_validate_block)
 
-        if self.__stub_to_blockgenerator is not None:
-            block_vote = loopchain_pb2.BlockVote(
-                vote_code=vote_code,
-                channel=channel_name,
-                message=message,
-                block_hash=block_hash,
-                peer_id=ObjectManager().peer_service.peer_id,
-                group_id=ObjectManager().peer_service.group_id)
+        block_vote = loopchain_pb2.BlockVote(
+            vote_code=vote_code,
+            channel=channel,
+            message=message,
+            block_hash=block_hash,
+            peer_id=self.__peer_id,
+            group_id=ObjectManager().peer_service.group_id)
 
-            if conf.CONSENSUS_ALGORITHM == conf.ConsensusAlgorithm.lft:
-                self.broadcast("VoteUnconfirmedBlock", block_vote)
-            else:
-                self.__stub_to_blockgenerator.call("VoteUnconfirmedBlock", block_vote)
-        else:
-            logging.error("No block generator stub!")
+        self.broadcast("VoteUnconfirmedBlock", block_vote)
 
     def start_server(self, server, listen_address):
         server.add_insecure_port(listen_address)
@@ -264,25 +257,24 @@ class CommonService(CommonThread):
 
     def run(self):
         self.start_server(self.outer_server, '[::]:' + str(self.__port))
-        if self.__inner_service_port is not None:
-            # Bind Only loopback address (ip4) - TODO IP6
-            self.start_server(self.inner_server, conf.INNER_SERVER_BIND_IP + ':' + str(self.__inner_service_port))
+        # Bind Only loopback address (ip4) - TODO IP6
+        self.start_server(self.inner_server, conf.INNER_SERVER_BIND_IP + ':' + str(self.__inner_service_port))
 
         # Block Generator 에 subscribe 하게 되면 Block Generator 는 peer 에 channel 생성을 요청한다.
         # 따라서 peer 의 gRPC 서버가 완전히 시작된 후 Block Generator 로 subscribe 요청을 하여야 한다.
         time.sleep(conf.WAIT_GRPC_SERVICE_START)
 
         try:
-            while self.is_run:
+            while self.is_run():
                 self.__run_loop_functions()
                 time.sleep(conf.SLEEP_SECONDS_IN_SERVICE_NONE)
         except KeyboardInterrupt:
             logging.info("Server Stop by KeyboardInterrupt")
         finally:
             while not self.__subscriptions.empty():
-                logging.info("Un subscribe to server...")
-                subscribe_stub = self.__subscriptions.get()
-                self.__un_subscribe(self.__port, subscribe_stub)
+                channel, subscribe_stub = self.__subscriptions.get()
+                logging.info(f"Un subscribe to channel({channel}) server({subscribe_stub.target})")
+                self.__un_subscribe(channel, self.__port, subscribe_stub)
 
             self.__stop_broadcast_process()
 

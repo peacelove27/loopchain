@@ -22,6 +22,7 @@ import unittest
 
 import loopchain.utils as util
 import testcase.unittest.test_util as test_util
+from loopchain import configure as conf
 from loopchain.blockchain import Block
 from loopchain.blockchain import BlockChain, BlockStatus
 
@@ -46,9 +47,9 @@ class TestGeneratorBlock(unittest.TestCase):
         :return: 임시 블럭
         """
         if self.last_block is None:
-            self.last_block = Block()
+            self.last_block = Block(channel_name=conf.LOOPCHAIN_DEFAULT_CHANNEL)
             self.last_block.generate_block()
-        block = Block()
+        block = Block(channel_name=conf.LOOPCHAIN_DEFAULT_CHANNEL)
         for x in range(0, 10):
             tx = test_util.create_basic_tx(self.__peer_id, self.__peer_auth)
             self.assertNotEqual(tx.get_tx_hash(), "", "트랜잭션 생성 실패")

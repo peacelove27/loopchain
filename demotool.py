@@ -32,6 +32,7 @@ from loopchain.protos import message_code
 
 sys.path.append("loopchain/protos")
 from loopchain.protos import loopchain_pb2, loopchain_pb2_grpc
+from loopchain.radiostation import AdminManager
 
 
 # Main definition - constants
@@ -58,6 +59,8 @@ def main_menu(show=True):
         print("6. Check Python Process(ps -ef | grep python)")
         print("7. Kill All Python Process(pkill -fs python)")
         print("8. Clear __pycache__")
+        print("9. Set Test Configuration")
+        print("10. UnSet Test Configuration")
         print("0. Quit")
 
     choice = input(" >>  ")
@@ -195,6 +198,22 @@ def menu7():
 
 def menu8():
     os.system("""find . | grep -E "(__pycache__|\.pyc|\.pyo$)" | xargs rm -rf""")
+    main_menu()
+
+
+def menu9():
+    print(f"\n\nset channel_manage_data_test to channel_manage_data\n\n")
+    if not os.path.isfile("channel_manage_data_ori.json"):
+        os.system("""cp channel_manage_data.json channel_manage_data_ori.json""")
+    os.system("""cp channel_manage_data_test.json channel_manage_data.json""")
+    main_menu()
+
+
+def menu10():
+    print(f"\n\nreset channel_manage_data_ori to channel_manage_data\n\n")
+    if os.path.isfile("channel_manage_data_ori.json"):
+        os.system("""cp channel_manage_data_ori.json channel_manage_data.json""")
+        os.system("""rm -f channel_manage_data_ori.json""")
     main_menu()
 
 
@@ -344,13 +363,19 @@ def menu4_13(params):
         )
         tx_hash = response.tx_hash
         print(f"Create Tx({tx_hash}) remain times({repeat_times})")
+
         time.sleep(test_interval)
-        response = peer_stub.GetTx(loopchain_pb2.GetTxRequest(tx_hash=tx_hash), conf.GRPC_TIMEOUT)
+        response = peer_stub.GetTx(loopchain_pb2.GetTxRequest(
+            tx_hash=tx_hash,
+            channel=test_globals["channel_name"]
+        ), conf.GRPC_TIMEOUT)
+
         if response.response_code != message_code.Response.success:
             allow_fails -= 1
             fail_times += 1
         else:
             allow_fails = allow_fails_reset
+
         print("Find Tx: " + str(response))
         print(f"({test_times}) test times, ({allow_fails}) allow fails, ({fail_times}) fail times")
 
@@ -504,18 +529,30 @@ def menu4_7(params):
 
 
 def menu4_1(params=None):
-    print("Input Peer Target [IP]:[port] (default '' -> 127.0.0.1:7100, [port] -> 127.0.0.1:[port])")
+    admin_manager = AdminManager("demotool")
+
+    print("\nInput Peer Target [IP]:[port] (default '' -> 127.0.0.1:7100, [port] -> 127.0.0.1:[port])")
     choice = input(" >>  ")
     if choice == "":
         choice = "127.0.0.1:7100"
     elif choice.find(':') == -1:
         choice = "127.0.0.1:" + choice
 
-    print(f"Select Channel (0: {conf.LOOPCHAIN_DEFAULT_CHANNEL}, 1: {conf.LOOPCHAIN_TEST_CHANNEL})")
+    select_channel_index = 0
+    select_channel_string = ""
+    for channel in admin_manager.get_channel_list():
+        if select_channel_index != 0:
+            select_channel_string += ", "
+        select_channel_string += f"{select_channel_index}: {admin_manager.get_channel_list()[select_channel_index]}"
+        select_channel_index += 1
+
+    print(f"Select Channel ({select_channel_string})")
     channel_choice = input(" >>  ")
-    test_globals["channel_name"] = conf.LOOPCHAIN_DEFAULT_CHANNEL
-    if channel_choice == "1":
-        test_globals["channel_name"] = conf.LOOPCHAIN_TEST_CHANNEL
+    try:
+        test_globals["channel_name"] = admin_manager.get_channel_list()[int(channel_choice)]
+    except Exception as e:
+        print(f"wrong channel number! Now use default channel({admin_manager.get_channel_list()[0]})\n")
+        test_globals["channel_name"] = admin_manager.get_channel_list()[0]
 
     print("your input: " + choice)
     channel = grpc.insecure_channel(choice)
@@ -646,6 +683,8 @@ menu_actions = {
     '6': menu6,
     '7': menu7,
     '8': menu8,
+    '9': menu9,
+    '10': menu10,
     '0': tool_exit
 }
 

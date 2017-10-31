@@ -25,6 +25,19 @@ class ConsensusSiever(ConsensusBase):
     51% 이상의 투표를 획득하면 해당 블록을 Block Chain 에 추가한다.
     """
 
+    def __throw_out_block(self, target_block):
+        # leader 에서 해당 블럭은 candidate blocks 의 get_confirmed_block 과정중 버려진다.
+        # ( TODO 해당 블럭에 담긴 tx 도 같이 버려진다. 검토 필요 )
+
+        # 이전 블럭에 대한 confirm 작업을 생략하도록 설정한다.
+        self._block.prev_block_confirm = False
+
+        # 실패한 블럭은 버리고 prev_block_hash 와 block height 를 보정한다.
+        self._block.prev_block_hash = target_block.prev_block_hash
+        self._block.height = target_block.height
+
+        self._current_vote_block_hash = ""
+        
     def consensus(self):
         # broadcasting 한 블럭이 검증이 끝났는지 확인한다.
         confirmed_block = None
@@ -34,7 +47,9 @@ class ConsensusSiever(ConsensusBase):
             logging.error(e)
         except candidate_blocks.NotCompleteValidation as e:
             # try re count voters
-            logging.warning(f"This block need more validation vote from Peers block hash({str(e.block.block_hash)})")
+            logging.warning(f"This block need more validation vote from Peers block "
+                            f"hash({str(e.block.block_hash)}) channel({self._channel_name})")
+
             self._blockmanager.broadcast_audience_set()
 
             if util.diff_in_seconds(e.block.time_stamp) > conf.BLOCK_VOTE_TIMEOUT:
@@ -62,7 +77,8 @@ class ConsensusSiever(ConsensusBase):
 
         # 검증이 끝난 블럭이 있으면
         if confirmed_block is not None:
-            logging.info("Block Validation is Complete hash: " + confirmed_block.block_hash)
+            logging.info(f"Block Validation is Complete "
+                         f"hash({confirmed_block.block_hash}) channel({self._channel_name})")
             # 현재 블럭에 이전 투표에 대한 기록을 갱신한다.
             self._block.prev_block_confirm = True
 
@@ -101,6 +117,7 @@ class ConsensusSiever(ConsensusBase):
                 self._current_vote_block_hash = candidate_block.block_hash
                 logging.info("candidate block hash: " + self._current_vote_block_hash)
 
+                util.logger.spam(f"consensus_siever:consensus try peer_manager.get_next_leader_peer().peer_id")
                 candidate_block.next_leader_peer = peer_manager.get_next_leader_peer().peer_id
 
                 # 생성된 블럭을 투표 요청하기 위해서 broadcast 한다.
@@ -130,6 +147,8 @@ class ConsensusSiever(ConsensusBase):
                 else:
                     # TODO LEADER_BLOCK_CREATION_LIMIT 에서 무조건 리더가 변경된다. 잔여 tx 처리가 필요하다.
                     self._stop_gen_block()
+                    util.logger.spam(f"consensus_siever:consensus channel({self._channel_name}) "
+                                     f"\ntry ObjectManager().peer_service.rotate_next_leader(self._channel_name)")
                     ObjectManager().peer_service.rotate_next_leader(self._channel_name)
 
         self._makeup_block()

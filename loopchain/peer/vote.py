@@ -14,11 +14,8 @@
 """data object for peer votes to one block"""
 
 import logging
-import hashlib
-import json
 
 from enum import Enum
-
 
 from loopchain.baseservice import PeerManager
 from loopchain import configure as conf
@@ -149,11 +146,11 @@ class Vote:
         logging.debug("=total_peer_count: " + str(total_peer_count))
 
         return result, agree_vote_group_count, total_vote_group_count, \
-               total_group_count, agree_vote_peer_count, total_peer_count, voting_ratio
+            total_group_count, agree_vote_peer_count, total_peer_count, voting_ratio
 
     def is_failed_vote(self, block_hash, voting_ratio):
         result, agree_vote_group_count, total_vote_group_count, total_group_count, \
-        agree_vote_peer_count, total_peer_count, voting_ratio = self.get_result_detail(block_hash, voting_ratio)
+            agree_vote_peer_count, total_peer_count, voting_ratio = self.get_result_detail(block_hash, voting_ratio)
 
         fail_vote_group_count = total_vote_group_count - agree_vote_group_count
         possible_agree_vote_group_count = total_group_count - fail_vote_group_count

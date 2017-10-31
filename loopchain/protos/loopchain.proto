@@ -20,9 +20,11 @@ syntax = "proto2";
 
 
 // ########################################################################
-// Peer Service for Inner Process
+// Peer Services
+// ########################################################################
+
+// Peer Inner Service
 service InnerService {
-    // Connection
     rpc Request (Message) returns (Message) {}
     rpc GetStatus (StatusRequest) returns (StatusReply) {}
     rpc GetScoreStatus (StatusRequest) returns (StatusReply) {}
@@ -36,9 +38,8 @@ service InnerService {
     rpc NotifyProcessError (CommonRequest) returns (CommonReply) {}
 }
 
-// Peer Service for Outer Client or other Peer
+// Peer Outer Service for Outer Client or other Peer
 service PeerService {
-    // Connection
     rpc Request (Message) returns (Message) {}
     rpc GetStatus (StatusRequest) returns (StatusReply) {}
     rpc GetScoreStatus (StatusRequest) returns (StatusReply) {}
@@ -75,25 +76,37 @@ service PeerService {
 }
 
 
-// #######################################################
-// RadioStation Service
+// ########################################################################
+// RadioStation Services
+// ########################################################################
+
+// RadioStation Outer Service
 service RadioStation {
     rpc Request (Message) returns (Message) {}
     rpc GetStatus (StatusRequest) returns (StatusReply) {}
     rpc Stop (StopRequest) returns (StopReply) {}
     // Peer 접속
-    rpc ConnectPeer (PeerRequest) returns (ConnectPeerReply) {}
+    rpc GetChannelInfos (GetChannelInfosRequest) returns (GetChannelInfosReply) {}
+    rpc ConnectPeer (ConnectPeerRequest) returns (ConnectPeerReply) {}
     rpc GetPeerList (CommonRequest) returns (PeerList) {}
     rpc GetPeerStatus (PeerID) returns (StatusReply) {}
     rpc AnnounceNewLeader (ComplainLeaderRequest) returns (CommonReply) {}
+    rpc GetRandomTable (CommonRequest) returns (CommonReply) {}
     // Subscribe 와 UnSubscribe 는 Broadcast 관련 메소드로 loopchain.proto 와 동일하게 구성되어야 한다.
     rpc Subscribe (PeerRequest) returns (CommonReply) {}
     rpc UnSubscribe (PeerRequest) returns (CommonReply) {}
 }
 
+// RadioStation Inner Service for Admin
+service AdminService {
+    rpc Request (Message) returns (Message) {}
+}
 
-// #######################################################
+
+// ########################################################################
 // Container Service
+// ########################################################################
+
 service Container {
     rpc Request (Message) returns (Message) {}
 }
@@ -157,8 +170,10 @@ message GetBlockRequest {
 message GetBlockReply {
     required int32 response_code = 1;
     required string block_hash = 2;
-    required string block_data_json = 3;    // json key:value by block_data_filter "{version:'0.1', prev_block_hash:'0000', time_stamp:'1990-10-10'}"
-    repeated string tx_data_json = 4;       // json key:value by tx_data_filter "{transaction_hash:'12345', data:'12345', time_stamp:'1990-10-10'}"
+    // json key:value by block_data_filter "{version:'0.1', prev_block_hash:'0000', time_stamp:'1990-10-10'}"
+    required string block_data_json = 3;
+    // json key:value by tx_data_filter "{transaction_hash:'12345', data:'12345', time_stamp:'1990-10-10'}"
+    repeated string tx_data_json = 4;
 }
 
 
@@ -248,9 +263,9 @@ message BlockAnnounce {
 }
 
 
-// #######################################################
+// ########################################################################
 // RadioStation, Peer, BlockGenerator 공통 요소
-// #######################################################
+// ########################################################################
 
 
 enum PeerType {
@@ -310,10 +325,14 @@ message PeerRequest {
     optional bytes peer_object = 8;
 }
 
-message PeerID {
+message ConnectPeerRequest {
     required string peer_id = 1;
     optional string channel = 2;
-    required string group_id = 3;
+    required string peer_target = 3;
+    required string group_id = 4;
+    optional bytes cert = 5;
+    optional int32 peer_order = 6;
+    optional bytes peer_object = 7;
 }
 
 // RadioStation이 Peer에게 줄 정보들
@@ -322,4 +341,22 @@ message ConnectPeerReply {
     required bytes peer_list = 2;
     repeated string channels = 3;
     optional string more_info = 4;
+}
+
+message GetChannelInfosRequest {
+    required string peer_id = 1;
+    required string peer_target = 2;
+    required string group_id = 3;
+    optional bytes cert = 4;
+}
+
+message GetChannelInfosReply {
+    required int32 response_code = 1;
+    required string channel_infos = 2;
+}
+
+message PeerID {
+    required string peer_id = 1;
+    optional string channel = 2;
+    required string group_id = 3;
 }

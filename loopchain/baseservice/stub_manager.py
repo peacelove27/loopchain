@@ -41,6 +41,7 @@ class StubManager:
     def __make_stub(self, is_stub_reuse=True):
         if util.datetime_diff_in_mins(self.__stub_update_time) >= conf.STUB_REUSE_TIMEOUT or \
                 not is_stub_reuse or self.__stub is None:
+            util.logger.spam(f"StubManager:__make_stub is_stub_reuse({is_stub_reuse}) self.__stub({self.__stub})")
             self.__stub = util.get_stub_to_server(self.__target, self.__stub_type, is_check_status=False)
             # if self.__is_secure:
             #     # TODO need treat to secure channel but not yet
@@ -54,7 +55,7 @@ class StubManager:
             pass
 
     @property
-    def stub(self, is_stub_reuse=False):
+    def stub(self, is_stub_reuse=True):
         # TODO need check channel status (is shutdown or terminated)
 
         self.__make_stub(is_stub_reuse)
@@ -69,7 +70,9 @@ class StubManager:
     def target(self):
         return self.__target
 
-    def call(self, method_name, message, timeout=conf.GRPC_TIMEOUT, is_stub_reuse=True, is_raise=False):
+    def call(self, method_name, message, timeout=None, is_stub_reuse=True, is_raise=False):
+        if timeout is None:
+            timeout = conf.GRPC_TIMEOUT
         self.__make_stub(is_stub_reuse)
 
         try:
@@ -88,7 +91,9 @@ class StubManager:
             logging.warning(f"call_async fail  : {result}\n"
                             f"cause by : {result.details()}")
 
-    def call_async(self, method_name, message, timeout=conf.GRPC_TIMEOUT, is_stub_reuse=True):
+    def call_async(self, method_name, message, timeout=None, is_stub_reuse=True):
+        if timeout is None:
+            timeout = conf.GRPC_TIMEOUT
         self.__make_stub(is_stub_reuse)
 
         try:
@@ -98,7 +103,7 @@ class StubManager:
         except Exception as e:
             logging.warning(f"gRPC call_async fail method_name({method_name}), message({message}): {e}")
 
-    def call_in_time(self, method_name, message, time_out_seconds=conf.CONNECTION_RETRY_TIMEOUT, is_stub_reuse=True):
+    def call_in_time(self, method_name, message, time_out_seconds=None, is_stub_reuse=True):
         """Try gRPC call. If it fails try again until time out (seconds)
 
         :param method_name:
@@ -107,7 +112,8 @@ class StubManager:
         :param is_stub_reuse:
         :return:
         """
-
+        if time_out_seconds is None:
+            time_out_seconds = conf.CONNECTION_RETRY_TIMEOUT
         self.__make_stub(is_stub_reuse)
 
         stub_method = getattr(self.__stub, method_name)
@@ -131,13 +137,17 @@ class StubManager:
 
         return None
 
-    def call_in_times(self, method_name, message, retry_times=conf.CONNECTION_RETRY_TIMES, is_stub_reuse=True):
+    def call_in_times(self, method_name, message,
+                      retry_times=conf.CONNECTION_RETRY_TIMES,
+                      is_stub_reuse=True,
+                      timeout=conf.GRPC_TIMEOUT):
         """Try gRPC call. If it fails try again until "retry_times"
 
         :param method_name:
         :param message:
         :param retry_times:
         :param is_stub_reuse:
+        :param timeout:
         :return:
         """
 
@@ -146,7 +156,7 @@ class StubManager:
 
         while retry_times > 0:
             try:
-                return stub_method(message, conf.GRPC_TIMEOUT)
+                return stub_method(message, timeout)
             except Exception as e:
                 logging.debug(f"retry request_server_in_times({method_name}): {e}")
 
@@ -156,14 +166,24 @@ class StubManager:
 
         return None
 
+    def check_status(self):
+        try:
+            self.__stub.Request(loopchain_pb2.Message(code=message_code.Request.status), conf.GRPC_TIMEOUT)
+            return True
+        except Exception as e:
+            logging.warning(f"stub_manager:check_status is Fail reason({e})")
+            return False
+
     @staticmethod
-    def get_stub_manager_to_server(target, stub_class, time_out_seconds=conf.CONNECTION_RETRY_TIMEOUT,
+    def get_stub_manager_to_server(target, stub_class, time_out_seconds=None,
                                    is_allow_null_stub=False):
         """gRPC connection to server
 
         :return: stub manager to server
         """
 
+        if time_out_seconds is None:
+            time_out_seconds = conf.CONNECTION_RETRY_TIMEOUT
         stub_manager = StubManager(target, stub_class)
         start_time = timeit.default_timer()
         duration = timeit.default_timer() - start_time

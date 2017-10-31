@@ -21,16 +21,25 @@ from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.primitives.asymmetric import ec, utils, rsa, padding
+from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePublicKey
 from cryptography.x509 import Certificate
 
 
 class PublicVerifier:
     """ provide singnature verify function using public key"""
-    def __init__(self, pub_key):
+    def __init__(self, public):
         """ set public key
-        :param pub_key: publickey
+        :param public: der or public Object
         """
-        self.__public_key = pub_key
+        if isinstance(public, bytes):
+            self.__public_key = serialization.load_der_public_key(
+                public,
+                backend=default_backend()
+            )
+        elif isinstance(public, EllipticCurvePublicKey):
+            self.__public_key = public
+        else:
+            raise ValueError("public must bytes or public_key Object")
 
     def verify_data(self, data, signature) -> bool:
         """개인키로 서명한 데이터 검증
@@ -112,35 +121,6 @@ class PublicVerifier:
         )
 
 
-class CertVerifier(PublicVerifier):
-    """CertVerifier have cert info, and can verification signature, and cert status"""
-
-    def __init__(self, serialized_cert):
-        """create cert_verifier raise exception if create fail
-
-        :param serialized_cert: serialized cert type pem
-        :return:
-        :raise: exception cert deseialized fail
-        """
-
-        self.__serialized_cert = serialized_cert
-        self.__cert: Certificate = x509.load_pem_x509_certificate(serialized_cert, default_backend())
-        super().__init__(self.__cert.public_key())
-
-    @property
-    def serialized_cert(self):
-        return self.__serialized_cert
-
-    def get_cert_bytes(self) -> bytes:
-        """인증서 DER Bytes
-
-        :return:
-        """
-        return self.__cert.public_bytes(
-                encoding=serialization.Encoding.DER,
-        )
-
-
 class PublicVerifierContainer:
     """ PublicVerifier Container for many usaged """
 
@@ -166,8 +146,7 @@ class PublicVerifierContainer:
         :return: PublicVerifier
         """
 
-        public_key = serialization.load_der_public_key(serialized_public, backend=default_backend())
-        public_verifier = PublicVerifier(public_key)
+        public_verifier = PublicVerifier(serialized_public)
         cls.__public_verifier[serialized_public] = public_verifier
 
         return public_verifier

@@ -36,9 +36,11 @@ class Request(IntEnum):
     peer_peer_list = 600
     peer_get_leader = 601  # get leader peer object
     peer_complain_leader = 602  # complain leader peer is no response
+    peer_reconnect_to_rs = 603  # reconnect to rs when rs restart detected.
 
     rs_get_configuration = 800
     rs_set_configuration = 801
+    rs_send_channel_manage_info_to_rs = 802
 
     tx_create = 900  # create tx to inner tx service
     tx_connect_to_leader = 901  # connect to leader
@@ -76,6 +78,7 @@ class Response(IntEnum):
     fail_wrong_subscribe_info = -8
     fail_connect_to_leader = -9
     fail_add_tx_to_leader = -10
+    fail_no_peer_info_in_rs = -800
     timeout_exceed = -900
     not_treat_message_code = -999
 
@@ -93,6 +96,7 @@ responseCodeMap = {
     Response.fail_wrong_subscribe_info: (Response.fail_wrong_subscribe_info,    "fail wrong subscribe info"),
     Response.fail_connect_to_leader:    (Response.fail_connect_to_leader,       "fail connect to leader"),
     Response.fail_add_tx_to_leader:     (Response.fail_add_tx_to_leader,        "fail add tx to leader"),
+    Response.fail_no_peer_info_in_rs:   (Response.fail_no_peer_info_in_rs,      "fail no peer info in radio station"),
     Response.timeout_exceed:            (Response.timeout_exceed,               "timeout exceed")
 }
 

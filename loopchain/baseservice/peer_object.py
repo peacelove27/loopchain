@@ -20,7 +20,7 @@ from enum import IntEnum
 from loopchain import configure as conf
 from loopchain.baseservice import StubManager
 from loopchain.protos import loopchain_pb2_grpc
-from loopchain.tools import CertVerifier
+from loopchain.tools import PublicVerifier
 
 
 class PeerStatus(IntEnum):
@@ -109,7 +109,7 @@ class PeerObject:
         """set peer info and create live data"""
         self.__peer_info: PeerInfo = peer_info
         self.__stub_manager: StubManager = None
-        self.__cert_verifier: CertVerifier = None
+        self.__cert_verifier: PublicVerifier = None
         self.__no_response_count = 0
 
         self.__create_live_data()
@@ -123,7 +123,7 @@ class PeerObject:
             logging.exception(f"Create Peer create stub_manager fail target : {self.__peer_info.target} \n"
                               f"exception : {e}")
         try:
-            self.__cert_verifier = CertVerifier(self.peer_info.cert)
+            self.__cert_verifier = PublicVerifier(self.peer_info.cert)
         except Exception as e:
             logging.exception(f"create cert verifier error : {self.__peer_info.cert} \n"
                               f"exception {e}")
@@ -137,7 +137,7 @@ class PeerObject:
         return self.__stub_manager
 
     @property
-    def cert_verifier(self) -> CertVerifier:
+    def cert_verifier(self) -> PublicVerifier:
         return self.__cert_verifier
 
     @property

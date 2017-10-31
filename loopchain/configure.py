@@ -16,8 +16,8 @@
 import re
 import json
 import loopchain
+import importlib
 
-from components.singleton import SingletonMetaClass
 from loopchain.configure_default import *
 try:
     from loopchain.configure_user import *
@@ -32,9 +32,23 @@ class DataType(IntEnum):
     int = 1
     float = 2
     bool = 3
+    dict = 4
 
 
-class Configure(metaclass=SingletonMetaClass):
+class ConfigureMetaClass(type):
+    """특정 클래스에서 metaclass 로 지정하면 해당 클래스는 singleton이 된다.
+    사용예: class ClassOne(metaclass=ConfigureMetaClass):
+    """
+    _instances = {}
+
+    def __call__(cls, *args, **kwargs):
+        if cls not in cls._instances:
+            cls._instances[cls] = super(ConfigureMetaClass, cls).__call__(*args, **kwargs)
+
+        return cls._instances[cls]
+
+
+class Configure(metaclass=ConfigureMetaClass):
 
     def __init__(self):
         # print("Set Configure... only once in scope from system environment.")
@@ -68,7 +82,7 @@ class Configure(metaclass=SingletonMetaClass):
         print(f"try load configure from json file ({configure_file_path})")
 
         try:
-            with open(f"./{configure_file_path}") as json_file:
+            with open(f"{configure_file_path}") as json_file:
                 json_data = json.load(json_file)
 
             for configure_key, configure_value in json_data.items():
@@ -82,6 +96,8 @@ class Configure(metaclass=SingletonMetaClass):
 
         except Exception as e:
             exit(f"cannot open json file in ({configure_file_path}): {e}")
+
+        importlib.reload(loopchain.utils)
 
     def __load_configure(self, configure_module):
         configure_name_list = dir(configure_module)
@@ -117,6 +133,8 @@ class Configure(metaclass=SingletonMetaClass):
             configure_type = DataType.string
         elif isinstance(configure_value, int):
             configure_type = DataType.int
+        elif isinstance(configure_value, dict):
+            configure_type = DataType.dict
         else:
             configure_type = None
 

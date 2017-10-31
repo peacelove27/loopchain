@@ -40,7 +40,7 @@ class SampleThread(CommonThread):
         return self.__run_times
 
     def run(self):
-        while self.is_run:
+        while self.is_run():
             time.sleep(conf.SLEEP_SECONDS_IN_SERVICE_LOOP)
             self.__run_times += 1
             logging.debug("SampleThread, I have: " + str(self.__var))

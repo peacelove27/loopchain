@@ -35,7 +35,7 @@ def main(argv):
                                     "radio_station_target=",
                                     "port=",
                                     "score=",
-                                    "cert=",
+                                    "public=",
                                     "private=",
                                     "password=",
                                     "configure_file_path="
@@ -54,18 +54,29 @@ def main(argv):
     port = conf.PORT_PEER
     radio_station_ip = conf.IP_RADIOSTATION
     radio_station_port = conf.PORT_RADIOSTATION
+    radio_station_ip_sub = conf.IP_RADIOSTATION
+    radio_station_port_sub = conf.PORT_RADIOSTATION
     score = conf.DEFAULT_SCORE_PACKAGE
-    cert = conf.CERT_PATH
+    public = conf.PUBLIC_PATH
     private = conf.PRIVATE_PATH
     pw = conf.DEFAULT_PW
 
-    # apply option values
+    # Parse command line arguments.
     for opt, arg in opts:
         if (opt == "-r") or (opt == "--radio_station_target"):
             try:
                 if ':' in arg:
-                    radio_station_ip = arg.split(":")[0].strip()
-                    radio_station_port = int(arg.split(":")[1])
+                    target_list = util.parse_target_list(arg)
+                    if len(target_list) == 2:
+                        radio_station_ip, radio_station_port = target_list[0]
+                        radio_station_ip_sub, radio_station_port_sub = target_list[1]
+                    else:
+                        radio_station_ip, radio_station_port = target_list[0]
+                    # util.logger.spam(f"peer "
+                    #                  f"radio_station_ip({radio_station_ip}) "
+                    #                  f"radio_station_port({radio_station_port}) "
+                    #                  f"radio_station_ip_sub({radio_station_ip_sub}) "
+                    #                  f"radio_station_port_sub({radio_station_port_sub})")
                 elif len(arg.split('.')) == 4:
                     radio_station_ip = arg
                 else:
@@ -80,8 +91,8 @@ def main(argv):
             score = arg
         elif (opt == "-a") or (opt == "--password"):
             pw = arg
-        elif opt == "--cert":
-            cert = arg
+        elif opt == "--public":
+            public = arg
         elif opt == "--private":
             private = arg
         elif opt == "-d":
@@ -105,7 +116,7 @@ def main(argv):
 
     ObjectManager().peer_service = PeerService(radio_station_ip=radio_station_ip,
                                                radio_station_port=radio_station_port,
-                                               cert_path=cert,
+                                               public_path=public,
                                                private_path=private,
                                                cert_pass=pw)
 
@@ -121,12 +132,13 @@ def usage():
     print("-------------------------------")
     print("-o or --configure_file_path : json configure file path")
     print("-h or --help : print this usage")
-    print("-r or --radio_station_target : [IP Address of Radio Station]:[PORT number of Radio Station] "
+    print("-r or --radio_station_target : [IP Address of Radio Station]:[PORT number of Radio Station],"
+          "[IP Address of Sub Radio Station]:[PORT number of Sub Radio Station]"
           "or just [IP Address of Radio Station]")
     print("-p or --port : port of Peer Service itself")
     print("-c or --score : user score repository Path")
     print("-a or --password : private key password")
-    print("--cert : certificate file path")
+    print("--public : public file path")
     print("--private : private key file path")
     print("-d : Display colored log.")
 

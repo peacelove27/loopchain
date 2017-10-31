@@ -16,6 +16,9 @@
 import json
 import leveldb
 
+from fluent import event
+
+import loopchain.utils as util
 from loopchain import configure as conf
 from loopchain.baseservice import ObjectManager
 from loopchain.blockchain import BlockStatus, Block
@@ -32,10 +35,16 @@ class BlockChain:
     LAST_BLOCK_KEY = b'last_block_key'
     BLOCK_HEIGHT_KEY = b'block_height_key'
 
-    def __init__(self, blockchain_db=None, channel_name=conf.LOOPCHAIN_DEFAULT_CHANNEL):
+    def __init__(self, blockchain_db=None, channel_name=None):
+        if channel_name is None:
+            channel_name = conf.LOOPCHAIN_DEFAULT_CHANNEL
         self.__block_height = 0
         self.__last_block = None
         self.__channel_name = channel_name
+
+        self.__peer_id = None
+        if ObjectManager().peer_service is not None:
+            self.__peer_id = ObjectManager().peer_service.peer_id
 
         # block db has [ block_hash - block | block_height - block_hash | BlockChain.LAST_BLOCK_KEY - block_hash ]
         self.__confirmed_block_db = blockchain_db
@@ -148,12 +157,12 @@ class BlockChain:
         return self.__find_block_by_key(key)
 
     def add_block(self, block: Block):
-        """
-        인증된 블럭만 추가합니다.
+        """인증된 블럭만 추가합니다.
+
         :param block: 인증완료된 추가하고자 하는 블럭
         :return:
         """
-
+        # util.logger.spam(f"blockchain:add_block --start--")
         if block.block_status is not BlockStatus.confirmed:
             raise BlockInValidError("미인증 블럭")
         elif self.__last_block is not None and self.__last_block.height > 0:
@@ -163,13 +172,14 @@ class BlockChain:
                 logging.debug("block.prev_block_hash: " + block.prev_block_hash)
                 raise BlockError("최종 블럭과 해쉬값이 다릅니다.")
 
-        if ObjectManager().peer_service is None:
+        # util.logger.spam(f"blockchain:add_block --1-- {block.prev_block_hash}, {block.height}")
+        if block.height == 0 or ObjectManager().peer_service is None:
             # all results to success
             success_result = {'code': int(message_code.Response.success)}
             invoke_results = self.__create_invoke_result_specific_case(block.confirmed_transaction_list, success_result)
         else:
             try:
-                invoke_results = ObjectManager().peer_service.score_invoke(block)
+                invoke_results = ObjectManager().peer_service.score_invoke(block, self.__channel_name)
 
             except Exception as e:
                 # When Grpc Connection Raise Exception
@@ -179,13 +189,19 @@ class BlockChain:
                 invoke_results = self.__create_invoke_result_specific_case(block.confirmed_transaction_list
                                                                            , score_container_exception_result)
 
+        # util.logger.spam(f"blockchain:add_block --2--")
         self.__add_tx_to_block_db(block, invoke_results)
-        self.__confirmed_block_db.Put(block.block_hash.encode(encoding='UTF-8'), block.serialize_block())
-        self.__confirmed_block_db.Put(BlockChain.LAST_BLOCK_KEY, block.block_hash.encode(encoding='UTF-8'))
-        self.__confirmed_block_db.Put(
+
+        block_hash_encoded = block.block_hash.encode(encoding='UTF-8')
+
+        batch = leveldb.WriteBatch()
+        batch.Put(block_hash_encoded, block.serialize_block())
+        batch.Put(BlockChain.LAST_BLOCK_KEY, block_hash_encoded)
+        batch.Put(
             BlockChain.BLOCK_HEIGHT_KEY +
             block.height.to_bytes(conf.BLOCK_HEIGHT_BYTES_LEN, byteorder='big'),
-            block.block_hash.encode(encoding='UTF-8'))
+            block_hash_encoded)
+        self.__confirmed_block_db.Write(batch)
 
         self.__last_block = block
         self.__block_height = self.__last_block.height
@@ -197,6 +213,15 @@ class BlockChain:
         logging.info("ADD BLOCK HEIGHT : %i , HASH : %s", block.height, block.block_hash)
         # 블럭의 Transaction 의 데이터를 저장 합니다.
         # Peer에서 Score를 파라미터로 넘김으로써 체인코드를 실행합니다.
+
+        # util.logger.spam(f"blockchain:add_block --end--")
+
+        util.apm_event(self.__peer_id, {
+            'event_type': 'AddBlock',
+            'peer_id': self.__peer_id,
+            'data': {
+                'block_height': self.__block_height,
+                'block_type': block.block_type.name}})
 
         return True
 
@@ -228,6 +253,7 @@ class BlockChain:
 
     def find_tx_by_key(self, tx_hash_key):
         """tx 의 hash 로 저장된 tx 를 구한다.
+
         :param tx_hash_key: tx 의 tx_hash
         :return tx_hash_key 에 해당하는 transaction, 예외인 경우 None 을 리턴한다.
         """
@@ -265,7 +291,7 @@ class BlockChain:
         return tx
 
     def find_invoke_result_by_tx_hash(self, tx_hash):
-        """ find invoke result matching tx_hash and return result if not in blockchain return code delay
+        """find invoke result matching tx_hash and return result if not in blockchain return code delay
 
         :param tx_hash: tx_hash
         :return: {"code" : "code", "error_message" : "error_message if not fail this is not exist"}
@@ -293,8 +319,8 @@ class BlockChain:
         return tx_info_json
 
     def __add_genesisblock(self):
-        """
-        제네시스 블럭을 추가 합니다.
+        """제네시스 블럭을 추가 합니다.
+
         :return:
         """
         logging.info("Make Genesis Block....")
@@ -307,19 +333,21 @@ class BlockChain:
         # 으로 일정 합니다.
 
     def add_unconfirm_block(self, unconfirmed_block):
-        """
-        인증되지 않은 Unconfirm블럭을 추가 합니다.
+        """인증되지 않은 Unconfirm블럭을 추가 합니다.
+
         :param unconfirmed_block: 인증되지 않은 Unconfirm블럭
         :return:인증값 : True 인증 , False 미인증
         """
-        logging.debug(f"blockchain::add_unconfirmed_block")
+        logging.debug(f"blockchain:add_unconfirmed_block ({self.__channel_name})")
 
         # confirm 블럭
         if (self.__last_block.height + 1) != unconfirmed_block.height:
-            logging.error("블럭체인의 높이가 다릅니다.")
+            logging.error("The height of the block chain is different.")
             return False, "block_height"
         elif unconfirmed_block.prev_block_hash != self.__last_block.block_hash:
-            logging.error("마지막 블럭의 해쉬값이 다릅니다. %s vs %s ", unconfirmed_block.prev_block_hash, self.__last_block.block_hash)
+            logging.error("마지막 블럭의 해쉬값이 다릅니다. %s vs %s ",
+                          unconfirmed_block.prev_block_hash,
+                          self.__last_block.block_hash)
             return False, "prev_block_hash"
         elif unconfirmed_block.block_hash != unconfirmed_block.generate_block(self.__last_block):
             logging.error("%s의 값이 재생성한 블럭해쉬와 같지 않습니다.", unconfirmed_block.block_hash)
@@ -331,10 +359,11 @@ class BlockChain:
 
     def confirm_block(self, confirmed_block_hash):
         """인증완료후 Block을 Confirm해 줍니다.
+
         :param confirmed_block_hash: 인증된 블럭의 hash
         :return: Block 에 포함된 tx 의 갯수를 리턴한다.
         """
-        logging.debug(f"BlockChain::confirm_block channel({self.__channel_name})")
+        logging.debug(f"BlockChain:confirm_block channel({self.__channel_name})")
 
         try:
             unconfirmed_block_byte = self.__confirmed_block_db.Get(BlockChain.UNCONFIRM_BLOCK_KEY)

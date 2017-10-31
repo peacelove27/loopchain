@@ -18,7 +18,7 @@ import logging
 import leveldb
 import os
 import os.path as osp
-from enum import Enum
+from enum import Enum, IntEnum
 from loopchain.baseservice import ObjectManager
 from loopchain import configure as conf
 
@@ -28,10 +28,16 @@ class ScoreDatabaseType(Enum):
     leveldb = 'leveldb'
 
 
+class LogLevel(IntEnum):
+    ERROR = 0
+    WARNING = 1
+    INFO = 2
+    DEBUG = 3
+
+
 class ScoreHelper:
-    """
-    Score 를 개발하기 위한 라이브러리
-    """
+    """Score 를 개발하기 위한 라이브러리"""
+
     loopchain_objects = None
     __connection = None
     __cursor = None
@@ -66,12 +72,36 @@ class ScoreHelper:
 
         return connection
 
+    def log(self, channel: str, msg: str, log_level=LogLevel.DEBUG):
+        """log info log with peer_id
+
+        :param channel: channel name
+        :param msg: log msg
+        :param log_level: logging level
+        :return:
+        """
+        log = f"peer_id: {self.__load_peer_id()}, channel: {channel}, msg: {msg}"
+
+        # TODO level 에 따른 logger 를 찾는 방법이 비효율적이다. 개선이 필요함.
+        if log_level == LogLevel.DEBUG:
+            logging.debug(log)
+        elif log_level == LogLevel.INFO:
+            logging.info(log)
+        elif log_level == LogLevel.WARNING:
+            logging.warning(log)
+        elif log_level == LogLevel.ERROR:
+            logging.error(log)
+
+    # TODO peer id 가 자주 사용된다면 아래 처리 비용을 감소 시킬 필요가 있다.
     def __load_peer_id(self):
         # DEFAULT peer status
-        peer_id = 'local'
-
+        peer_id = None
         if self.loopchain_objects.score_service is not None:
             peer_id = self.loopchain_objects.score_service.get_peer_id()
+
+        if peer_id is None:
+            peer_id = 'local'
+
         return peer_id
 
     def __db_filepath(self, peer_id, score_id):
@@ -102,11 +132,12 @@ class ScoreHelper:
     def __leveldb_database(self, score_id):
         """Leveldb 용 Database 생성
 
-
         :param score_info:
         :return:
         """
         peer_id = self.__load_peer_id()
+        logging.debug(f"LOOP-289 peer id :{peer_id}")
+        logging.debug(f"LOOP-289 score id :{score_id}")
         _score_database = self.__db_filepath(peer_id, score_id)
         try:
             return leveldb.LevelDB(_score_database, create_if_missing=True)

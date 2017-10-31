@@ -121,6 +121,134 @@ $ ./peer.py --configure_file_path loopchain/configure.json
 
 This will modify your default "PORT_PEER" path 7100 to 7500. You can also apply the same logic to `radiostation.py` as well.
 
+
+## Multichannel 
+ To use Multichannel, You have to know the SCORE and peer information. 
+
+### 1. Create the file including channel information. 
+   
+  In this file, we'll put 1. name of channel, 2. the name of SCORE to execute in this channel, 3. the list of peer to join. 
+  For example, you can make ```channel_manage_data.json``` like below.  
+
+``` channel_manage_data.json```
+```json
+{
+  "%CHANNEL_NAME1%": { // 1st channel name
+    "score_package": "your_score_package", // The name of SCORE to execute in this channel.
+    "peers": [
+      {
+        "peer_target": "%IP%:%PORT%" // The list of eer targets
+      },
+     ........
+    ]
+  },
+  "%CHANNEL_NAME2%": {  // 2nd channel name
+    "score_package": "your_score_package", // The name of SCORE to execute in this channel
+    "peers": [
+      {
+        "peer_target": ""%IP%:%PORT%"   // The list of eer targets
+      },
+      .......
+    ]
+  }
+}
+
+```
+  TIP: If no peer list information. You can ignore ```peers``` list.
+  
+  For example, the channel names are ```kofia_0``` and ```kofia_1``` and assign the SCORE ```score/code1``` and ```score/code2``` on each channel, then create file like below. 
+  
+ ```json
+{
+  "kofia_0": { 
+    "score_package": "score/code1", 
+    "peers": [
+      {
+        "peer_target": "~~~~" 
+      },
+      ......
+    ]
+  },
+  "kofia_1": { 
+    "score_package": "score/code2", 
+    "peers": [
+      {
+        "peer_target": "~~~~"  
+      },
+      ........
+    ]
+  }
+}
+
+```
+  
+### 2. Configure and execute RadioStation with configuration file. 
+
+ Now, let's load ```channel_manage_data.json``` made in previous step and execute RadioStation with Multichannel. 
+ 
+ Create configuration file for RadioStation like below.
+```json
+{
+    "CHANNEL_MANAGE_DATA_PATH" : "your channel_manage_data path",
+    "ENABLE_CHANNEL_AUTH" : true
+}
+```
+
+ The meaning of each parameter is, 
+  * ```CHANNEL_MANAGE_DATA_PATH```: The path of multichannel configuration file. It have to include file name.  
+  * ```ENABLE_CHANNEL_AUTH``` :  
+     - ```true``` = Allow to join peer registered in channel manage data file.
+     - ```false```= You can add peer randomly. You can use this when you don't have the peer list.
+
+ 
+ For example, you can create ```rs_config.json```and put the contents like below. 
+ 
+ ``` rs_config.js```
+ ```json
+ {
+    "CHANNEL_MANAGE_DATA_PATH" : "./channel_manage_data.json",
+    "ENABLE_CHANNEL_AUTH" : true
+  }
+ ``` 
+ 
+ And load this configuration file with ```-o``` option.
+ 
+ ```
+$ ./radiostation.py -o rs_config.js
+```
+
+### 3. Configure and execute peer. 
+
+ Now you have to configure 1. default channel to use and 2. branch of SCORE to execute. Why we need this configuration is to avoid malfunction.
+
+```json
+{
+    "LOOPCHAIN_DEFAULT_CHANNEL" : "basic channel path",
+    "DEFAULT_SCORE_BRANCH": "your working branch name"
+}
+```
+The meaning of each parameter is,
+ * LOOPCHAIN_DEFAULT_CHANNEL : Default channel for this peer. 
+ * DEFAULT_SCORE_BRANCH : Branch of SCORE to use. Default value is ```master```.
+
+
+For example, 
+
+```peer_config.js```
+
+```json
+{
+    "LOOPCHAIN_DEFAULT_CHANNEL" : "kofia_0",
+    "DEFAULT_SCORE_BRANCH": "master"
+}
+```
+
+You can run peer with configuration like below. 
+```
+$ ./peer.py -o peer_config.js
+```
+
+
 ## Deployment
 There are two ways to run a loopchain:
 

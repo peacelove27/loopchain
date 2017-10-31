@@ -95,7 +95,7 @@ class TestTransaction(unittest.TestCase):
         """
         # GIVEN
         tx = Transaction()
-        tx.init_meta("AAAAA", "BBBBB", "CCCCC")
+        tx.init_meta("AAAAA", "BBBBB", "CCCCC", conf.LOOPCHAIN_DEFAULT_CHANNEL)
         tx.put_meta("1234", "5678")
         tx.put_meta("1", "5")
         tx.put_meta("2", "5")
@@ -105,7 +105,7 @@ class TestTransaction(unittest.TestCase):
         txtime = tx.get_timestamp()
 
         tx2 = Transaction()
-        tx2.init_meta("AAAAA", "BBBBB", "CCCCC")
+        tx2.init_meta("AAAAA", "BBBBB", "CCCCC", conf.LOOPCHAIN_DEFAULT_CHANNEL)
         tx2.put_meta("1234", "5678")
         tx2.put_meta("1", "5")
         tx2.put_meta("2", "5")
@@ -173,7 +173,7 @@ class TestTransaction(unittest.TestCase):
         """
         # GIVEN
         # init peer_auth for signautre
-        peer_auth = PeerAuthorization(cert_file=conf.CERT_PATH,
+        peer_auth = PeerAuthorization(public_file=conf.PUBLIC_PATH,
                                       pri_file=conf.PRIVATE_PATH,
                                       cert_pass=conf.DEFAULT_PW)
 

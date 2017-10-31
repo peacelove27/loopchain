@@ -15,9 +15,11 @@
 
 import collections
 import logging
+
+import loopchain.utils as util
+from loopchain import configure as conf
 from loopchain.baseservice import ObjectManager
 from loopchain.peer import Vote
-from loopchain import configure as conf
 
 
 class NoExistBlock(Exception):
@@ -63,6 +65,7 @@ class CandidateBlocks:
         :param block: Block Manager 가 tx 를 수집하여 주기적으로 생성한 블럭, 아직 Block Chain 의 멤버가 아니다.
         :return: unconfirmed block 을 식별하기 위한 block_hash (str)
         """
+        logging.debug(f"CandidateBlocks:add_unconfirmed_block ({self.__channel_name})")
         # block 생성자의 peer_id 를 지정한다. (새로 네트워크에 참여하는 피어는 마지막 블럭의 peer_id 를 리더로 간주한다.)
         block.peer_id = self.__peer_id
 
@@ -76,7 +79,7 @@ class CandidateBlocks:
         return block.block_hash
 
     def reset_voter_count(self, block_hash):
-        logging.debug("Reset voter count in candidate blocks")
+        logging.debug(f"({self.__channel_name}) Reset voter count in candidate blocks")
         vote = Vote(block_hash, ObjectManager().peer_service.channel_manager.get_peer_manager(self.__channel_name))
         prev_vote, block = self.__unconfirmed_blocks[block_hash]
         # vote.get_result_detail(block.block_hash, conf.VOTING_RATIO)
@@ -129,6 +132,12 @@ class CandidateBlocks:
             block_hash = candidate_block.block_hash
 
         if block_hash not in self.__unconfirmed_blocks.keys():
+            util.apm_event(self.__peer_id, {
+                'event_type': 'NoExistBlock',
+                'peer_id': self.__peer_id,
+                'data': {
+                    'message': 'No Exist block in candidate blocks by hash',
+                    'block_hash': block_hash}})
             raise NoExistBlock("No Exist block in candidate blocks by hash: " + block_hash)
 
         if self.__unconfirmed_blocks[block_hash][0].get_result(block_hash, conf.VOTING_RATIO):
@@ -138,9 +147,21 @@ class CandidateBlocks:
             if self.__unconfirmed_blocks[block_hash][0].is_failed_vote(block_hash, conf.VOTING_RATIO):
                 logging.warning("This block fail to validate!!")
                 self.remove_broken_block(block_hash)
+                util.apm_event(self.__peer_id, {
+                    'event_type': 'InvalidatedBlock',
+                    'peer_id': self.__peer_id,
+                    'data': {
+                        'message': 'This block fail to validate',
+                        'block_hash': candidate_block.block_hash}})
                 raise InvalidatedBlock("This block fail to validate", candidate_block)
             else:
                 logging.warning("There is Not Complete Validation.")
+                util.apm_event(self.__peer_id, {
+                    'event_type': 'NotCompleteValidation',
+                    'peer_id': self.__peer_id,
+                    'data': {
+                        'message': 'There is Not Complete Validation.',
+                        'block_hash': candidate_block.block_hash}})
                 raise NotCompleteValidation("Not Complete Validation", candidate_block)
 
     def get_candidate_block(self):
@@ -148,10 +169,10 @@ class CandidateBlocks:
 
         :return: block, broadcast 를 통해 피어로부터 검증 받아야 한다.
         """
-        if len(self.__unconfirmed_blocks) > 0:
-            return next(iter(self.__unconfirmed_blocks.items()))[1][1]
+        if self.__unconfirmed_blocks.__len__() > 0:
+            return list(self.__unconfirmed_blocks.items())[0][1][1]
 
         return None
 
     def is_remain_blocks(self):
-        return len(self.__unconfirmed_blocks) > 0
+        return self.__unconfirmed_blocks.__len__() > 0

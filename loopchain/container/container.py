@@ -32,10 +32,11 @@ class ServerType(Enum):
 
 class Container(CommonProcess):
 
-    def __init__(self, port, type=ServerType.GRPC):
+    def __init__(self, port, type=ServerType.GRPC, peer_ip=None):
         CommonProcess.__init__(self)
         self._port = port
         self._type = type
+        self._peer_ip = peer_ip
 
     def run(self, conn):
         logging.debug("Container run...")
@@ -45,7 +46,7 @@ class Container(CommonProcess):
             loopchain_pb2_grpc.add_ContainerServicer_to_server(self, server)
             server.add_insecure_port('[::]:' + str(self._port))
         elif self._type == ServerType.REST_PEER:
-            server = RestServer(self._port)
+            server = RestServer(self._port, self._peer_ip)
         else:
             server = RestServerRS(self._port)
 

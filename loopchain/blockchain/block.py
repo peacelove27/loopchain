@@ -44,7 +44,7 @@ class Block:
     Transaction 들을 담아서 Peer들과 주고 받는 Block Object.
     """
 
-    def __init__(self, made_block_count=0, is_divided_block=False, channel_name=conf.LOOPCHAIN_DEFAULT_CHANNEL):
+    def __init__(self, channel_name, made_block_count=0, is_divided_block=False):
         # Block head
         self.version = "0.1a"
         self.prev_block_hash = ""

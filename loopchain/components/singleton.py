@@ -30,6 +30,7 @@ class SingletonMetaClass(type):
     def clear(cls):
         """testcase 에서 테스트 instance 를 반복해서 생성하는 경우
         singleton 규칙에서 예외로 한다. 실제 코드에서는 이 루틴을 호출해서는 안된다!!
+
         :param cls: Sigleton instance 의 class 이름
         """
         if cls in cls._instances:
