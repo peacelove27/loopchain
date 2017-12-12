@@ -15,6 +15,7 @@ COPY ./deploy/LOOPCHAIN_VERSION LOOPCHAIN_VERSION
 RUN mkdir ./loopchain
 COPY ./loopchain/ ./loopchain/
 COPY ./resources/default_certs ./resources/default_certs
+COPY ./resources/default_pki ./resources/default_pki
 COPY radiostation.py ./
 COPY channel_manage_data.json ./
 COPY gtool.py ./

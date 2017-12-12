@@ -14,6 +14,7 @@ COPY ./deploy/LOOPCHAIN_VERSION LOOPCHAIN_VERSION
 RUN mkdir ./loopchain ./score ./.storage ./resources
 COPY ./loopchain/ ./loopchain/
 COPY ./resources/default_certs ./resources/default_certs
+COPY ./resources/default_pki ./resources/default_pki
 
 # COPY default SCORE
 COPY ./score/loopchain_default.zip ./score/loopchain_default.zip

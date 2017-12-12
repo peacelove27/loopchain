@@ -45,5 +45,10 @@ if [[ ${LOG} = log || "$(docker images -q loopchain-fluentd:latest > /dev/null)"
     build_local_fluentd ${ARG}
 fi
 
+# Generate key for basic testing.
+cd ..
+python3 create_sign_pki.py
+cd deploy
 
+# Generate docker images
 build_docker ${ARG}
