@@ -1,0 +1,40 @@
+# DOCKERFILE for Peer.
+
+FROM ubuntu:14.04
+MAINTAINER TheLoop Dev Team <dev@theloop.co.kr>
+RUN locale-gen en_US.UTF-8
+ENV LANG en_US.UTF-8
+ENV LANGUAGE en_US:en
+ENV LC_ALL en_US.UTF-8
+
+# CHANGE KOREA mirror
+RUN sed -i 's/archive.ubuntu.com/ftp.daum.net/g' /etc/apt/sources.list
+
+# Update packages.
+RUN apt-get clean && apt-get update && apt-get install -y software-properties-common python-software-properties && \
+    add-apt-repository ppa:jonathonf/python-3.6 && \
+    add-apt-repository ppa:ubuntu-toolchain-r/test && \
+    apt-get update && apt-get install -y \
+        libc6-dev make gcc-4.9 g++-4.9 dpkg-dev\
+        wget \
+        libssl-dev \
+        libffi-dev \
+        python3.6 \
+        python3.6-dev \
+        curl \
+        git && \
+    apt-get clean && apt-get autoremove -y && \
+    rm -rf /var/cache/apk/*
+
+# ADD pip3
+RUN rm /usr/bin/x86_64-linux-gnu-gcc && ln -s /usr/bin/gcc-4.9 /usr/bin/x86_64-linux-gnu-gcc && \
+    rm /usr/bin/x86_64-linux-gnu-g++ && ln -s /usr/bin/g++-4.9 /usr/bin/x86_64-linux-gnu-g++ && \
+    update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.6 1 && \
+    update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.9 60 --slave /usr/bin/g++ g++ /usr/bin/g++-4.9
+
+RUN wget https://bootstrap.pypa.io/get-pip.py \
+    && python3 get-pip.py \
+    && rm get-pip.py
+
+# Remove bash shell.
+RUN rm /bin/bash

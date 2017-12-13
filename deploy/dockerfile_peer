@@ -1,0 +1,37 @@
+# DOCKERFILE for Peer.
+
+FROM loop-base:latest
+MAINTAINER TheLoop Dev Team <dev@theloop.co.kr>
+
+# Prepare basic python environment.
+ADD requirements.txt .
+RUN pip3 install -r requirements.txt
+
+# COPY LOOPCHAIN VERSION
+COPY ./deploy/LOOPCHAIN_VERSION LOOPCHAIN_VERSION
+
+# COPY loopchain project.
+RUN mkdir ./loopchain ./score ./.storage ./resources
+COPY ./loopchain/ ./loopchain/
+COPY ./resources/default_certs ./resources/default_certs
+COPY ./resources/default_pki ./resources/default_pki
+
+# COPY default SCORE
+COPY ./score/loopchain_default.zip ./score/loopchain_default.zip
+COPY ./peer.py ./
+COPY ./rest_proxy.py ./
+
+# Generate code from proto file.
+ADD generate_code.sh ./
+RUN ./generate_code.sh
+
+# Start service
+# ENTRYPOINT or CMD
+# CMD python3 peer.py
+
+# Expose port.
+#  for gRPC
+EXPOSE 7100
+EXPOSE 7101
+EXPOSE 7102
+EXPOSE 9000

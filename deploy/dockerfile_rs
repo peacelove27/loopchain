@@ -1,0 +1,36 @@
+# DOCKERFILE for RadioStation.
+
+FROM loop-base:latest
+MAINTAINER TheLoop Dev Team <dev@theloop.co.kr>
+
+# Prepare basic python environment.
+
+ADD requirements.txt .
+RUN pip3 install -r requirements.txt
+
+# COPY LOOPCHAIN VERSION
+COPY ./deploy/LOOPCHAIN_VERSION LOOPCHAIN_VERSION
+
+# COPY peer project.
+RUN mkdir ./loopchain
+COPY ./loopchain/ ./loopchain/
+COPY ./resources/default_certs ./resources/default_certs
+COPY ./resources/default_pki ./resources/default_pki
+COPY radiostation.py ./
+COPY channel_manage_data.json ./
+COPY gtool.py ./
+
+
+# Generate code from proto file.
+ADD generate_code.sh ./
+RUN ./generate_code.sh
+
+
+# Start service
+# ENTRYPOINT or CMD
+
+# Expose port.
+#  for gRPC
+EXPOSE 7100
+EXPOSE 7101
+EXPOSE 7102
