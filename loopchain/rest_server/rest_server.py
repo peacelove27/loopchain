@@ -199,7 +199,7 @@ class Transaction(Resource):
         args = ServerComponents().parser.parse_args()
         response = ServerComponents().get_transaction(args['hash'], get_channel_name_from_args(args))
         tx_data = json.loads('{}')
-        tx_data['response_code'] = str(response.response_code)
+        tx_data['response_code'] = response.response_code
         tx_data['data'] = ""
         if len(response.data) is not 0:
             try:
@@ -316,7 +316,6 @@ class Blocks(Resource):
             block_data['block_data_json'] = json.loads(response.block_data_json)
 
         return block_data
-
 
 
 class RestServer(CommonThread):
