@@ -144,9 +144,6 @@ target/
 # IPython Notebook
 .ipynb_checkpoints
 
-# pyenv
-.python-version
-
 # celery beat schedule file
 celerybeat-schedule
 
@@ -157,9 +154,30 @@ celerybeat-schedule
 .venv/
 venv/
 ENV/
+
+### venv ###
+# Linux
 bin/
 lib/
 include/
+
+# Window
+Include/
+Lib/
+Scripts/
+
+# Shared
+pyvenv.cfg
+
+### macOS ###
+*.DS_Store
+.AppleDouble
+.LSOverride
+
+# Icon must end with two \r
+Icon
+
+### Project settings ###
 
 # Spyder project settings
 .spyderproject
@@ -167,8 +185,7 @@ include/
 # Rope project settings
 .ropeproject
 
-
-# ETC
+### ETC ###
 testcase/db/
 test_chain_helper_block/
 sample_score
