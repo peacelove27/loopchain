@@ -65,7 +65,7 @@ This is how to run loopchain in a local machine:
 $ virtualenv -p python3 .  # Create a virtual environment
 $ source bin/activate    # Enter the virtual environment
 $ pip3 install -r requirements.txt  # Install necessary packages in the virtual environment
-./generate_code.sh #  gRPC generates codes necessary for communication
+$ ./generate_code.sh #  gRPC generates codes necessary for communication
 ```
 
 Or you can do this easily as follows:
