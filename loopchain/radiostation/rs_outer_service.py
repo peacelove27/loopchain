@@ -271,7 +271,7 @@ class OuterService(loopchain_pb2_grpc.RadioStationServicer):
             except Exception as e:
                 logging.warning(f"fail GetStatus... ({e})")
 
-        return loopchain_pb2.StatusReply(status="", block_height=0, total_tx=0)
+        return loopchain_pb2.StatusReply(status=message_code.Response.fail, block_height=0, total_tx=0)
 
     def AnnounceNewLeader(self, request, context):
         channel_name = conf.LOOPCHAIN_DEFAULT_CHANNEL if request.channel == '' else request.channel
