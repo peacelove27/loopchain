@@ -19,6 +19,7 @@ import pickle
 
 from flask import Flask, request
 from flask_restful import reqparse, Api, Resource
+from flask_restful.utils import cors
 
 from loopchain import configure as conf
 from loopchain.baseservice import CommonThread, StubManager
@@ -32,6 +33,8 @@ class ServerComponents(metaclass=SingletonMetaClass):
     def __init__(self):
         self.__app = Flask(__name__)
         self.__api = Api(self.__app)
+        if conf.CORS_ENABLED:
+            self.__api.decorators = [cors.crossdomain(origin='*', headers=['accept', 'Content-Type'])]
         self.__parser = reqparse.RequestParser()
         self.__stub_to_rs_service = None
 
