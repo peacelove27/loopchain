@@ -264,9 +264,3 @@ MY_SEED = 123456  # for create pki added data
 ####################
 TIMEOUT_FOR_PEER_VOTE = 20
 TIMEOUT_FOR_PEER_BLOCK_GENERATION = TIMEOUT_FOR_PEER_VOTE + 10
-
-
-###########
-# CORS ###
-###########
-CORS_ENABLED = True
