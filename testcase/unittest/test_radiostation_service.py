@@ -18,6 +18,7 @@
 import unittest
 
 import loopchain.utils as util
+import testcase.unittest.test_util as test_util
 from loopchain import configure as conf
 from loopchain.radiostation import RadioStationService
 
@@ -25,6 +26,12 @@ util.set_log_level_debug()
 
 
 class TestRadioStationService(unittest.TestCase):
+
+    def setUp(self):
+        test_util.print_testname(self._testMethodName)
+
+    def tearDown(self):
+        pass
 
     def test_random_generate(self):
         """GIVEN Random Seed and conf.RANDOM_NUM, conf.KMS = True

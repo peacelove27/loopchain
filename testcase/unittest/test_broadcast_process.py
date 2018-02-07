@@ -21,6 +21,7 @@ import time
 import unittest
 
 import loopchain.utils as util
+import testcase.unittest.test_util as test_util
 from loopchain.baseservice import BroadcastProcess
 from loopchain.protos import message_code
 
@@ -28,6 +29,11 @@ util.set_log_level_debug()
 
 
 class TestBroadcastProcess(unittest.TestCase):
+    def setUp(self):
+        test_util.print_testname(self._testMethodName)
+
+    def tearDown(self):
+        pass
 
     def test_broadcast_process(self):
         # TODO base 클래스가 변경되어 테스트 재작성 필요함

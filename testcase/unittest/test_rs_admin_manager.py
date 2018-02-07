@@ -21,6 +21,7 @@ import json
 import os
 
 import loopchain.utils as util
+import testcase.unittest.test_util as test_util
 from loopchain.radiostation import AdminManager
 from loopchain import configure as conf
 
@@ -28,6 +29,12 @@ util.set_log_level_debug()
 
 
 class TestRSAdminManager(unittest.TestCase):
+
+    def setUp(self):
+        test_util.print_testname(self._testMethodName)
+
+    def tearDown(self):
+        pass
 
     def test_get_channel_info_by_peer_target(self):
         # GIVEN
