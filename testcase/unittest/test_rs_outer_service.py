@@ -19,8 +19,7 @@ import unittest
 
 import loopchain.utils as util
 import testcase.unittest.test_util as test_util
-from loopchain import configure as conf
-from loopchain.radiostation import OuterService
+from loopchain.radiostation import OuterService, RadioStationService, ChannelManager
 
 util.set_log_level_debug()
 
@@ -33,13 +32,15 @@ class TestOuterService(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def test_random_generate(self):
-        outer_service = OuterService()
+    def test_when_peer_stub_manager_is_none_return_fail(self):
+        rs_service = RadioStationService()
+        channel_manager = ChannelManager(rs_service.common_service)
+        rs_service._RadioStationService__channel_manager = channel_manager
         request = TestRequest('abcd', 'abcd', None)
+        outer_service = OuterService()
         context = None
         response = outer_service.GetPeerStatus(request, context)
-
-        self.assertEqual(response.fail, response.status)
+        self.assertEqual("fail", response.status)
 
 
 class TestRequest:
