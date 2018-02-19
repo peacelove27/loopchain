@@ -27,6 +27,7 @@ from loopchain.components import SingletonMetaClass
 from loopchain.baseservice import CommonThread
 from flask import Flask, request
 from flask_restful import reqparse, Api, Resource
+from flask_restful.utils import cors
 from loopchain.protos import loopchain_pb2, loopchain_pb2_grpc, message_code
 from loopchain import configure as conf
 
@@ -39,6 +40,7 @@ class ServerComponents(metaclass=SingletonMetaClass):
     def __init__(self):
         self.__app = Flask(__name__)
         self.__api = Api(self.__app)
+        self.__api.decorators = [cors.crossdomain(origin='*', headers=['accept', 'Content-Type'])]
         self.__parser = reqparse.RequestParser()
         self.__stub_to_peer_service = None
 
