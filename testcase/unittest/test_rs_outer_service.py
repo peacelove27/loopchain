@@ -14,48 +14,41 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Test Broadcast Process"""
-
-import logging
-import time
+"""Test OuterService"""
 import unittest
 
 import loopchain.utils as util
 import testcase.unittest.test_util as test_util
-from loopchain.baseservice import BroadcastProcess
-from loopchain.protos import message_code
+from loopchain.radiostation import OuterService, RadioStationService, ChannelManager
 
 util.set_log_level_debug()
 
 
-class TestBroadcastProcess(unittest.TestCase):
+class TestOuterService(unittest.TestCase):
+
     def setUp(self):
         test_util.print_testname(self._testMethodName)
 
     def tearDown(self):
         pass
 
-    def test_broadcast_process(self):
-        # TODO base 클래스가 변경되어 테스트 재작성 필요함
-        ## GIVEN
-        broadcast_process = BroadcastProcess()
-        broadcast_process.start()
+    def test_when_peer_stub_manager_is_none_return_fail(self):
+        rs_service = RadioStationService()
+        channel_manager = ChannelManager(rs_service.common_service)
+        rs_service._RadioStationService__channel_manager = channel_manager
+        request = TestRequest('abcd', 'abcd', None)
+        outer_service = OuterService()
+        context = None
+        response = outer_service.GetPeerStatus(request, context)
+        self.assertEqual("fail", response.status)
 
-        ## WHEN
-        result = ""
-        times = 0
-        while times < 2:
-            broadcast_process.send_to_process(("status", "param"))
-            # result = broadcast_process.recv_from_process()
-            # logging.debug("broadcast_process status: " + result)
-            time.sleep(1)
-            times += 1
 
-        broadcast_process.stop()
-        broadcast_process.wait()
+class TestRequest:
 
-        ## THEN
-        # self.assertEqual(result, message_code.get_response_msg(message_code.Response.success))
+    def __init__(self, peer_id, group_id, channel):
+        self.peer_id = peer_id
+        self.group_id = group_id
+        self.channel = channel
 
 
 if __name__ == '__main__':

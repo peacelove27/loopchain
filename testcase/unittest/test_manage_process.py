@@ -21,6 +21,7 @@ import unittest
 import time
 
 import loopchain.utils as util
+import testcase.unittest.test_util as test_util
 from loopchain import configure as conf
 from loopchain.baseservice import ManageProcess
 from loopchain.baseservice import CommonThread
@@ -65,6 +66,12 @@ class SampleManageProcess(ManageProcess):
 
 
 class TestManageProcess(unittest.TestCase):
+
+    def setUp(self):
+        test_util.print_testname(self._testMethodName)
+
+    def tearDown(self):
+        pass
 
     def test_manage_process(self):
         # GIVEN

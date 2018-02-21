@@ -453,10 +453,11 @@ class PeerManager:
 
     def get_peer_stub_manager(self, peer, group_id=None):
         logging.debug("get_peer_stub_manager")
-        logging.debug(f"peer_info : {peer.peer_id} {peer.group_id}")
+
         if group_id is None:
                 group_id = conf.ALL_GROUP_ID
         try:
+            logging.debug(f"peer_info : {peer.peer_id} {peer.group_id}")
             return self.__peer_object_list[group_id][peer.peer_id].stub_manager
         except Exception as e:
             logging.debug("try get peer stub except: " + str(e))

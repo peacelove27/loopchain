@@ -21,6 +21,7 @@ import unittest
 import time
 
 import loopchain.utils as util
+import testcase.unittest.test_util as test_util
 from loopchain import configure as conf
 from loopchain.baseservice import CommonProcess
 from loopchain.baseservice import CommonThread
@@ -60,6 +61,12 @@ class SampleProcess(CommonProcess):
 
 
 class TestCommonProcess(unittest.TestCase):
+
+    def setUp(self):
+        test_util.print_testname(self._testMethodName)
+
+    def tearDown(self):
+        pass
 
     def test_common_process(self):
         sample_process1 = SampleProcess()

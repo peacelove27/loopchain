@@ -20,6 +20,7 @@ import unittest
 from unittest.mock import patch
 import json
 import loopchain.utils as util
+import testcase.unittest.test_util as test_util
 import os.path as osp
 import shutil
 import loopchain.configure as conf
@@ -42,6 +43,12 @@ class TestScoreHelper(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         #shutil.rmtree(cls.__repository_path, True)
+        pass
+
+    def setUp(self):
+        test_util.print_testname(self._testMethodName)
+
+    def tearDown(self):
         pass
 
     @patch('loopchain.container.ScoreService')

@@ -19,6 +19,7 @@ import pickle
 
 from flask import Flask, request
 from flask_restful import reqparse, Api, Resource
+from flask_restful.utils import cors
 
 from loopchain import configure as conf
 from loopchain.baseservice import CommonThread, StubManager
@@ -32,6 +33,7 @@ class ServerComponents(metaclass=SingletonMetaClass):
     def __init__(self):
         self.__app = Flask(__name__)
         self.__api = Api(self.__app)
+        self.__api.decorators = [cors.crossdomain(origin='*', headers=['accept', 'Content-Type'])]
         self.__parser = reqparse.RequestParser()
         self.__stub_to_rs_service = None
 
@@ -225,7 +227,12 @@ class Peer(Resource):
 
             # logging.debug(f"try get_peer_status peer_id({peer_id}), group_id({group_id})")
             response = ServerComponents().get_peer_status(args['peer_id'], args['group_id'], channel)
-            result = json.loads(response.status)
+            if response.status == message_code.get_response_msg(message_code.Response.fail):
+                result = json.loads('{}')
+                result['response_code'] = message_code.Response.fail
+                result['message'] = response.status
+            else:
+                result = json.loads(response.status)
 
         else:
             return ServerComponents().abort_if_url_doesnt_exist(request_type, self.__REQUEST_TYPE)

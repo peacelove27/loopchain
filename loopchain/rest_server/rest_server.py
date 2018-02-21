@@ -27,6 +27,7 @@ from loopchain.components import SingletonMetaClass
 from loopchain.baseservice import CommonThread
 from flask import Flask, request
 from flask_restful import reqparse, Api, Resource
+from flask_restful.utils import cors
 from loopchain.protos import loopchain_pb2, loopchain_pb2_grpc, message_code
 from loopchain import configure as conf
 
@@ -39,6 +40,7 @@ class ServerComponents(metaclass=SingletonMetaClass):
     def __init__(self):
         self.__app = Flask(__name__)
         self.__api = Api(self.__app)
+        self.__api.decorators = [cors.crossdomain(origin='*', headers=['accept', 'Content-Type'])]
         self.__parser = reqparse.RequestParser()
         self.__stub_to_peer_service = None
 
@@ -199,7 +201,7 @@ class Transaction(Resource):
         args = ServerComponents().parser.parse_args()
         response = ServerComponents().get_transaction(args['hash'], get_channel_name_from_args(args))
         tx_data = json.loads('{}')
-        tx_data['response_code'] = str(response.response_code)
+        tx_data['response_code'] = response.response_code
         tx_data['data'] = ""
         if len(response.data) is not 0:
             try:
@@ -316,7 +318,6 @@ class Blocks(Resource):
             block_data['block_data_json'] = json.loads(response.block_data_json)
 
         return block_data
-
 
 
 class RestServer(CommonThread):
