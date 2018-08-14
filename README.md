@@ -1,3 +1,5 @@
+** We'll obsolete this project. Please visit https://github.com/icon-project . ** 
+
 #  loopchain
 
 ## What is loopchain?
