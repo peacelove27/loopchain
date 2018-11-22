@@ -1,4 +1,4 @@
-** We'll obsolete this project. Please visit https://github.com/icon-project . ** 
+** We'll obsolete this project. Please visit https://github.com/icon-project/loopchain . ** 
 
 #  loopchain
 
